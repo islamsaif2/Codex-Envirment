@@ -1,0 +1,155 @@
+Blci50aXRsZT0nRGF0YSBzb3VyY2UnKyhjbGVhbi5sZW5ndGg+MT8ncyc6JycpKyc6ICcrY2xlYW4ubWFwKHg9Pm5hbWVzW3hdKS5qb2luKCcgKyAnKTsKIGZvcihjb25zdCBzb3VyY2Ugb2YgY2xlYW4pewogIGNvbnN0IHNwYW49ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnc3BhbicpOwogIHNwYW4uY2xhc3NOYW1lPSdtZXRyaWMtc291cmNlLWljb24gbWV0cmljLXNvdXJjZS0nK3NvdXJjZTsKICBzcGFuLnRpdGxlPW5hbWVzW3NvdXJjZV07CiAgc3Bhbi5pbm5lckhUTUw9c3ZnW3NvdXJjZV07CiAgd3JhcHBlci5hcHBlbmQoc3Bhbik7CiB9CiByZXR1cm4gd3JhcHBlcjsKfQpmdW5jdGlvbiBkZWNvcmF0ZShlbGVtZW50LGNvbnRleHQpewogaWYoZWxlbWVudC5kYXRhc2V0Lm1ldHJpY1NvdXJjZXNEZWNvcmF0ZWQpcmV0dXJuOwogY29uc3QgdGV4dE5vZGVzPUFycmF5LmZyb20oZWxlbWVudC5jaGlsZE5vZGVzKS5maWx0ZXIobm9kZT0+bm9kZS5ub2RlVHlwZT09PTMmJm5vZGUudGV4dENvbnRlbnQudHJpbSgpKTsKIGlmKCF0ZXh0Tm9kZXMubGVuZ3RoKXJldHVybjsKIGNvbnN0IHRpdGxlPXRleHROb2Rlcy5tYXAobm9kZT0+bm9kZS50ZXh0Q29udGVudCkuam9pbignJykudHJpbSgpOwogY29uc3Qgc291cmNlcz1sb29rdXAodGl0bGUsY29udGV4dCk7CiBpZighc291cmNlcy5sZW5ndGgpe2VsZW1lbnQuZGF0YXNldC5tZXRyaWNTb3VyY2VzRGVjb3JhdGVkPSd1bm1hcHBlZCc7cmV0dXJuO30KIGNvbnN0IGhlYWRpbmc9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnc3BhbicpOwogaGVhZGluZy5jbGFzc05hbWU9J21ldHJpYy1zb3VyY2UtaGVhZGluZyc7CiBjb25zdCBuYW1lPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ3NwYW4nKTsKIG5hbWUuY2xhc3NOYW1lPSdtZXRyaWMtc291cmNlLW5hbWUnOwogbmFtZS50ZXh0Q29udGVudD10aXRsZTsKIGhlYWRpbmcuYXBwZW5kKGljb25zKHNvdXJjZXMpLG5hbWUpOwogdGV4dE5vZGVzLmZvckVhY2gobm9kZT0+bm9kZS5yZW1vdmUoKSk7CiBlbGVtZW50Lmluc2VydEJlZm9yZShoZWFkaW5nLGVsZW1lbnQuZmlyc3RDaGlsZCk7CiBlbGVtZW50LmRhdGFzZXQubWV0cmljU291cmNlc0RlY29yYXRlZD0neWVzJzsKfQpmdW5jdGlvbiBkZWNvcmF0ZUludmVudG9yeShlbGVtZW50KXsKIGlmKGVsZW1lbnQuZGF0YXNldC5tZXRyaWNTb3VyY2VzRGVjb3JhdGVkKXJldHVybjsKIGNvbnN0IGRvdD1lbGVtZW50LnF1ZXJ5U2VsZWN0b3IoJzpzY29wZSA+IC5pbnYtZG90Jyk7CiBlbGVtZW50Lmluc2VydEJlZm9yZShpY29ucyhbJ3Nob3BpZnknXSksZG90P2RvdC5uZXh0U2libGluZzplbGVtZW50LmZpcnN0Q2hpbGQpOwogZWxlbWVudC5kYXRhc2V0Lm1ldHJpY1NvdXJjZXNEZWNvcmF0ZWQ9J3llcyc7Cn0KZnVuY3Rpb24gYXBwbHlTb3VyY2VzKCl7CiBjb25zdCByb290PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50Jyk7CiBpZighcm9vdClyZXR1cm47CiByb290LnF1ZXJ5U2VsZWN0b3JBbGwoJy5rcGkgLmt0LC5ibS1jYXJkIC5ibS1sYWJlbCwuYm0taGVyby1jYXJkIC5ibS1oZXJvLXRpdGxlLC5ibS1mdW5uZWwtY2VsbCA+IGInKS5mb3JFYWNoKGVsPT5kZWNvcmF0ZShlbCwnbWV0cmljJykpOwogcm9vdC5xdWVyeVNlbGVjdG9yQWxsKCcucHJvZHVjdC1tZXRyaWMgPiBzbWFsbCcpLmZvckVhY2goZWw9PmRlY29yYXRlKGVsLCdwcm9kdWN0JykpOwogcm9vdC5xdWVyeVNlbGVjdG9yQWxsKCcuaW52LXByb2R1Y3QtdGl0bGUgaDQnKS5mb3JFYWNoKGRlY29yYXRlSW52ZW50b3J5KTsKIHJvb3QucXVlcnlTZWxlY3RvckFsbCgnc2VjdGlvbi5wYW5lbCcpLmZvckVhY2gocGFuZWw9PnsKICBjb25zdCBoPXBhbmVsLnF1ZXJ5U2VsZWN0b3IoJzpzY29wZSA+IGgzJyk7CiAgaWYoaCYmaC50ZXh0Q29udGVudC50cmltKCk9PT0nU2hpcHBpbmcgU3RhZ2VzJykKICAgcGFuZWwucXVlcnlTZWxlY3RvckFsbCgnZGl2W3N0eWxlKj0iZm9udC1zaXplOjExcHgiXScpLmZvckVhY2goZWw9PmRlY29yYXRlKGVsLCdzaGlwcGluZycpKTsKIH0pOwp9CmNvbnN0IHJvb3Q9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQnKTsKaWYoIXJvb3QpcmV0dXJuOwpsZXQgc2NoZWR1bGVkPWZhbHNlOwpjb25zdCBvYnNlcnZlcj1uZXcgTXV0YXRpb25PYnNlcnZlcigoKT0+ewogaWYoc2NoZWR1bGVkKXJldHVybjsKIHNjaGVkdWxlZD10cnVlOwogcmVxdWVzdEFuaW1hdGlvbkZyYW1lKCgpPT57c2NoZWR1bGVkPWZhbHNlO2FwcGx5U291cmNlcygpO30pOwp9KTsKb2JzZXJ2ZXIub2JzZXJ2ZShyb290LHtjaGlsZExpc3Q6dHJ1ZSxzdWJ0cmVlOnRydWV9KTsKYXBwbHlTb3VyY2VzKCk7Cn0pKCk7Cjwvc2NyaXB0PjwvYm9keT48L2h0bWw+Cg==";
+const APP_HTML = new TextDecoder().decode(Uint8Array.from(atob(APP_HTML_B64), c => c.charCodeAt(0)));
+function base64url(input) {
+  const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
+  let binary = ""; for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+let googleTokenCache = { token: null, expiresAt: 0 };
+const REQUIRED_TABS = ["Order Tracking Details", "D by D Ads", "D by D Website Funnel", "Month to Month Products Analysis", "Website Mapping and Metrics"];
+const DEFAULT_BUSINESS = { id: "ultramedix", name: "Ultramedix", spreadsheetId: null, isDefault: true };
+
+async function getBusinesses(env) {
+  const defaults = [{ ...DEFAULT_BUSINESS, spreadsheetId: env.SPREADSHEET_ID }];
+  if (!env.BUSINESS_STORE) return defaults;
+  let saved = [];
+  try { saved = await env.BUSINESS_STORE.get("businesses", "json") || []; } catch { saved = []; }
+  if (!Array.isArray(saved)) saved = [];
+  const extras = saved.filter(b => b && b.id && b.id !== "ultramedix" && b.spreadsheetId);
+  return [...defaults, ...extras];
+}
+async function getBusiness(env, id = "ultramedix") {
+  return (await getBusinesses(env)).find(b => b.id === id) || null;
+}
+async function validateBusiness(env, name, spreadsheetUrl) {
+  let spreadsheetId = "";
+  try { const u = new URL(spreadsheetUrl); const match = u.pathname.match(/\/spreadsheets\/d\/([A-Za-z0-9_-]+)/); spreadsheetId = match ? match[1] : ""; } catch {}
+  if (!spreadsheetId) throw new Error("Please provide a valid Google Sheets URL.");
+  for (const tab of REQUIRED_TABS) await readPublicSheet(spreadsheetId, tab, "A1:A1");
+  const id = String(name).toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48) || ("business-" + crypto.randomUUID().slice(0, 8));
+  return { id, name: String(name).trim(), spreadsheetId, spreadsheetTitle: String(name).trim(), isDefault: false };
+}
+function json(data, status = 200, headers = {}) {
+  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...headers } });
+}
+
+const ULTRAMEDIX_SHEET_CACHE_TTL=180;
+async function readPublicSheet(spreadsheetId,title,range,rawMode=false){
+  // Per-sheet cache: avoids hammering Google gviz for every dashboard tab or comparison.
+  const part=[spreadsheetId,title,range||"",rawMode?"raw":"values"].join("|");
+  const root="https://ultramedix-analytics-api.islam-ahmed-solutions.workers.dev/__internal_sheet_cache?source="+encodeURIComponent(part);
+  const cache=caches.default, freshKey=new Request(root), staleKey=new Request(root+"&fallback=1");
+  try{
+    const found=await cache.match(freshKey);
+    if(found)return await found.json();
+  }catch(_){}
+  try{
+    const rows=await readPublicSheetOriginal(spreadsheetId,title,range,rawMode);
+    const payload=JSON.stringify(rows);
+    if(payload.length<18000000){
+      const fresh=new Response(payload,{headers:{"Content-Type":"application/json","Cache-Control":"public,max-age="+ULTRAMEDIX_SHEET_CACHE_TTL}});
+      const stale=new Response(payload,{headers:{"Content-Type":"application/json","Cache-Control":"public,max-age=86400"}});
+      // Cache writes are best-effort; failure cannot make the dashboard fail.
+      try{await Promise.allSettled([cache.put(freshKey,fresh),cache.put(staleKey,stale)]);}catch(_){}
+    }
+    return rows;
+  }catch(error){
+    try{
+      const lastGood=await cache.match(staleKey);
+      if(lastGood){console.warn("Serving last known good data for "+title+" after upstream error: "+String(error));return await lastGood.json();}
+    }catch(_){}
+    throw error;
+  }
+}
+
+async function readPublicSheetOriginal(spreadsheetId,title,range,rawMode=false){const url=new URL('https://docs.google.com/spreadsheets/d/'+encodeURIComponent(spreadsheetId)+'/gviz/tq');url.searchParams.set('tqx','out:json');url.searchParams.set('headers','0');url.searchParams.set('sheet',title);if(range)url.searchParams.set('range',range);let response;for(let attempt=0;attempt<2;attempt++){try{response=await fetch(url.toString(),{headers:{'Accept':'application/json,text/plain,*/*'},signal:AbortSignal.timeout(30000)});}catch(e){if(attempt===0){await new Promise(r=>setTimeout(r,400));continue;}throw new Error("Google Sheets request timed out or failed for worksheet "+title+": "+(e&&e.name==="TimeoutError"?"timeout after 30 seconds":e.message||"network error"));}if(attempt===0&&[429,502,503,504].includes(response.status)){try{await response.body?.cancel();}catch(_){}await new Promise(r=>setTimeout(r,400));continue;}break;}const raw=await response.text();if(!response.ok)throw new Error('Could not read public Google Sheet '+title+' (HTTP '+response.status+'). Confirm Anyone with the link can view it.');const first=raw.indexOf('{'),last=raw.lastIndexOf('}');if(first<0||last<=first)throw new Error('Google did not return public worksheet data for '+title+'. Confirm Anyone with the link — Viewer.');let payload;try{payload=JSON.parse(raw.slice(first,last+1));}catch(e){throw new Error('Google returned an unreadable response for worksheet '+title+'.');}if(payload.status&&payload.status!=='ok')throw new Error(payload.errors&&payload.errors[0]&&(payload.errors[0].detailed_message||payload.errors[0].reason)||'Google could not read worksheet '+title+'.');const table=payload.table;if(!table||!Array.isArray(table.rows))throw new Error('Worksheet '+title+' was not found or is not publicly viewable.');const width=Math.max(table.cols?table.cols.length:0,...table.rows.map(r=>r.c?r.c.length:0));return table.rows.map(row=>{const values=Array(width).fill('');(row.c||[]).forEach((cell,k)=>{if(!cell)return;let value=rawMode&&cell.f!==undefined&&cell.f!==null?cell.f:cell.v;if(!rawMode&&typeof value==="string"){const gd=value.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})\)$/);if(gd){const y=Number(gd[1]),mo=Number(gd[2]),d=Number(gd[3]);value=new Date(Date.UTC(y,mo,d)).toISOString().slice(0,10);}}if(value!==undefined&&value!==null)values[k]=value;else if(cell.f!==undefined)values[k]=cell.f;});return values;});}
+function isReturnedStatus(status) { return status === "returned" || status === "returned to business"; }
+function norm(s) { return String(s ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
+function money(v) { if (typeof v === "number") return v; const s = String(v ?? "").replace(/,/g, "").replace(/[^0-9.()-]/g, ""); if (!s) return 0; const n = Number(s.replace(/[()]/g, "")); return Number.isFinite(n) ? (s.includes("(") ? -n : n) : 0; }
+function findHeader(rows, requiredWords) { return rows.findIndex(row => { const cells = row.map(norm); return requiredWords.every(word => cells.some(c => c.includes(word))); }); }
+function dateCandidates(value, startDate, endDate) {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 20000 && value <= 100000) {
+    const date = new Date(Date.UTC(1899, 11, 30) + Math.round(value) * 86400000);
+    return [date.toISOString().slice(0, 10)];
+  }
+  const s = String(value ?? "").trim();
+  if (!s) return [];
+  const gviz = s.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})(?:,\d{1,2},\d{1,2}(?:,\d{1,2})?)?\)$/);
+  if (gviz) return [new Date(Date.UTC(Number(gviz[1]), Number(gviz[2]), Number(gviz[3]))).toISOString().slice(0,10)];
+  if (/^\d{5}(?:\.\d+)?$/.test(s)) {
+    const serial = Number(s);
+    if (serial >= 20000 && serial <= 100000) return [new Date(Date.UTC(1899,11,30)+Math.round(serial)*86400000).toISOString().slice(0,10)];
+  }
+  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:\b|T)/);
+  if (iso) return [new Date(Date.UTC(Number(iso[1]),Number(iso[2])-1,Number(iso[3]))).toISOString().slice(0,10)];
+  const full = s.match(/^(?:[A-Za-z]+,?\s*)?(\d{1,2})\s*[\/-]\s*(\d{1,2})\s*[\/-]\s*(\d{2,4})$/);
+  if (full) { const a=Number(full[1]), b=Number(full[2]); const month=a>12?b:a, day=a>12?a:b; let year=Number(full[3]); if(year<100) year+=year<70?2000:1900; return [new Date(Date.UTC(year,month-1,day)).toISOString().slice(0,10)]; }
+  const yearless = s.match(/^(?:[A-Za-z]+,?\s*)?(\d{1,2})\s*\/\s*(\d{1,2})$/);
+  if (yearless) {
+    const a=Number(yearless[1]), b=Number(yearless[2]), month=a>12?b:a, day=a>12?a:b;
+    const years=[];
+    if(startDate&&endDate){const first=Number(startDate.slice(0,4)),last=Number(endDate.slice(0,4));for(let y=first;y<=last&&y-first<=30;y++)years.push(y);}
+    else if(startDate)years.push(Number(startDate.slice(0,4)));
+    else if(endDate)years.push(Number(endDate.slice(0,4)));
+    else years.push(new Date().getFullYear());
+    return years.map(y=>new Date(Date.UTC(y,month-1,day)).toISOString().slice(0,10));
+  }
+  const parsed = new Date(s);
+  if (Number.isFinite(parsed.getTime())) return [parsed.toISOString().slice(0,10)];
+  return [];
+}
+function dateMatches(value, startDate, endDate) {
+  const keys = dateCandidates(value, startDate, endDate);
+  return keys.some(key => (!startDate || key >= startDate) && (!endDate || key <= endDate));
+}
+// Match Shopify line-item names to GA4 page titles. GA4 titles usually append the
+// store name, while Shopify line-item names may append the selected size/variant.
+function sourceTrafficType(value) {
+  const v=norm(value).replace(/[ -]+/g,"_");
+  if (!v) return "Unknown";
+  if (/(^|_)link_in_bio($|_)/.test(v)) return "Organic";
+  return "Paid";
+}
+function sourceChannel(value) {
+  const raw=String(value??"").trim();
+  if (!raw || /unknown source/i.test(raw)) return "Unknown";
+  const candidate=raw.toLowerCase();
+  if (/(^|[^a-z])instagram([^a-z]|$)|instagram\.com/.test(candidate)) return "Instagram";
+  if (/(^|[^a-z])facebook([^a-z]|$)|facebook\.com|fb\.com/.test(candidate)) return "Facebook";
+  if (/^https?:\/\//i.test(raw)) {
+    try { const host=new URL(raw).hostname.toLowerCase().replace(/^www\./,""); return host.split(".")[0].replace(/^m$/,"").replace(/[-_]+/g," ").replace(/\b\w/g,c=>c.toUpperCase())||"Unknown"; } catch {}
+  }
+  return raw.replace(/[_-]+/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+}
+function cleanedTrafficType(value) {
+  const v=norm(value);
+  return v==="paid"?"Paid":v==="organic"?"Organic":"Unknown";
+}
+function classifySource(row, ix = {}) {
+  const channel=sourceChannel(row[ix.source]);
+  const traffic=cleanedTrafficType(row[ix.traffic]);
+  return channel+" · "+traffic;
+}
+function productTitleKey(value) {
+  return norm(String(value ?? "")
+    .replace(/\s*[–—-]\s*(?:ultramedix|ultra\s*medix)\s*$/i, "")
+    .replace(/\s*[–—-]\s*(?:xxxs?|xxs|xs|s|m|l|xl|xxl|xxxl|xxxxl|2xl|3xl|4xl|small|medium|large|x[- ]?small|x[- ]?large|extra[- ]?small|extra[- ]?large)\s*$/i, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim());
+}
+function calculateMappedMetric(formulas,key,values,fallback){
+ const formula=formulas[key];if(!formula)return fallback;
+ try {
+ const src=String(formula).replace(/\s+/g,"");if(!/^[a-zA-Z0-9_+*/().-]+$/.test(src))return fallback;
+ const tokens=src.match(/[A-Za-z_][A-Za-z_0-9]*|(?:[0-9]+(?:\.[0-9]+)?)|[()+*/-]/g)||[];
+ if(tokens.join("")!==src)return fallback;
+ let i=0;function atom(){const t=tokens[i++];if(t==="-")return -atom();if(t==="+")return atom();if(t==="("){const n=expr();if(tokens[i++]!==")")throw Error("parenthesis");return n;}if(/^\d/.test(t||""))return Number(t);if(Object.prototype.hasOwnProperty.call(values,t))return Number(values[t])||0;throw Error("unknown variable");}
+ function mul(){let n=atom();while(tokens[i]==="*"||tokens[i]==="/"){const op=tokens[i++],v=atom();n=op==="*"?n*v:(v?n/v:0);}return n;}
+ function expr(){let n=mul();while(tokens[i]==="+"||tokens[i]==="-"){const op=tokens[i++],v=mul();n=op==="+"?n+v:n-v;}return n;}
+ const result=expr();return i===tokens.length&&Number.isFinite(result)?result:fallback;
+ }catch(e){return fallback;}
+}
+function parseWebsiteMapping(rows){const m=new Map();for(const r of (rows||[]).slice(1)){const k=String(r[0]??"").trim();if(k)m.set(k,{sheet:String(r[1]??"").trim(),type:String(r[2]??"").trim().toUpperCase(),value:String(r[3]??"").trim(),headerRow:Number(r[4])||0,dataStartRow:Number(r[5])||0});}return m;}
+function colNumber(v){let n=0,s=String(v??"").trim().toUpperCase();if(!s||!/^[A-Z]+$/.test(s))throw new Error("Invalid Website Mapping column: "+v);for(let i=0;i<s.length;i++)n=n*26+s.charCodeAt(i)-64;return n-1;}
+function mapRange(m,k){cons
