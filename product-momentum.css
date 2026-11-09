@@ -91,3 +91,19 @@ body.theme-dark .pm-status.steady{background:#304158;color:#d8e7fa}
 .pm-mini{overflow:visible}
 body.theme-dark .pm-period-label{fill:#b8c9e0}
 body.theme-dark .pm-small-axis,body.theme-dark .pm-avg-label{fill:#aebed4}
+
+
+/* Conversion-rate metric switch and missing-data clarity. */
+.pm-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.pm-metric-toggle{display:inline-flex;gap:3px;padding:4px;border:1px solid #d9e2ef;border-radius:11px;background:#edf2f9}
+.pm-metric-toggle button{font:inherit;cursor:pointer;border:0;background:transparent;padding:8px 13px;font-size:11px;font-weight:800;border-radius:8px;color:#647996;white-space:nowrap}
+.pm-metric-toggle button.selected{background:#fff;color:#285da3;box-shadow:0 1px 5px #142b4b20}
+.pm-rate-note{margin:0 15px 13px;border:1px solid #e3ebf4;background:#f4f8fc;color:#63758d;font-size:10px;line-height:1.6;border-radius:8px;padding:10px 12px}
+.pm-no-rate{font-size:12px;font-family:inherit;fill:#97a4b5}
+.pm-product-numbers .pm-delta b{overflow-wrap:anywhere}
+body.theme-dark .pm-metric-toggle{border-color:#405671;background:#253b54}
+body.theme-dark .pm-metric-toggle button{color:#b7c8df}
+body.theme-dark .pm-metric-toggle button.selected{background:#3c5575;color:#fff}
+body.theme-dark .pm-rate-note{background:#263c56;border-color:#46607d;color:#c0d1e7}
+body.theme-dark .pm-no-rate{fill:#c2d0e1}
+@media(max-width:700px){.pm-head-actions{justify-content:flex-start;width:100%}.pm-metric-toggle{width:100%;justify-content:center}.pm-metric-toggle button{flex:1}}
