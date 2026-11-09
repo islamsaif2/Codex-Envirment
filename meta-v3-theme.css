@@ -88,3 +88,17 @@ body.theme-dark #meta-explorer .mx-table tfoot td,body.theme-dark #meta-explorer
 body.theme-dark #meta-explorer .mx-more{background:#243d5b;color:#b8d7ff;border-color:#426184}
 
 @media(max-width:720px){body .sidefoot{display:block!important;padding:8px 0}body .sidefoot>div{display:none}body .theme-toggle{margin:0}}
+
+/* Ads calendar: reuse the Overview two-click selection in a non-clipped popover. */
+#meta-explorer.mx-panel{overflow:visible}
+#meta-explorer .mx-top{position:relative;z-index:7}
+#meta-explorer .mx-date-filter,#meta-explorer .mx-compare-date-filter{min-width:185px}
+#meta-explorer .mx-date-filter summary,#meta-explorer .mx-compare-date-filter summary{min-width:185px;font-size:12px;cursor:pointer}
+#meta-explorer .mx-date-filter .calendar-body,#meta-explorer .mx-compare-date-filter .calendar-body{right:auto;left:0;z-index:50;max-width:min(540px,calc(100vw - 45px))}
+#meta-explorer .mx-name-main{display:flex;align-items:center;min-height:26px}
+body.theme-dark #meta-explorer .calendar-body{background:#172840;color:#e6f0ff;border-color:#435a79}
+body.theme-dark #meta-explorer .cal-day{background:#1e3049;color:#e7f0ff}
+body.theme-dark #meta-explorer .cal-day:hover{background:#345477}
+body.theme-dark #meta-explorer .cal-day.selected{background:#4f70bd;color:#fff}
+body.theme-dark #meta-explorer .cal-day.inside{background:#2e4b70;color:#e9f0ff}
+body.theme-dark #meta-explorer .cal-nav button{background:#233b59;color:#e7f0ff;border-color:#4a5b77}
