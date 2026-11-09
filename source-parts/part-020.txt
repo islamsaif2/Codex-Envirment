@@ -1,0 +1,95 @@
+t x=m.get(k);if(!x||x.type!=="RANGE"||!x.value||!x.sheet)throw new Error("Website Mapping range missing: "+k);return x;}
+function mappedDataRows(rows,range){const st=String(range.value).match(/^[A-Z]+([0-9]+)/i);if(!st)throw new Error("Invalid starting row in range "+range.value);const first=range.dataStartRow||Number(st[1]);return rows.slice(Math.max(0,first-Number(st[1])));}
+function mapCol(m,k,rk,rows){const x=m.get(k),r=mapRange(m,rk);if(!x||!x.value)throw new Error("Website Mapping identification missing: "+k);const st=String(r.value).match(/^([A-Z]+)([0-9]+)/i);if(!st)throw new Error("Invalid start cell in "+rk);if(x.type==="COLUMN"){const n=colNumber(x.value)-colNumber(st[1]);if(n<0)throw new Error(k+" is outside "+r.value);return n;}if(x.type==="HEADER"){const hr=x.headerRow||r.headerRow;if(!hr)throw new Error("Header Row is required for "+k);const h=rows&&rows[Number(hr)-Number(st[2])];if(!h)throw new Error("Header row "+hr+" is outside "+rk);const n=h.findIndex(v=>norm(v)===norm(x.value));if(n<0)throw new Error("Header "+x.value+" was not found for "+k);return n;}throw new Error("Identification Type for "+k+" must be COLUMN or HEADER.");}
+function weeklyProductData(rows,idx,pairs){const m=new Map();for(const r of rows){const day=dateCandidates(r[idx.date])[0];if(!day)continue;const d=new Date(day+'T12:00:00Z');if(isNaN(d))continue;d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);const week=d.toISOString().slice(0,10);for(const [a,b] of pairs){const name=String(r[a]||'').trim(),price=String(r[b]||'').trim();if(!name||!price)continue;const key=name+'|||'+week,x=m.get(key)||{name,week,orders:0,revenue:0};x.orders++;x.revenue+=money(price);m.set(key,x)}}return [...m.values()]}
+async function buildDashboard(env, business, startDate, endDate, detailMode='') {
+  const workbook = { spreadsheetTitle: business.name };
+  const mappingRows=await readPublicSheet(business.spreadsheetId,"Website Mapping and Metrics","A1:G180");
+  const mapping=parseWebsiteMapping(mappingRows);
+  const metricFormulas=Object.fromEntries(mappingRows.filter(r=>String(r[0]||"").startsWith("metrics.")&&String(r[2]||"").toUpperCase()==="FORMULA").map(r=>[String(r[0]).slice(8),String(r[3]||"")]));
+  const or=mapRange(mapping,"orders.range"), mr=mapRange(mapping,"marketing.range"), pr=mapRange(mapping,"pages.range");
+  const regionRange=mapping.has("regionsAnalysis.range")?mapRange(mapping,"regionsAnalysis.range"):null;
+
+  const inventoryRange=mapping.has("inventory.range")?mapRange(mapping,"inventory.range"):null;
+  const inventoryImagesRange=mapping.has("inventoryImages.range")&&mapping.has("inventoryImages.variantId")&&mapping.has("inventoryImages.url")?mapRange(mapping,"inventoryImages.range"):null;
+  const [inventoryImagesRaw,orderRaw,marketingRaw,pageRaw,shippingOrderRaw,regionRaw,inventoryRaw]=await Promise.all([inventoryImagesRange?readPublicSheet(business.spreadsheetId,inventoryImagesRange.sheet,inventoryImagesRange.value).catch(()=>[]):Promise.resolve([]),readPublicSheet(business.spreadsheetId,or.sheet,or.value),Promise.all([readPublicSheet(business.spreadsheetId,mr.sheet,"A2:Q"),readPublicSheet(business.spreadsheetId,mr.sheet,"AE2:AP")]).then(([meta,ga])=>Array.from({length:Math.max(meta.length,ga.length)},(_,i)=>{const row=Array(42).fill("");const m=meta[i]||[],g=ga[i]||[];for(let j=0;j<17;j++)row[j]=m[j]??"";const offset=g.length>=42?30:0;for(let j=0;j<12;j++)row[30+j]=g[offset+j]??"";return row;})),readPublicSheet(business.spreadsheetId,pr.sheet,pr.value),readPublicSheet(business.spreadsheetId,"Cards Order","A1:D1000"),regionRange?readPublicSheet(business.spreadsheetId,regionRange.sheet,regionRange.value):Promise.resolve([]),inventoryRange?readPublicSheet(business.spreadsheetId,inventoryRange.sheet,inventoryRange.value,true).catch(()=>[]):Promise.resolve([])]);
+  // Reuse Meta A:Q already loaded for the base dashboard, only retrieve supplementary R:W for Ads.
+  const [metaDetailExtra,shopifySessionRaw]=await Promise.all([
+    detailMode==="ads"?readPublicSheet(business.spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:W").catch(()=>[]):Promise.resolve([]),
+    detailMode==="channels"?readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A2:M").catch(()=>[]):Promise.resolve([])
+  ]);
+  const metaDetailRaw=detailMode==="ads"?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter(row=>String(row[0]||"").trim()):[];
+  // Status is per campaign/adset/ad; use latest non-empty reported status by ID, never classify a missing status as paused.
+  const metaLastStatus={campaign:new Map(),adset:new Map(),ad:new Map()};
+  for(const row of metaDetailRaw){
+    const d=dateCandidates(row[0])[0];if(!d)continue;
+    for(const [type,idCol,statusCol] of [["campaign",2,19],["adset",4,20],["ad",6,21]]){
+      const id=String(row[idCol]||"").trim(),status=String(row[statusCol]||"").trim();if(!id||!status)continue;
+      const old=metaLastStatus[type].get(id);if(!old||d>=old.date)metaLastStatus[type].set(id,{date:d,status});
+    }
+  }
+  const metaStatusById={campaign:Object.fromEntries(metaLastStatus.campaign),adset:Object.fromEntries(metaLastStatus.adset),ad:Object.fromEntries(metaLastStatus.ad)};
+  const metaExplorerRows=metaDetailRaw.filter(r=>dateMatches(r[0],startDate,endDate)).map(r=>({date:String(dateCandidates(r[0],startDate,endDate)[0]||r[0]||""),campaign:String(r[1]||""),campaignId:String(r[2]||""),adset:String(r[3]||""),adsetId:String(r[4]||""),ad:String(r[5]||""),adId:String(r[6]||""),spend:money(r[7]),cpm:money(r[8]),ctr:(()=>{const v=money(r[9]);return v>1||String(r[9]||"").includes("%")?v/100:v;})(),clicks:money(r[10]),landing:money(r[11]),carts:money(r[12]),purchases:money(r[13]),checkouts:money(r[14]),platform:String(r[15]||""),objective:String(r[16]||""),thumbnail:String(r[17]||""),creativeUrl:String(r[18]||""),campaignDelivery:String(r[19]||""),adsetDelivery:String(r[20]||""),adDelivery:String(r[21]||""),placement:String(r[22]||"")})).filter(r=>r.campaign||r.ad);
+  const shopifyChannelSummary=new Map();
+  for(const r of shopifySessionRaw){if(!/\.myshopify\.com$/i.test(String(r[12]||"").trim()))continue;const date=dateCandidates(r[0],startDate,endDate).find(x=>(!startDate||x>=startDate)&&(!endDate||x<=endDate));if(!date)continue;const source=String(r[1]||"Unknown").trim()||"Unknown",medium=String(r[2]||"Unknown").trim()||"Unknown",key=source+" · "+medium;const item=shopifyChannelSummary.get(key)||{name:key,source,medium,firstOrders:0,lastOrders:0,sessions:0,shopifyOrders:0,completed:0,ordersAvailable:false};item.sessions+=Math.max(0,money(r[3]));if(String(r[4]??"").trim()!==""){item.shopifyOrders+=Math.max(0,money(r[4]));item.ordersAvailable=true;}item.completed+=Math.max(0,money(r[6]));item.firstOrders=item.shopifyOrders;item.lastOrders=item.shopifyOrders;shopifyChannelSummary.set(key,item);}
+  const metaPlacementRows=metaDetailRaw.filter(r=>dateMatches(r[0],startDate,endDate)&&String(r[22]||"").trim()).map(r=>({date:String(dateCandidates(r[0],startDate,endDate)[0]||r[0]||""),platform:String(r[15]||""),placement:String(r[22]||""),spend:money(r[7]),landing:money(r[11]),purchases:money(r[13])}));
+  const defaultShippingStatusLabels=["Picked up","In transit between Hubs","Route Assigned","Delivered","Received at warehouse","Returned to business"];
+  const shippingOrderSettings=(shippingOrderRaw||[]).map((r,i)=>({tab:String(r[0]??"").trim(),label:String(r[1]??"").trim(),orderRaw:String(r[2]??"").trim(),order:Number(r[2]),fallback:i})).filter(x=>norm(x.tab)==="shipping and operation analysis"&&defaultShippingStatusLabels.includes(x.label)&&x.orderRaw!==""&&Number.isFinite(x.order)&&x.order>0);
+  const shippingStatusOrder=defaultShippingStatusLabels.map((label,i)=>{const setting=shippingOrderSettings.find(x=>x.label===label);return {label,order:setting&&Number.isFinite(setting.order)?setting.order:i+1,fallback:i};}).sort((a,b)=>a.order-b.order||a.fallback-b.fallback).map(x=>x.label);
+  const overviewCardOrder=(shippingOrderRaw||[]).map((r,i)=>({tab:String(r[0]??"").trim(),label:String(r[1]??"").trim(),orderRaw:String(r[2]??"").trim(),order:Number(r[2]),fallback:i})).filter(x=>norm(x.tab)==="overview"&&x.label&&x.orderRaw!==""&&Number.isFinite(x.order)&&x.order>0).sort((a,b)=>a.order-b.order||a.fallback-b.fallback).map(x=>({label:x.label,order:x.order}));
+  const idx={date:mapCol(mapping,"orders.date","orders.range",orderRaw),order:mapCol(mapping,"orders.order","orders.range",orderRaw),medium:mapCol(mapping,"orders.medium","orders.range",orderRaw),campaign:mapCol(mapping,"orders.campaign","orders.range",orderRaw),source:mapCol(mapping,"orders.source","orders.range",orderRaw),sourceFirst:mapCol(mapping,"orders.sourceFirst","orders.range",orderRaw),sourceLast:mapCol(mapping,"orders.sourceLast","orders.range",orderRaw),channelTrafficFirst:mapCol(mapping,"orders.channelTrafficFirst","orders.range",orderRaw),channelTrafficLast:mapCol(mapping,"orders.channelTrafficLast","orders.range",orderRaw),itemsQuantity:mapCol(mapping,"orders.itemsQuantity","orders.range",orderRaw),gender:mapCol(mapping,"orders.gender","orders.range",orderRaw),cancellationReason:mapCol(mapping,"orders.cancellationReason","orders.range",orderRaw),creationToDelivery:mapCol(mapping,"orders.creationToDelivery","orders.range",orderRaw),content:mapCol(mapping,"orders.content","orders.range",orderRaw),referrer:mapCol(mapping,"orders.referrer","orders.range",orderRaw),customer:mapCol(mapping,"orders.customer","orders.range",orderRaw),customerId:mapCol(mapping,"orders.customerId","orders.range",orderRaw),total:mapCol(mapping,"orders.total","orders.range",orderRaw),products:mapCol(mapping,"orders.products","orders.range",orderRaw),tracking:mapCol(mapping,"orders.tracking","orders.range",orderRaw),fulfillment:mapCol(mapping,"orders.fulfillment","orders.range",orderRaw),orderStatus:mapCol(mapping,"orders.orderStatus","orders.range",orderRaw),first:mapCol(mapping,"orders.first","orders.range",orderRaw),discount:mapCol(mapping,"orders.discount","orders.range",orderRaw),region:mapCol(mapping,"orders.region","orders.range",orderRaw),district:mapCol(mapping,"orders.district","orders.range",orderRaw),status:mapCol(mapping,"orders.status","orders.range",orderRaw),shippingDiscount:mapCol(mapping,"orders.shippingDiscount","orders.range",orderRaw),shippingCost:mapCol(mapping,"orders.shippingCost","orders.range",orderRaw)};
+  const productColumnPairs=[1,2,3,4].map(n=>[mapCol(mapping,"orders.product"+n,"orders.range",orderRaw),mapCol(mapping,"orders.product"+n+"Price","orders.range",orderRaw)]).filter(([titleIx,priceIx])=>{const h=orderRaw[0]||[];return titleIx>=0&&priceIx>=0&&!/cleaned version|content source/i.test(String(h[titleIx]||""))&&!/cleaned version|content source/i.test(String(h[priceIx]||""));});
+  const orderRows=mappedDataRows(orderRaw,or),marketingRows=mappedDataRows(marketingRaw,mr),pageData=mappedDataRows(pageRaw,pr);
+  const pageRows=pageData.map(r=>[r[mapCol(mapping,"pages.date","pages.range",pageRaw)],r[mapCol(mapping,"pages.title","pages.range",pageRaw)],r[mapCol(mapping,"pages.sessions","pages.range",pageRaw)],r[mapCol(mapping,"pages.engagedSessions","pages.range",pageRaw)],r[mapping.has("pages.path")?mapCol(mapping,"pages.path","pages.range",pageRaw):9],r[mapping.has("pages.newUsers")?mapCol(mapping,"pages.newUsers","pages.range",pageRaw):8],r[mapping.has("pages.oldUsers")?mapCol(mapping,"pages.oldUsers","pages.range",pageRaw):10]]);
+  const orders = orderRows.filter(r => dateMatches(r[idx.date], startDate, endDate));
+
+  const variantColumn=mapping.has("orders.productVariantOnly")
+    ? mapCol(mapping,"orders.productVariantOnly","orders.range",orderRaw)
+    : colNumber("AG")-colNumber(String(or.value).match(/^([A-Z]+)/i)[1]);
+  const variantCounts=new Map(), dailyMetrics=new Map();
+  for(const row of orders){
+    const names=new Map();
+    for(const line of String(row[variantColumn]??"").split(/\r?\n/)){
+      const name=line.trim();
+      if(name)names.set(norm(name),name);
+    }
+    for(const [key,name] of names){
+      const variant=variantCounts.get(key)||{name,count:0};
+      variant.count++;
+      variantCounts.set(key,variant);
+    }
+    const date=dateCandidates(row[idx.date],startDate,endDate).find(day=>(!startDate||day>=startDate)&&(!endDate||day<=endDate));
+    if(!date)continue;
+    const day=dailyMetrics.get(date)||{date,orders:0,delivered:0,returned:0,items:0,itemOrders:0,deliveredRevenue:0,totalSales:0};
+    day.orders++;day.totalSales+=money(row[idx.total]);
+    const status=norm(row[idx.orderStatus]);
+    if(status==="delivered"){day.delivered++;day.deliveredRevenue+=money(row[idx.total])-Math.abs(money(row[idx.discount]));}
+    else if(isReturnedStatus(status))day.returned++;
+    const raw=String(row[idx.itemsQuantity]??"").trim(), items=Number(raw);
+    if(raw&&Number.isFinite(items)&&items>=0){day.items+=items;day.itemOrders++;}
+    dailyMetrics.set(date,day);
+  }
+  const variants=[...variantCounts.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name));
+  const metricDaily=[...dailyMetrics.values()].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>({
+    date:x.date,orders:x.orders,totalSales:x.totalSales,deliveredRevenue:x.deliveredRevenue,deliveredOrders:x.delivered,returnedOrders:x.returned,
+    deliveryRate:x.delivered+x.returned?x.delivered/(x.delivered+x.returned):null,
+    avgLineItems:x.itemOrders?x.items/x.itemOrders:null
+  }));
+
+  const orderDays=metricDaily.filter(x=>x.orders>0).map(x=>x.date);const avgFrom=startDate||orderDays[0],avgTo=endDate||orderDays.at(-1);const avgDuration=avgFrom&&avgTo?Math.round((Date.parse(avgTo+'T12:00:00Z')-Date.parse(avgFrom+'T12:00:00Z'))/86400000)+1:0;const avgOrdersPerDay=avgDuration>0?orders.length/avgDuration:null;
+  const cancellationCounts=new Map();
+  for(const r of orders){const reason=String(r[idx.cancellationReason]??'').trim();if(!reason)continue;cancellationCounts.set(reason,(cancellationCounts.get(reason)||0)+1);}
+  const cancellationReasons=[...cancellationCounts].map(([reason,count])=>({reason,count})).sort((a,b)=>b.count-a.count||a.reason.localeCompare(b.reason));
+
+  const isDelivered = r => norm(r[idx.orderStatus]) === "delivered";
+  const deliveredOrdersRows = orders.filter(isDelivered);
+  const shippingStatusLabels = ["Picked up","In transit between Hubs","Route Assigned","Delivered","Received at warehouse","Returned to business"];
+  const shippingStatusCounts = Object.fromEntries(shippingStatusLabels.map(label => [label, orders.filter(r => label === "Returned to business" ? isReturnedStatus(norm(r[idx.orderStatus])) : norm(r[idx.orderStatus]) === norm(label)).length]));
+  const fulfilledOrders = orders.filter(r => norm(r[idx.fulfillment]) === "fulfilled");
+  const returnedOrdersRows = orders.filter(r => isReturnedStatus(norm(r[idx.orderStatus])));
+  const eligibleFulfilledOrders = deliveredOrdersRows.length + returnedOrdersRows.length;
+  const isCancelledOrder = r => /^(cancelled|canceled)$/.test(norm(r[idx.status]));
+  const cancelledBeforePickupOrders = orders.filter(r => { const stage=norm(r[idx.orderStatus]); const alreadyPickedUp=/^(picked up|in transit(?: between hubs)?|out for delivery|delivery in progress|delivered|returned(?: to business)?)$/.test(stage); return isCancelledOrder(r) && !alreadyPickedUp; });
+  const orderDiscount = r => Math.abs(money(r[idx.discount]));
+  const revenue = deliveredOrdersRows.reduce((sum, r) => sum + money(r[idx.total]) - orderDiscount(r), 0);
+  const totalSales = orders.reduce
