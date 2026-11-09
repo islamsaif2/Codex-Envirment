@@ -1,0 +1,118 @@
+function renderMetaExplorer(){
+  const level=explorerState.level;
+  const raw=dashboard.metaExplorerRows||[];
+  const catalog=dashboard.metaExplorerCatalog||[];
+  const grouped=explorerGroup(explorerFiltered(raw),level);
+  const metricIndex=new Map(grouped.map(x=>[String(x.id),x]));
+  const statuses=dashboard.metaStatusById||{};
+  const tagLevel=["campaign","adset","ad"][level];
+  const catalogFiltered=catalog.filter(r=>
+    (!explorerState.objective||r.objective===explorerState.objective)&&
+    (!explorerState.platform||r.platform===explorerState.platform)&&
+    (!explorerState.campaign||(r.campaignId||r.campaign)===explorerState.campaign)&&
+    (!explorerState.adset||(r.adsetId||r.adset)===explorerState.adset)
+  );
+  const entityIndex=new Map();
+  for(const c of catalogFiltered){
+    const id=String(level===0?(c.campaignId||c.campaign):level===1?(c.adsetId||c.adset):(c.adId||c.ad));
+    const name=String(level===0?c.campaign:level===1?c.adset:c.ad);
+    if(!id||!name)continue;
+    const old=entityIndex.get(id);
+    if(!old||String(c.date||"")>String(old.date||""))entityIndex.set(id,{...c,id,name});
+  }
+  // Include entities returned by the date-filtered report even when they are
+  // missing from the historical index. Do not filter out paused or archived ads.
+  for(const r of grouped)if(!entityIndex.has(String(r.id)))entityIndex.set(String(r.id),r);
+  const rows=[...entityIndex.values()].map(c=>{
+    const metrics=metricIndex.get(String(c.id));
+    const statusInfo=statuses[tagLevel]?.[c.id];
+    return {
+      ...c,...(metrics||{spend:0,clicks:0,landing:0,carts:0,checkouts:0,purchases:0,cpm:null,ctr:null,cpa:null}),
+      name:c.name||metrics?.name||"Untitled",
+      status:String(statusInfo?.status||metrics?.status||"Unavailable"),
+      statusDate:statusInfo?.date||metrics?.statusDate||"",
+      hasActivity:!!metrics,
+      objective:c.objective||metrics?.objective||"",
+      thumbnail:c.thumbnail||metrics?.thumbnail||"",
+      creativeUrl:c.creativeUrl||metrics?.creativeUrl||""
+    };
+  }).filter(r=>!explorerState.status||r.status.toLowerCase()===explorerState.status.toLowerCase());
+  const statusRank=s=>/^active$/i.test(s)?0:/^paused$/i.test(s)?1:/^archived$/i.test(s)?2:/^unavailable$/i.test(s)?4:3;
+  rows.sort((a,b)=>statusRank(a.status)-statusRank(b.status)||
+    (explorerState.asc?1:-1)*(Number(a[explorerState.sort]||0)-Number(b[explorerState.sort]||0))||
+    a.name.localeCompare(b.name));
+  const objectiveOptions=[...new Set([...catalog,...raw].map(r=>r.objective).filter(Boolean))].sort();
+  const platformOptions=[...new Set([...catalog,...raw].map(r=>r.platform).filter(Boolean))].sort();
+  const statusOptions=[...new Set([...catalogFiltered.map(x=>statuses[tagLevel]?.[level===0?(x.campaignId||x.campaign):level===1?(x.adsetId||x.adset):(x.adId||x.ad)]?.status||"Unavailable"),...rows.map(x=>x.status)])].sort((a,b)=>statusRank(a)-statusRank(b));
+  const option=(arr,value,placeholder)=>'<option value="">'+placeholder+'</option>'+arr.map(x=>'<option value="'+esc(x)+'" '+(x===value?'selected':'')+'>'+esc(x)+'</option>').join('');
+  const keys=["spend","cpm","ctr","clicks","landing","carts","checkouts","purchases","cpa"];
+  const labels=["Spend","CPM","CTR","Outbound clicks","Landing views","Adds to cart","Checkouts","Purchases","CPA"];
+  const fmt=(value,key)=>{
+    if(value==null||!Number.isFinite(Number(value)))return "—";
+    const n=Number(value);
+    if(key==="ctr")return (n*100).toFixed(2)+"%";
+    if(["spend","cpm","cpa"].includes(key))return "EGP "+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2});
+    return n.toLocaleString("en-US",{maximumFractionDigits:0});
+  };
+  const previous=new Map(explorerGroup(explorerFiltered(explorerState.previous),level).map(x=>[String(x.id),x]));
+  const measured=rows.filter(r=>r.hasActivity&&r.spend>0&&statusRank(r.status)===0);
+  const peerGroups=new Map();
+  for(const r of measured){const k=r.objective||"all";if(!peerGroups.has(k))peerGroups.set(k,[]);peerGroups.get(k).push(r);}
+  const valueCell=(r,key)=>{
+    if(!r.hasActivity)return '<span class="mx-no-activity">—</span>';
+    const value=r[key];
+    const main='<div class="mx-number">'+fmt(value,key)+'</div>';
+    if(value==null)return main;
+    let baseline=null;
+    if(explorerState.compare==="previous")baseline=previous.get(String(r.id))?.[key];
+    else{
+      const peers=(peerGroups.get(r.objective||"all")||[]).filter(x=>x.id!==r.id&&x[key]!=null);
+      if(peers.length)baseline=peers.reduce((sum,x)=>sum+Number(x[key]),0)/peers.length;
+    }
+    if(baseline==null||!Number.isFinite(Number(baseline))||Number(baseline)===0)return main;
+    const delta=100*(Number(value)-Number(baseline))/Math.abs(Number(baseline));
+    const lowerBetter=["cpm","cpa"].includes(key);
+    const color=Math.abs(delta)<10?"neutral":((delta>0)!==lowerBetter?"good":"bad");
+    return main+'<div class="mx-delta '+color+'">'+(delta>0?"▲ ":"▼ ")+Math.abs(delta).toFixed(1)+'%</div>';
+  };
+  const statusClass=s=>/^active$/i.test(s)?"active":/^paused$/i.test(s)?"paused":/^archived$/i.test(s)?"archived":"unavailable";
+  const display=rows.slice(0,explorerState.limit);
+  const body=display.map(r=>{
+    const thumb=level===2&&explorerUrl(r.thumbnail)?'<img class="mx-thumb" src="'+esc(explorerUrl(r.thumbnail))+'" loading="lazy" alt="">':"";
+    const title=esc(r.name),id=esc(String(r.id||""));
+    const open=level<2?'<button class="mx-name-link" data-explorer-open="'+id+'" title="'+title+'">› '+title+'</button>':
+      explorerUrl(r.creativeUrl)?'<a class="mx-name-link" href="'+esc(explorerUrl(r.creativeUrl))+'" target="_blank" rel="noopener noreferrer" title="'+title+'">'+title+'</a>':
+      '<span class="mx-name-link" title="'+title+'">'+title+'</span>';
+    return '<tr><td><div class="mx-name-wrap"><span class="mx-dot '+statusClass(r.status)+'" title="'+esc(r.status)+'"></span>'+thumb+
+      '<div class="mx-name-main">'+open+'<div class="mx-name-sub">'+id+' · '+esc(r.status)+(r.statusDate?' · '+esc(r.statusDate):'')+'</div></div></div></td>'+
+      keys.map(key=>'<td>'+valueCell(r,key)+'</td>').join('')+'</tr>';
+  }).join('');
+  const subtotal=grouped.reduce((tot,r)=>{for(const key of ["spend","clicks","landing","carts","checkouts","purchases"])tot[key]+=Number(r[key]||0);return tot;},{spend:0,clicks:0,landing:0,carts:0,checkouts:0,purchases:0});
+  subtotal.cpa=subtotal.purchases?subtotal.spend/subtotal.purchases:null;
+  subtotal.cpm=null;subtotal.ctr=null;
+  const totalRow='<tr><td>Totals · selected dates</td>'+keys.map(key=>'<td>'+fmt(subtotal[key],key)+'</td>').join('')+'</tr>';
+  const active=rows.filter(r=>statusRank(r.status)===0).length,inactive=rows.length-active;
+  const filter=(title,id,options,value,placeholder)=>'<div class="mx-filter"><label for="'+id+'">'+title+'</label><select id="'+id+'">'+option(options,value,placeholder)+'</select></div>';
+  const dateInput=(title,id,value)=>'<div class="mx-filter"><label for="'+id+'">'+title+'</label><input type="date" id="'+id+'" value="'+esc(value||"")+'"></div>';
+  const crumbs=level?'<button class="mx-back" id="explorer-back">← Back</button>':"";
+  return '<section class="panel mx-panel" id="meta-explorer"><div class="mx-top"><div class="mx-heading"><div><h3 class="mx-title">Meta Ads Performance Explorer</h3><p class="mx-subtitle">Campaign → Ad set → Ad · Meta Ads reporting · Fixed 7-day click attribution</p></div><span class="mx-source">Ⓜ META ADS · 7-day click</span></div>'+
+    '<div class="mx-controls">'+
+    filter("Objective","explorer-objective",objectiveOptions,explorerState.objective,"All objectives")+
+    filter("Platform","explorer-platform",platformOptions,explorerState.platform,"All platforms")+
+    filter("Delivery status","explorer-status",statusOptions,explorerState.status,"All statuses")+
+    '<div class="mx-filter"><label for="explorer-compare">Comparison</label><select id="explorer-compare"><option value="peers" '+(explorerState.compare==="peers"?"selected":"")+'>Active peers</option><option value="previous" '+(explorerState.compare==="previous"?"selected":"")+'>Previous period</option></select></div>'+
+    dateInput("From","explorer-from",dateFrom)+dateInput("To","explorer-to",dateTo)+
+    '<button class="mx-action" id="explorer-apply">Apply dates</button>'+
+    (explorerState.compare==="previous"?dateInput("Compare from","explorer-prev-from",explorerState.prevFrom)+dateInput("Compare to","explorer-prev-to",explorerState.prevTo)+'<button class="mx-action" id="explorer-compare-apply">Compare</button>':"")+'</div></div>'+
+    '<div class="mx-stats">'+crumbs+'<span class="mx-level">'+["Campaigns","Ad sets","Ads"][level]+'</span>'+
+    '<span class="mx-chip"><strong>'+rows.length+'</strong> total</span>'+
+    '<span class="mx-chip"><span class="mx-dot active"></span><strong>'+active+'</strong> active</span>'+
+    '<span class="mx-chip"><span class="mx-dot paused"></span><strong>'+inactive+'</strong> other statuses</span>'+
+    '<span class="mx-stat">Latest known delivery status · includes historical inactive items</span></div>'+
+    '<div class="mx-scroll"><table class="mx-table"><colgroup><col class="mx-name-col">'+keys.map(()=>'<col class="mx-metric-col">').join('')+'</colgroup>'+
+    '<thead><tr><th>'+["Campaign / delivery","Ad set / delivery","Ad / delivery"][level]+'</th>'+keys.map((key,i)=>'<th><button class="mx-col-sort" data-explorer-sort="'+key+'">'+labels[i]+(explorerState.sort===key?(explorerState.asc?' ↑':' ↓'):' ↕')+'</button></th>').join('')+'</tr></thead>'+
+    '<tbody>'+(body||'<tr><td colspan="10" style="padding:24px;text-align:center">No matching campaigns, ad sets, or ads.</td></tr>')+'</tbody>'+
+    '<tfoot>'+totalRow+'</tfoot></table></div>'+
+    '<div class="mx-foot"><span>Showing '+Math.min(display.length,rows.length)+' of '+rows.length+' · Entities with no activity in the date range display — · EGP currency</span>'+
+    (rows.length>explorerState.limit?'<button id="explorer-more" class="mx-more">Load more rows</button>':'')+'</div></section>';
+}
