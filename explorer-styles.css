@@ -1,0 +1,59 @@
+
+/* Meta Explorer — compact, editorial data-table styling */
+#meta-explorer.mx-panel {padding:0;overflow:hidden;background:#fff;border:1px solid #e3e8f0;box-shadow:0 4px 24px rgba(22,38,63,.035);border-radius:13px}
+#meta-explorer .mx-top {padding:20px 22px 15px;border-bottom:1px solid #edf0f5}
+#meta-explorer .mx-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+#meta-explorer .mx-title {font-size:16px;letter-spacing:-.025em;margin:0 0 5px;font-weight:750;color:#17233b}
+#meta-explorer .mx-subtitle {color:#738197;font-size:11px;margin:0}
+#meta-explorer .mx-source {display:inline-flex;align-items:center;gap:5px;border-radius:20px;background:#eaf1ff;color:#2862ca;padding:5px 10px;font-weight:700;font-size:10px;white-space:nowrap}
+#meta-explorer .mx-controls {display:flex;align-items:flex-end;gap:9px;flex-wrap:wrap;margin-top:20px}
+#meta-explorer .mx-filter {display:flex;flex-direction:column;gap:5px;min-width:105px}
+#meta-explorer .mx-filter label {font-size:10px;font-weight:680;color:#8390a2}
+#meta-explorer .mx-filter select,#meta-explorer .mx-filter input {border:1px solid #e0e6ef;background:#fff;border-radius:7px;height:35px;padding:0 10px;color:#37445c;font:600 11px inherit;box-shadow:none;max-width:200px;min-width:100px}
+#meta-explorer .mx-filter select {font-size:11px;font-weight:600}
+#meta-explorer .mx-filter input {font-size:11px}
+#meta-explorer .mx-action {height:35px;border:1px solid #dbe3ee;background:#f7f9fc;border-radius:7px;font-size:11px;font-weight:700;color:#3e516d;padding:0 14px;cursor:pointer}
+#meta-explorer .mx-action:hover {background:#eaf0fa}
+#meta-explorer .mx-stats {display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 22px;border-bottom:1px solid #edf1f6;background:#fbfcfe}
+#meta-explorer .mx-stat {font-size:11px;color:#5d6a7e}
+#meta-explorer .mx-stat strong {font-weight:800;color:#1c2a40}
+#meta-explorer .mx-chip {display:inline-flex;align-items:center;gap:6px;font-size:10px;line-height:1;border:1px solid #e4eaf0;padding:6px 8px;border-radius:6px;background:white;color:#657184}
+#meta-explorer .mx-dot {width:7px;height:7px;flex-shrink:0;border-radius:50%;display:inline-block;background:#a0aec0}
+#meta-explorer .mx-dot.active {background:#22c55e;box-shadow:0 0 0 3px #22c55e1c}
+#meta-explorer .mx-dot.paused {background:#efad46}
+#meta-explorer .mx-dot.archived {background:#a4afc0}
+#meta-explorer .mx-dot.unavailable {background:#cbd5e1}
+#meta-explorer .mx-level {font-weight:800;font-size:12px;color:#253148;margin-right:7px}
+#meta-explorer .mx-back {border:0;background:transparent;color:#4a79c4;font-size:11px;font-weight:750;cursor:pointer;padding:0 6px 0 0}
+#meta-explorer .mx-scroll {width:100%;overflow-x:auto;overflow-y:auto;max-height:680px;scrollbar-color:#cbd4e1 transparent}
+#meta-explorer .mx-table {width:100%;min-width:1240px;border:0;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:11px;font-variant-numeric:tabular-nums}
+#meta-explorer .mx-table col.mx-name-col {width:275px}
+#meta-explorer .mx-table col.mx-metric-col {width:108px}
+#meta-explorer .mx-table thead th {background:#f4f7fb;color:#59667a;font-weight:750;text-align:right;border-bottom:1px solid #dbe3ec;padding:10px 11px;white-space:normal;line-height:1.25;font-size:10px;position:sticky;top:0;z-index:2}
+#meta-explorer .mx-table th:first-child {text-align:left;position:sticky;left:0;z-index:4;background:#f4f7fb;box-shadow:1px 0 0 #e9edf3}
+#meta-explorer .mx-table tbody td {padding:11px 11px;border-bottom:1px solid #eff1f6;text-align:right;white-space:nowrap;color:#273249;vertical-align:middle}
+#meta-explorer .mx-table tbody tr:nth-child(even) {background:#fafbfd}
+#meta-explorer .mx-table tbody tr:hover {background:#eff5ff}
+#meta-explorer .mx-table tbody td:first-child {position:sticky;left:0;z-index:1;text-align:left;background:#fff;box-shadow:1px 0 0 #edf0f5}
+#meta-explorer .mx-table tbody tr:nth-child(even) td:first-child {background:#fafbfd}
+#meta-explorer .mx-table tbody tr:hover td:first-child {background:#eff5ff}
+#meta-explorer .mx-col-sort {border:none;background:none;padding:0;text-align:inherit;cursor:pointer;font:inherit;color:inherit;font-weight:inherit}
+#meta-explorer .mx-col-sort:hover {color:#235fbd}
+#meta-explorer .mx-name-wrap {display:flex;align-items:center;gap:10px;min-width:0}
+#meta-explorer .mx-name-wrap .mx-dot {margin-left:1px}
+#meta-explorer .mx-name-main {min-width:0;flex:1}
+#meta-explorer .mx-name-link {border:0;background:none;display:block;width:100%;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;padding:0;color:#2863b7;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none}
+#meta-explorer .mx-name-link:hover {text-decoration:underline}
+#meta-explorer .mx-name-sub {font-size:9px;color:#9aa6b8;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+#meta-explorer .mx-thumb {width:29px;height:29px;object-fit:cover;border-radius:5px;border:1px solid #e8eef5}
+#meta-explorer .mx-number {font-size:11px;font-weight:670;white-space:nowrap;color:#2a364a}
+#meta-explorer .mx-delta {font-size:9px;font-weight:730;margin-top:4px}
+#meta-explorer .mx-delta.good {color:#18855b}
+#meta-explorer .mx-delta.bad {color:#d65050}
+#meta-explorer .mx-delta.neutral {color:#c18b29}
+#meta-explorer .mx-no-activity {color:#aab3c0;font-size:10px}
+#meta-explorer .mx-table tfoot td {padding:12px 11px;background:#eef3fa;border-top:1px solid #dce5f0;text-align:right;font-weight:800;color:#243149;position:sticky;bottom:0;z-index:2}
+#meta-explorer .mx-table tfoot td:first-child {text-align:left;left:0;position:sticky;z-index:3}
+#meta-explorer .mx-foot {display:flex;gap:15px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 20px;color:#7d899a;font-size:10px}
+#meta-explorer .mx-more {border:1px solid #dbe4f1;background:white;color:#2863b7;font-weight:750;font-size:11px;border-radius:7px;padding:8px 15px;cursor:pointer}
+@media (max-width:750px) {#meta-explorer .mx-top{padding:16px}#meta-explorer .mx-stats{padding:10px 16px}#meta-explorer .mx-filter{min-width:95px}#meta-explorer .mx-scroll{max-height:590px}}
