@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: ultramedix-dashboard
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: npm install && node assemble.mjs
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SPREADSHEET_ID
+        value: 1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E
