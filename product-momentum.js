@@ -180,6 +180,7 @@
   function boardHtml(){
     const data=getData(),fullDays=data.days||[],days=fullDays.slice(-28),products=allProducts();
     if(!days.length||!products.length)return '<section class="panel pm-section"><h3>Product Momentum</h3><p class="hint">No product order trends are available for the selected period.</p></section>';
+    if(!state.expanded)return '<section class="panel pm-section pm-collapsed" id="product-momentum"><button type="button" class="pm-accordion-toggle" id="pm-accordion" aria-expanded="false"><span class="pm-accordion-icon">▸</span><span><small>PRODUCT ANALYTICS</small><strong>Product Momentum</strong><em>Track daily orders and conversion-rate changes by product</em></span><span class="pm-open-label">Expand</span></button></section>';
     const top=products.slice().sort((a,b)=>b.daily.slice(-28).reduce((x,y)=>x+y,0)-a.daily.slice(-28).reduce((x,y)=>x+y,0)).slice(0,state.shown).map((p,i)=>({product:{...p,daily:p.daily.slice(-28),sessions:p.sessions?.slice(-28)},index:i,color:palette[i%palette.length]}));
     const visible=top.filter(x=>!state.hidden.has(x.product.name));
     const legend=top.map(x=>'<button type="button" class="pm-legend-item'+(state.hidden.has(x.product.name)?' is-muted':'')+'" data-pm-toggle="'+x.index+'" title="Toggle product line">'+
@@ -204,12 +205,12 @@
       '<div class="pm-product-numbers"><span><small>Selected period</small><b>'+fmtMetric(now)+'</b></span><span><small>Previous equal period</small><b>'+fmtMetric(prev)+'</b></span><span class="pm-delta '+status.className+'"><small>Change</small><b>'+changeText+'</b></span></div>'+
       '<div class="pm-mini">'+smallGraph(p,range?.selectedDays||[])+'</div></article>';
     }).join("");
-    return '<section class="panel pm-section" id="product-momentum"><div class="pm-head"><div><span class="pm-eyebrow">PRODUCT ANALYTICS</span><h3>Product Momentum</h3><p>See which products are accelerating, slowing down, or recovering — all on the same timeline.</p></div><div class="pm-head-actions"><div class="pm-metric-toggle" role="group" aria-label="Product momentum metric"><button type="button" data-pm-metric="orders" class="'+(state.metric==="orders"?"selected":"")+'" aria-pressed="'+(state.metric==="orders")+'">Orders</button><button type="button" data-pm-metric="rate" class="'+(state.metric==="rate"?"selected":"")+'" aria-pressed="'+(state.metric==="rate")+'">Conversion rate</button></div><div class="pm-meta">'+days.length+' days · '+fmtN(products.length)+' products</div></div></div>'+
+    return '<section class="panel pm-section" id="product-momentum"><button type="button" class="pm-accordion-toggle pm-accordion-expanded" id="pm-accordion" aria-expanded="true"><span class="pm-accordion-icon">▾</span><span><small>PRODUCT ANALYTICS</small><strong>Product Momentum</strong></span><span class="pm-open-label">Collapse</span></button><div class="pm-head"><div><span class="pm-eyebrow">PRODUCT ANALYTICS</span><h3>Product Momentum</h3><p>See which products are accelerating, slowing down, or recovering — all on the same timeline.</p></div><div class="pm-head-actions"><div class="pm-metric-toggle" role="group" aria-label="Product momentum metric"><button type="button" data-pm-metric="orders" class="'+(state.metric==="orders"?"selected":"")+'" aria-pressed="'+(state.metric==="orders")+'">Orders</button><button type="button" data-pm-metric="rate" class="'+(state.metric==="rate"?"selected":"")+'" aria-pressed="'+(state.metric==="rate")+'">Conversion rate</button></div><div class="pm-meta">'+days.length+' days · '+fmtN(products.length)+' products</div></div></div>'+
       '<div class="pm-combined"><div class="pm-combined-head"><div><h4>Top Products Trend</h4><p>'+(state.metric==="rate"?"Rolling 7-day orders / matched product-page sessions · one color per product":"Smoothed 7-day average of daily orders · one color per product")+'</p></div><div class="pm-count-controls">'+controls+'</div></div>'+
       '<div class="pm-combined-body"><div class="pm-legend"><div class="pm-legend-title">PRODUCTS <small>Orders in period</small></div>'+legend+'</div>'+bigGraph(visible,days)+'</div>'+
       '<div class="pm-footnote">Click a product on the left to show or hide its line. Hover the chart to compare values by day.</div>'+(state.metric==="rate"?'<p class="pm-rate-note">Conversion rate proxy = Shopify orders containing a product ÷ GA4 sessions on its matching product page. Sources are not session-attributed. Missing or zero product-page sessions display —, not 0%. Values can exceed 100% due to differing cohorts.</p>':'')+'</div>'+
       '<div class="pm-rows-head"><div><h4>Daily Momentum by Product</h4><p>'+(state.metric==="rate"?"Rolling 7-day conversion proxy · dashed = average rate · shaded bands = ±20% · status compares two 7-day rates":"Smoothed 7-day daily-order average · dashed = period baseline · shaded bands = ±20% · status compares last 7 vs previous 7 days")+'</p></div><div class="pm-summary"><span class="pm-up">'+rising+' rising</span><span class="pm-down">'+falling+' falling</span></div></div>'+
-      '<div class="pm-toolbar"><label>Search<input id="pm-search" type="search" placeholder="Find a product…" value="'+e(state.search)+'"></label><label>Sort<select id="pm-sort"><option value="orders"'+(state.sort==="orders"?" selected":"")+'>Most orders</option><option value="rise"'+(state.sort==="rise"?" selected":"")+'>Biggest rise</option><option value="fall"'+(state.sort==="fall"?" selected":"")+'>Biggest drop</option><option value="name"'+(state.sort==="name"?" selected":"")+'>Product name</option></select></label></div>'+
+      '<div class="pm-period-controls"><div class="pm-period-heading"><strong>Daily Momentum period</strong><span>Compare with the immediately previous '+(range?.duration||"—")+' days</span></div><div class="pm-period-fields"><label>From<input type="date" id="pm-period-from" min="'+e(fullDays[0]||"")+'" max="'+e(fullDays.at(-1)||"")+'" value="'+e(state.periodFrom)+'"></label><label>To<input type="date" id="pm-period-to" min="'+e(fullDays[0]||"")+'" max="'+e(fullDays.at(-1)||"")+'" value="'+e(state.periodTo)+'"></label><button type="button" class="pm-period-apply" id="pm-period-apply">Apply</button><span class="pm-period-presets"><button type="button" data-pm-period="7">7d</button><button type="button" data-pm-period="14">14d</button><button type="button" data-pm-period="28">28d</button><button type="button" data-pm-period="60">60d</button></span></div><p class="pm-period-comparison">Selected: '+e(range?.from||"—")+' – '+e(range?.to||"—")+' <b>vs</b> previous: '+e(range?.compareFrom||"Not available")+' – '+e(range?.compareTo||"")+'</p>'+(state.periodError?'<p class="pm-period-error">'+e(state.periodError)+'</p>':"")+'</div><div class="pm-toolbar"><label>Search<input id="pm-search" type="search" placeholder="Find a product…" value="'+e(state.search)+'"></label><label>Sort<select id="pm-sort"><option value="orders"'+(state.sort==="orders"?" selected":"")+'>Most orders</option><option value="rise"'+(state.sort==="rise"?" selected":"")+'>Biggest rise</option><option value="fall"'+(state.sort==="fall"?" selected":"")+'>Biggest drop</option><option value="name"'+(state.sort==="name"?" selected":"")+'>Product name</option></select></label></div>'+
       '<div class="pm-product-rows">'+(rows||'<p class="hint">No products match your search.</p>')+'</div>'+
       (sorted.length>state.rows?'<button type="button" class="pm-more" id="pm-more">Load more products ('+(sorted.length-state.rows)+' remaining)</button>':'')+
       (data.limited?'<p class="pm-footnote">For performance, charts display at most the most recent 120 days of the selected period.</p>':'')+
@@ -217,19 +218,36 @@
   }
   function bindBoard(){
     const board=document.getElementById("product-momentum");if(!board)return;
+    const accordion=board.querySelector("#pm-accordion");
+    if(accordion)accordion.onclick=()=>{state.expanded=!state.expanded;renderBoardOnly();};
+    const applyPeriod=(from,to)=>{
+      const days=getData().days||[],i=days.indexOf(from),j=days.indexOf(to);
+      if(i<0||j<i){state.periodError="Choose valid dates within the available 120-day history.";renderBoardOnly();return;}
+      const n=j-i+1;
+      if(n>60||n<1){state.periodError="Choose 1–60 days so the prior equal-length period can be compared.";renderBoardOnly();return;}
+      if(i-n<0){state.periodError="Not enough earlier data for the immediately previous "+n+" days.";renderBoardOnly();return;}
+      state.periodFrom=from;state.periodTo=to;state.periodError="";state.rows=5;renderBoardOnly();
+    };
+    const apply=board.querySelector("#pm-period-apply");
+    if(apply)apply.onclick=()=>applyPeriod(board.querySelector("#pm-period-from")?.value,board.querySelector("#pm-period-to")?.value);
+    board.querySelectorAll("[data-pm-period]").forEach(button=>button.onclick=()=>{
+      const days=getData().days||[],n=Number(button.dataset.pmPeriod);
+      if(days.length>=n*2)applyPeriod(days.at(-n),days.at(-1));
+      else{state.periodError="Not enough history for this comparison.";renderBoardOnly();}
+    });
     board.querySelectorAll("[data-pm-metric]").forEach(b=>b.onclick=()=>{state.metric=b.dataset.pmMetric;renderBoardOnly();});
     board.querySelectorAll("[data-pm-show]").forEach(b=>b.onclick=()=>{state.shown=Number(b.dataset.pmShow);state.hidden.clear();renderBoardOnly();});
-    board.querySelectorAll("[data-pm-toggle]").forEach(b=>b.onclick=()=>{const p=allProducts()[Number(b.dataset.pmToggle)];if(!p)return;if(state.hidden.has(p.name))state.hidden.delete(p.name);else state.hidden.add(p.name);renderBoardOnly();});
-    const sort=board.querySelector("#pm-sort");if(sort)sort.onchange=()=>{state.sort=sort.value;state.rows=12;renderBoardOnly();};
-    const search=board.querySelector("#pm-search");if(search)search.oninput=()=>{state.search=search.value;state.rows=12;renderBoardOnly(true);};
-    const more=board.querySelector("#pm-more");if(more)more.onclick=()=>{state.rows+=12;renderBoardOnly();};
+    board.querySelectorAll("[data-pm-toggle]").forEach(b=>b.onclick=()=>{const p=allProducts().slice().sort((a,b)=>b.daily.slice(-28).reduce((x,y)=>x+y,0)-a.daily.slice(-28).reduce((x,y)=>x+y,0))[Number(b.dataset.pmToggle)];if(!p)return;if(state.hidden.has(p.name))state.hidden.delete(p.name);else state.hidden.add(p.name);renderBoardOnly();});
+    const sort=board.querySelector("#pm-sort");if(sort)sort.onchange=()=>{state.sort=sort.value;state.rows=5;renderBoardOnly();};
+    const search=board.querySelector("#pm-search");if(search)search.oninput=()=>{state.search=search.value;state.rows=5;renderBoardOnly(true);};
+    const more=board.querySelector("#pm-more");if(more)more.onclick=()=>{state.rows+=5;renderBoardOnly();};
     const plot=board.querySelector(".pm-plot"),tooltip=plot?.querySelector(".pm-tooltip"),svg=plot?.querySelector("svg");
     if(svg&&tooltip){
       svg.onpointermove=ev=>{
-        const days=getData().days||[],n=days.length;if(!n)return;
+        const days=(getData().days||[]).slice(-28),n=days.length;if(!n)return;
         const rect=svg.getBoundingClientRect(),x=(ev.clientX-rect.left)*820/rect.width;
         const i=Math.max(0,Math.min(n-1,Math.round((x-47)/(820-47-18)*(n-1))));
-        const selected=allProducts().slice(0,state.shown).map((p,j)=>({p,j})).filter(x=>!state.hidden.has(x.p.name));
+        const selected=allProducts().slice().sort((a,b)=>b.daily.slice(-28).reduce((x,y)=>x+y,0)-a.daily.slice(-28).reduce((x,y)=>x+y,0)).slice(0,state.shown).map((p,j)=>({p:{...p,daily:p.daily.slice(-28),sessions:p.sessions?.slice(-28)},j})).filter(x=>!state.hidden.has(x.p.name));
         tooltip.innerHTML='<strong>'+e(days[i])+(state.metric==="rate"?" · rolling conversion rate":" · 7-day average")+'</strong>'+selected.map(x=>'<div><i style="background:'+palette[x.j%palette.length]+'"></i><span>'+e(x.p.name)+'</span><b>'+(state.metric==="rate"?percent(rollingRate(x.p)[i]):rolling(x.p)[i].toFixed(2))+'</b></div>').join("");
         tooltip.hidden=false;tooltip.style.left=Math.min(rect.width-10,Math.max(10,ev.clientX-rect.left))+"px";
       };
