@@ -1,0 +1,107 @@
+((sum, r) => sum + money(r[idx.total]), 0);
+  const totalOrderDiscounts = orders.filter(r => !isCancelledOrder(r)).reduce((sum, r) => sum + orderDiscount(r), 0);
+  const deliveredOrderDiscounts = deliveredOrdersRows.reduce((sum, r) => sum + orderDiscount(r), 0);
+  const freeShippingDiscounts = orders.filter(r => !isCancelledOrder(r)).reduce((sum, r) => sum + Math.abs(money(r[idx.shippingDiscount])), 0);
+  const totalShippingCosts = orders.filter(r => !isCancelledOrder(r)).reduce((sum, r) => sum + Math.abs(money(r[idx.shippingCost])), 0);
+  const regionTotals = new Map();
+  for (const r of orders) { if (isCancelledOrder(r)) continue; const region=String(r[idx.region]??"").trim()||"Unspecified"; const item=regionTotals.get(region)||{region,revenue:0,deliveredOrders:0,returnedOrders:0,itemsOrdered:0}; item.itemsOrdered+=(money(r[idx.itemsQuantity])||productColumnPairs.reduce((count,pair)=>count+(String(r[pair[0]]??"").trim()?1:0),0)); const status=norm(r[idx.orderStatus]); if(status==="delivered"){item.deliveredOrders++;item.revenue+=money(r[idx.total])-orderDiscount(r);} if(isReturnedStatus(status))item.returnedOrders++; regionTotals.set(region,item); }
+  const regionPerformance=[...regionTotals.values()].map(x=>({...x,deliveryRate:(x.deliveredOrders+x.returnedOrders)?x.deliveredOrders/(x.deliveredOrders+x.returnedOrders):0,averageOrderValue:x.deliveredOrders?x.revenue/x.deliveredOrders:0})).sort((a,b)=>b.revenue-a.revenue||a.region.localeCompare(b.region));
+
+const genderOrderDays=new Map(),genderOrderTotals={Female:0,Male:0,Unknown:0};
+for(const row of orders){const genderName=norm(row[idx.gender])==='female'?'Female':norm(row[idx.gender])==='male'?'Male':'Unknown';genderOrderTotals[genderName]++;const day=dateCandidates(row[idx.date],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));if(!day)continue;const record=genderOrderDays.get(day)||{date:day,Female:0,Male:0,Unknown:0};record[genderName]++;genderOrderDays.set(day,record);}
+const genderOrders={totals:genderOrderTotals,daily:[...genderOrderDays.values()].sort((a,b)=>a.date.localeCompare(b.date))};
+const demoGender={Female:{gender:'Female',revenue:0,delivered:0,returned:0},Male:{gender:'Male',revenue:0,delivered:0,returned:0},Unknown:{gender:'Unknown',revenue:0,delivered:0,returned:0}};
+const demoLocations=new Map(),demoDurations=new Map();
+for(const r of orders){if(isCancelledOrder(r))continue;const g=norm(r[idx.gender])==='female'?'Female':norm(r[idx.gender])==='male'?'Male':'Unknown',del=isDelivered(r),ret=isReturnedStatus(norm(r[idx.orderStatus])),rev=del?money(r[idx.total])-orderDiscount(r):0;demoGender[g].revenue+=rev;if(del)demoGender[g].delivered++;if(ret)demoGender[g].returned++;
+const region=String(r[idx.region]||'Unspecified').trim()||'Unspecified',district=String(r[idx.district]||'').trim()||'Missing district',key=JSON.stringify([region,district]),v=demoLocations.get(key)||{region,district,revenue:0};v.revenue+=rev;demoLocations.set(key,v);
+if(del){const str=String(r[idx.creationToDelivery]||''),days=Number((str.match(/(\d+)\s*days?/i)||[])[1]||0),hours=Number((str.match(/(\d+)\s*hours?/i)||[])[1]||0),minutes=Number((str.match(/(\d+)\s*minutes?/i)||[])[1]||0),duration=days*1440+hours*60+minutes;if(duration>0){const t=demoDurations.get(region)||{region,total:0,count:0};t.total+=duration;t.count++;demoDurations.set(region,t);}}}
+const demographics={gender:Object.values(demoGender).map(x=>({...x,deliveryRate:x.delivered+x.returned?x.delivered/(x.delivered+x.returned):0})),locations:[...demoLocations.values()].sort((a,b)=>b.revenue-a.revenue),deliveryDurations:[...demoDurations.values()].map(x=>({region:x.region,averageMinutes:x.total/x.count,count:x.count})).sort((a,b)=>a.averageMinutes-b.averageMinutes)};
+
+  // Channel Analysis is computed in Google Sheets; the website reads the formula output.
+  const channelAnalysisDaily=[],channelSummary=new Map();
+  for(const row of orders){
+    const date=dateCandidates(row[idx.date],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));
+    if(!date)continue;
+    const sourceFirst=sourceChannel(row[idx.sourceFirst]),sourceLast=sourceChannel(row[idx.sourceLast]);
+    const mediumFirst=cleanedTrafficType(row[idx.channelTrafficFirst]),mediumLast=cleanedTrafficType(row[idx.channelTrafficLast]);
+    const firstKey=sourceFirst+" · "+mediumFirst,lastKey=sourceLast+" · "+mediumLast;
+    const first=channelSummary.get(firstKey)||{name:firstKey,source:sourceFirst,medium:mediumFirst,firstOrders:0,lastOrders:0,sessions:null};
+    first.firstOrders++;channelSummary.set(firstKey,first);
+    const last=channelSummary.get(lastKey)||{name:lastKey,source:sourceLast,medium:mediumLast,firstOrders:0,lastOrders:0,sessions:null};
+    last.lastOrders++;channelSummary.set(lastKey,last);
+    channelAnalysisDaily.push({date,medium:mediumFirst,firstOrders:1,lastOrders:0});
+    channelAnalysisDaily.push({date,medium:mediumLast,firstOrders:0,lastOrders:1});
+  }
+  const orderVisitChannelAnalysis=[...channelSummary.values()].map(x=>({...x,firstConversionRate:null,lastConversionRate:null}));
+  const channelAnalysis=[...shopifyChannelSummary.values()].map(x=>({...x,firstConversionRate:x.ordersAvailable&&x.sessions?x.shopifyOrders/x.sessions:null,lastConversionRate:x.ordersAvailable&&x.sessions?x.shopifyOrders/x.sessions:null,firstOrders:x.ordersAvailable?x.shopifyOrders:null,lastOrders:x.ordersAvailable?x.shopifyOrders:null}));
+  const sourceCountsFirst={},sourceCountsLast={};
+  const paidOrganicFirst={paid:0,organic:0,unknown:0},paidOrganicLast={paid:0,organic:0,unknown:0};
+  for(const c of channelAnalysis){
+    sourceCountsFirst[c.name]=c.firstOrders;sourceCountsLast[c.name]=c.lastOrders;
+    const medium=/^(paid|organic)$/.test(c.medium.toLowerCase())?c.medium.toLowerCase():"unknown";
+    paidOrganicFirst[medium]+=c.firstOrders;paidOrganicLast[medium]+=c.lastOrders;
+  }
+  paidOrganicFirst.total=paidOrganicFirst.paid+paidOrganicFirst.organic+paidOrganicFirst.unknown;
+  paidOrganicLast.total=paidOrganicLast.paid+paidOrganicLast.organic+paidOrganicLast.unknown;
+    const productTotals = new Map();
+  const productOrderSets = new Map();
+  const productPageSessions=new Map(),collectionMap=new Map(),otherMap=new Map();
+  for(const r of pageRows){
+    if(!dateMatches(r[0],startDate,endDate))continue;
+    let path=String(r[4]||'').trim();if(!path)continue;
+    try{if(/^https?:\/\//i.test(path))path=new URL(path).pathname}catch{}
+    path=(path.split(/[?#]/)[0].replace(/\/+/g,'/').replace(/\/$/,'')||'/').toLowerCase();
+    if(path.startsWith('/products/')){const k=productTitleKey(r[1]);if(k)productPageSessions.set(k,(productPageSessions.get(k)||0)+money(r[2]));continue;}
+    const type=path==='/'?'Home':path.startsWith('/collections/')?'Collection':path.startsWith('/pages/')?'Page':'Other';
+    const target=type==='Collection'?collectionMap:otherMap,entry=target.get(path)||{name:String(r[1]||path),path,type,sessions:0,newUsers:0,oldUsers:0};
+    entry.sessions+=money(r[2]);entry.newUsers+=money(r[5]);entry.oldUsers+=money(r[6]);target.set(path,entry);
+  }
+  const collectionPages=[...collectionMap.values()].sort((a,b)=>b.sessions-a.sessions),pagesAnalysis=[...otherMap.values()].sort((a,b)=>b.sessions-a.sessions);
+  const customerTotals = new Map();
+  for (const r of deliveredOrdersRows) { const customerName=String(r[idx.customer]||"Unknown customer").trim()||"Unknown customer"; const customerId=String(r[idx.customerId]??"").trim(); const customerKey=customerId||("name:"+customerName); const customer=customerTotals.get(customerKey)||{id:customerId,name:customerName,orders:0,spend:0}; customer.orders+=1;customer.spend+=money(r[idx.total]);customerTotals.set(customerKey,customer); }
+  const firstProductCounts=new Map(),secondProductCounts=new Map(),pairCounts=new Map();
+  for(const r of orders){const isDeliveredOrder=isDelivered(r),sequence=[];
+    for(const [i,priceIx] of productColumnPairs){const title=String(r[i]??"").trim(),priceCell=String(r[priceIx]??"").trim();if(!title||!priceCell)continue;sequence.push(title);const price=money(priceCell);
+      const product=productTotals.get(title)||{name:title,revenue:0,lineItems:0,volume:0,orders:0,deliveredLines:0,undeliveredLines:0,deliveryRate:0,sessions:0,conversionRate:0};product.volume++;product.lineItems++;if(isDeliveredOrder)product.deliveredLines++;else product.undeliveredLines++;product.revenue+=price;
+      const orderKey=String(r[idx.order]??r[idx.date]+"-"+r[idx.customer]).trim();if(!productOrderSets.has(title))productOrderSets.set(title,new Set());productOrderSets.get(title).add(orderKey);productTotals.set(title,product);}
+    if(sequence[0])firstProductCounts.set(sequence[0],(firstProductCounts.get(sequence[0])||0)+1);if(sequence[1])secondProductCounts.set(sequence[1],(secondProductCounts.get(sequence[1])||0)+1);
+    const unique=[...new Set(sequence)];for(let i=0;i<unique.length;i++)for(let j=i+1;j<unique.length;j++){const a=unique[i],b=unique[j],key=a+"|||"+b;pairCounts.set(key,(pairCounts.get(key)||0)+1);}
+  }
+  const firstProducts=[...firstProductCounts].map(([name,orders])=>({name,orders})).sort((a,b)=>b.orders-a.orders);
+  const secondProducts=[...secondProductCounts].map(([name,orders])=>({name,orders})).sort((a,b)=>b.orders-a.orders);
+  const attachRates=[...pairCounts].map(([key,coOrders])=>{const [productA,productB]=key.split("|||");const productAOrders=productOrderSets.get(productA)?.size||0;return {productA,productB,coOrders,productAOrders,attachRate:productAOrders?coOrders/productAOrders:0};}).sort((a,b)=>b.coOrders-a.coOrders||b.attachRate-a.attachRate).slice(0,30);
+  for (const [title, product] of productTotals) {
+    product.orders = productOrderSets.get(title)?.size || 0;
+    product.deliveryRate = product.volume ? product.deliveredLines / product.volume : 0;
+    product.sessions = productPageSessions.get(productTitleKey(product.name)) || 0;
+    product.conversionRate = product.sessions ? product.orders / product.sessions : 0;
+  }
+  const topProducts = [...productTotals.values()].sort((a,b) => b.revenue - a.revenue);
+  const topCustomers = [...customerTotals.values()].sort((a,b) => b.orders - a.orders || b.spend - a.spend).slice(0, 20);
+  // Meta Ads and GA4 raw databases are side-by-side in Monthly Revenue & ads: headers at BR43:CJ43, data from row 44.
+  // Read the daily data by its two date columns, not by header text. Google Visualization may omit blank/title/header rows and shift the returned row offset.
+  // BR and CA are nine columns apart in the requested BR:CJ range. If GViz returns whole-sheet columns, BR is absolute index 69; if it honors the range, BR is index 0.
+  const isMarketingDate = value => dateCandidates(value).length > 0;
+  const mo={metaDate:mapCol(mapping,"marketing.metaDate","marketing.range",marketingRaw),spend:mapCol(mapping,"marketing.spend","marketing.range",marketingRaw),cpm:mapCol(mapping,"marketing.cpm","marketing.range",marketingRaw),ctr:mapCol(mapping,"marketing.ctr","marketing.range",marketingRaw),clicks:mapCol(mapping,"marketing.outboundClicks","marketing.range",marketingRaw),landing:mapCol(mapping,"marketing.landingPageViews","marketing.range",marketingRaw),addToCart:mapCol(mapping,"marketing.addsToCart","marketing.range",marketingRaw),purchases:mapCol(mapping,"marketing.purchases","marketing.range",marketingRaw),metaCheckouts:mapCol(mapping,"marketing.checkouts","marketing.range",marketingRaw),googleDate:mapCol(mapping,"marketing.googleDate","marketing.range",marketingRaw),sessions:mapCol(mapping,"marketing.sessions","marketing.range",marketingRaw),engaged:mapCol(mapping,"marketing.engagedSessions","marketing.range",marketingRaw),googleAddToCart:mapCol(mapping,"marketing.googleAddToCarts","marketing.range",marketingRaw),googleCheckouts:mapCol(mapping,"marketing.googleCheckouts","marketing.range",marketingRaw),duration:mapCol(mapping,"marketing.avgSessionDuration","marketing.range",marketingRaw),views:mapCol(mapping,"marketing.viewsPerSession","marketing.range",marketingRaw),engagement:mapCol(mapping,"marketing.userEngagement","marketing.range",marketingRaw),bounce:mapCol(mapping,"marketing.bounceRate","marketing.range",marketingRaw),avgEngaged:mapCol(mapping,"marketing.avgEngagedTime","marketing.range",marketingRaw),metaOrders:mapCol(mapping,"marketing.metaAdsOrders","marketing.range",marketingRaw),metaDelivered:mapCol(mapping,"marketing.deliveredMetaAdsOrders","marketing.range",marketingRaw),metaCost:mapCol(mapping,"marketing.costPerOrderAds","marketing.range",marketingRaw),metaActualCost:mapCol(mapping,"marketing.actualCostPerOrderAds","marketing.range",marketingRaw),metaDeliveryRate:mapCol(mapping,"marketing.metaAdsDeliveryRate","marketing.range",marketingRaw),objective:mapCol(mapping,"marketing.objective","marketing.range",marketingRaw),campaignName:mapCol(mapping,"marketing.campaignName","marketing.range",marketingRaw),campaignId:mapCol(mapping,"marketing.campaignId","marketing.range",marketingRaw)};
+  const gaRegionColumn=mapping.has("marketing.ga4UnifiedRegion")?mapCol(mapping,"marketing.ga4UnifiedRegion","marketing.range",marketingRaw):-1;
+  const marketingData=marketingRows.map(r=>[r[mo.metaDate],r[mo.spend],r[mo.cpm],r[mo.ctr],r[mo.clicks],r[mo.landing],r[mo.addToCart],r[mo.purchases],r[mo.metaCheckouts],r[mo.googleDate],r[mo.sessions],r[mo.engaged],r[mo.googleAddToCart],r[mo.googleCheckouts],r[mo.duration],r[mo.views],r[mo.engagement],r[mo.bounce],r[mo.avgEngaged],r[mo.metaOrders],r[mo.metaDelivered],r[mo.metaCost],r[mo.metaActualCost],r[mo.metaDeliveryRate],r[gaRegionColumn],r[mo.objective],r[mo.campaignName],r[mo.campaignId]]).filter(r=>r.length>=10&&(isMarketingDate(r[0])||isMarketingDate(r[9])));
+  const metaAllDaily=marketingData.filter(r=>isMarketingDate(r[0])&&dateMatches(r[0],startDate,endDate));
+  // Objective in Raw Meta column Q contains OUTCOME_SALES; exclude every other objective from performance metrics.
+  const metaDaily=metaAllDaily.filter(r=>/sales/i.test(String(r[25]??"")));
+  const metaPlatformMap=new Map();
+  const platformCol=mapCol(mapping,"marketing.platform","marketing.range",marketingRaw);
+  for(const r of marketingRows){
+    if(!dateMatches(r[mo.metaDate],startDate,endDate)||!/sales/i.test(String(r[mo.objective]||"")))continue;
+    const platform=String(r[platformCol]||"Unknown").trim()||"Unknown",key=platform.toLowerCase();
+    const o=metaPlatformMap.get(key)||{platform,medium:"Meta Ads",spend:0,sessions:0,purchases:0};
+    o.spend+=Math.max(0,money(r[mo.spend]));o.sessions+=Math.max(0,money(r[mo.landing]));o.purchases+=Math.max(0,money(r[mo.purchases]));
+    metaPlatformMap.set(key,o);
+  }
+  const metaPlatformAnalysis=[...metaPlatformMap.values()].sort((a,b)=>b.spend-a.spend).map(r=>({...r,conversionRate:r.sessions?r.purchases/r.sessions:null}));
+  const qualified=metaPlatformAnalysis.filter(r=>r.sessions>=100&&r.purchases>=3);
+  const baseline=qualified.reduce((n,r)=>n+r.purchases,0)/Math.max(1,qualified.reduce((n,r)=>n+r.sessions,0));
+  metaPlatformAnalysis.forEach(r=>{r.opportunity=qualified.length<2||r.sessions<100||r.purchases<3?"insufficient":r.conversionRate>=baseline*1.2?"high":r.conversionRate<baseline*0.8?"low":"normal";});
+
+  const ga4Daily=marketingData.filter(r=>isMarketingDate(r[9])&&dateMatches(r[9],startDate,endDate));
+  const sumAt=(rows,ix)=>rows.reduce((total,r)=>total+money(r[ix]),0);
+  const averageAt=(rows,ix,percent=false)=>{const vals=rows.map(r=>{const raw=String(r[ix]??"").trim();if(!raw)return null;const n=money(
