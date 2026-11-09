@@ -1,0 +1,151 @@
+raw);return percent?(raw.includes("%")||n>1?n/100:n):n;}).filter(v=>v!==null&&Number.isFinite(v));return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;};
+  const weightedAt=(rows,valueIx,weightIx,percent=false)=>{let total=0,weight=0;for(const r of rows){const raw=String(r[valueIx]??"").trim(),w=money(r[weightIx]);if(!raw||w<=0)continue;let value=money(raw);if(percent&&(raw.includes("%")||value>1))value/=100;if(Number.isFinite(value)){total+=value*w;weight+=w;}}return weight?total/weight:0;};
+  const spend=sumAt(metaAllDaily,1),salesSpend=sumAt(metaDaily,1),adClicks=sumAt(metaDaily,4),adLandingPageViews=sumAt(metaDaily,5),adAddsToCart=sumAt(metaDaily,6),adPurchases=sumAt(metaDaily,7),adCheckouts=sumAt(metaDaily,8);
+  // Meta rows are now summed by date in the Google Sheet. Recombine daily rates using estimated impressions, not a simple average.
+  const metaImpressions=metaDaily.reduce((n,r)=>{const cp=money(r[2]);return n+(cp>0?money(r[1])/cp*1000:0);},0);
+  const metaLinkClicks=metaDaily.reduce((n,r)=>{const cp=money(r[2]);if(cp<=0)return n;const raw=String(r[3]??"").trim();const v=money(r[3]);const rate=raw.includes("%")||v>1?v/100:v;return n+(Number.isFinite(rate)?rate*money(r[1])/cp*1000:0);},0);
+  const ctr=metaImpressions?metaLinkClicks/metaImpressions:0,cpm=metaImpressions?salesSpend/metaImpressions*1000:0;
+    const metricDateKey=v=>{const n=Number(v);if(Number.isFinite(n)&&n>20000&&n<100000)return new Date(Date.UTC(1899,11,30)+Math.floor(n)*86400000).toISOString().slice(0,10);const s=String(v??"").trim();if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);const d=new Date(s);return Number.isNaN(d.getTime())?null:d.toISOString().slice(0,10);};
+  const metaSalesTrendMap=new Map();
+  for(const row of metaDaily){const date=metricDateKey(row[0]);if(!date)continue;const cp=money(row[2]),sp=money(row[1]),raw=String(row[3]??""),v=money(row[3]);const impressions=cp>0?sp/cp*1000:0,rate=raw.includes("%")||v>1?v/100:v;const k=metaSalesTrendMap.get(date)||{date,spend:0,impressions:0,linkClicks:0};k.spend+=sp;k.impressions+=impressions;k.linkClicks+=Number.isFinite(rate)?rate*impressions:0;metaSalesTrendMap.set(date,k);}
+  const ctrTrend=[...metaSalesTrendMap.values()].map(r=>({date:r.date,value:r.impressions?r.linkClicks/r.impressions:0})).sort((a,b)=>a.date.localeCompare(b.date));
+  const cpmTrend=[...metaSalesTrendMap.values()].map(r=>({date:r.date,value:r.impressions?r.spend/r.impressions*1000:0})).sort((a,b)=>a.date.localeCompare(b.date));
+  const sessions=sumAt(ga4Daily,10),engagedSessions=sumAt(ga4Daily,11),ga4AddToCart=sumAt(ga4Daily,12),ga4Checkouts=sumAt(ga4Daily,13);
+  const avgSessionDuration=weightedAt(ga4Daily,14,10),avgEngagementTime=weightedAt(ga4Daily,18,10),avgPagesPerSession=weightedAt(ga4Daily,15,10),ga4BounceRate=weightedAt(ga4Daily,17,10,true);
+  // Attribute Shopify Meta sales orders only to campaigns confirmed as Sales-objective in raw Meta rows.
+  const normalizeCampaign=v=>norm(String(v??"").replace(/\+/g," ").replace(/\s+/g," ").trim());
+  const salesCampaignKeys=new Set();
+  for(const item of metaDaily){for(const value of [item[26],item[27]]){const k=normalizeCampaign(value);if(k)salesCampaignKeys.add(k);}}
+  const isFirstClickPaid=r=>cleanedTrafficType(r[idx.channelTrafficFirst])==="Paid"&&["Facebook","Instagram"].includes(sourceChannel(r[idx.sourceFirst]))&&salesCampaignKeys.has(normalizeCampaign(r[idx.campaign]));
+  const sources=(mapping.get("attribution.metaSources")?.value || "facebook, instagram").split(",").map(norm).filter(Boolean);
+  const excluded=(mapping.get("attribution.excludedContent")?.value ?? "link_in_bio").split(",").map(norm).filter(Boolean);
+  const deliveryStatus=norm(mapping.get("attribution.deliveredStatus")?.value || "Delivered");
+  const metaByDate=new Map();
+  const emptyMetaCounts=()=>({qualifyingMetaOrders:0,qualifyingDeliveredMetaOrders:0,qualifyingReturnedMetaOrders:0,paidFacebookOrders:0,paidInstagramOrders:0});
+  const periodMetaCounts=emptyMetaCounts();
+  for(const order of orders){
+    const source=norm(order[idx.sourceFirst]), content=norm(order[idx.first]);
+    if(!content || excluded.includes(content) || !sources.some(value=>source.includes(value)) || !isFirstClickPaid(order))continue;
+    const date=dateCandidates(order[idx.date],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));
+    if(!date)continue;
+    const counts=metaByDate.get(date)||emptyMetaCounts();
+    metaByDate.set(date,counts);
+    for(const bucket of [counts,periodMetaCounts]){
+      bucket.qualifyingMetaOrders++;
+      const status=norm(order[idx.orderStatus]);
+      if(status===deliveryStatus)bucket.qualifyingDeliveredMetaOrders++;
+      else if(isReturnedStatus(status))bucket.qualifyingReturnedMetaOrders++;
+      if(source.includes("facebook"))bucket.paidFacebookOrders++;
+      else if(source.includes("instagram"))bucket.paidInstagramOrders++;
+    }
+  }
+  const calc=(key,values,fallback)=>calculateMappedMetric(metricFormulas,key,values,fallback);
+  const mappedMetaMetrics=(counts,advertisingSpend)=>{
+    const metaAdsOrders=calc("metaAdsOrders",counts,counts.qualifyingMetaOrders);
+    const deliveredMetaAdsOrders=calc("deliveredMetaAdsOrders",counts,counts.qualifyingDeliveredMetaOrders);
+    const values={...counts,advertisingSpend,metaAdsOrders,deliveredMetaAdsOrders};
+    return {metaAdsOrders,deliveredMetaAdsOrders,costPerOrder:calc("costPerOrderAds",values,metaAdsOrders?advertisingSpend/metaAdsOrders:0),actualCostPerOrder:calc("actualCostPerOrderAds",values,deliveredMetaAdsOrders?advertisingSpend/deliveredMetaAdsOrders:0),metaAdsDeliveryRate:(counts.qualifyingDeliveredMetaOrders+counts.qualifyingReturnedMetaOrders)?counts.qualifyingDeliveredMetaOrders/(counts.qualifyingDeliveredMetaOrders+counts.qualifyingReturnedMetaOrders):0};
+  };
+  const periodMeta=mappedMetaMetrics(periodMetaCounts,salesSpend);
+  const attributedOrders = deliveredOrdersRows.filter(isFirstClickPaid);
+  const allAttributedOrders = orders.filter(isFirstClickPaid);
+  const attributedDeliveredOrders = allAttributedOrders.filter(isDelivered);
+  const clickToPurchaseRate = adClicks ? attributedOrders.length / adClicks : 0;
+  // Shopify-equivalent retention: distinct customers with an order in the selected period,
+  // classified as returning when they had any earlier distinct order in their full history.
+  const isOldStoreHistoricalRange = !!endDate && endDate <= "2026-10-26";
+  const newStoreCustomerIdsInOldStoreRange = new Set(["10456137335022","10456157978862","10456162795758","10436778950894","10456059805934","10456098668782"]);
+  const excludedCustomerOrderKeys = new Set(["8825247367228|#3782","4563626614|#5896"]);
+  const isExcludedRetentionOrder = (customerId, orderName) =>
+    excludedCustomerOrderKeys.has(customerId+"|"+orderName) ||
+    (isOldStoreHistoricalRange && newStoreCustomerIdsInOldStoreRange.has(customerId));
+  const periodCustomers = new Map();
+  for (const r of orders) {
+    const customerId=String(r[idx.customerId]??"").trim();
+    const orderName=String(r[idx.order]??"").trim();
+    if(!customerId||!orderName||isExcludedRetentionOrder(customerId,orderName))continue;
+    const customerName=String(r[idx.customer]||"Unknown customer").trim()||"Unknown customer";
+    const date=dateCandidates(r[idx.date],startDate,endDate)[0]||"";
+    const c=periodCustomers.get(customerId)||{id:customerId,name:customerName,periodOrders:new Map(),deliveredOrderTotals:new Map(),itemCount:0,ordersWithItems:new Set()};
+    if(!c.periodOrders.has(orderName))c.periodOrders.set(orderName,date);
+    if(!c.ordersWithItems.has(orderName)){let orderItems=0;for(const [pi,pj] of productColumnPairs){if(String(r[pi]??"").trim()&&String(r[pj]??"").trim())orderItems++;}c.itemCount+=orderItems;c.ordersWithItems.add(orderName);}
+    if(isDelivered(r))c.deliveredOrderTotals.set(orderName,money(r[idx.total]));
+    periodCustomers.set(customerId,c);
+  }
+  // Search the complete order worksheet for earlier purchases outside the selected period.
+  const allHistoryOrders = new Map();
+  const lifetimeDeliveredOrders = new Map();
+  for (const r of orderRows) {
+    const customerId=String(r[idx.customerId]??"").trim();
+    const orderName=String(r[idx.order]??"").trim();
+    if(!customerId||!orderName||isExcludedRetentionOrder(customerId,orderName))continue;
+    const date=dateCandidates(r[idx.date],startDate,endDate)[0]||"";
+    if(!date)continue;
+    const byDeliveredOrder=lifetimeDeliveredOrders.get(customerId)||new Map();if(isDelivered(r))byDeliveredOrder.set(orderName,money(r[idx.total]));lifetimeDeliveredOrders.set(customerId,byDeliveredOrder);
+    const byOrder=allHistoryOrders.get(customerId)||new Map();
+    const existing=byOrder.get(orderName);
+    if(!existing||date<existing)byOrder.set(orderName,date);
+    allHistoryOrders.set(customerId,byOrder);
+  }
+  const activeCustomers=[...periodCustomers.values()].map(c=>{
+    const periodDates=[...c.periodOrders.values()].filter(Boolean).sort();
+    const firstPeriodDate=periodDates[0]||"";
+    const history=allHistoryOrders.get(c.id)||new Map();
+    const hasEarlierOrder=[...history.entries()].some(([name,date])=>
+      !c.periodOrders.has(name) && !!firstPeriodDate && date<firstPeriodDate
+    );
+    const isReturning=c.periodOrders.size>=2||hasEarlierOrder;
+    const lifetimeSpend=[...(lifetimeDeliveredOrders.get(c.id)||new Map()).values()].reduce((sum,value)=>sum+value,0);
+    return {id:c.id,name:c.name,orders:c.periodOrders.size,deliveredOrders:c.deliveredOrderTotals.size,spend:[...c.deliveredOrderTotals.values()].reduce((sum,value)=>sum+value,0),lifetimeSpend,isReturning};
+  });
+  const newCustomers=activeCustomers.filter(c=>!c.isReturning);
+  const returningCustomers=activeCustomers.filter(c=>c.isReturning);
+  const periodSpend=activeCustomers.reduce((sum,c)=>sum+c.spend,0);
+  const periodItems=activeCustomers.reduce((sum,c)=>sum+(periodCustomers.get(c.id)?.itemCount||0),0);
+  const lifetimeSpend=activeCustomers.reduce((sum,c)=>sum+c.lifetimeSpend,0);
+  const secondPurchaseGaps=[];for(const c of activeCustomers){const dates=[...(allHistoryOrders.get(c.id)||new Map()).values()].filter(Boolean).sort();if(dates.length>=2){const days=(Date.parse(dates[1]+"T00:00:00Z")-Date.parse(dates[0]+"T00:00:00Z"))/86400000;if(Number.isFinite(days)&&days>=0)secondPurchaseGaps.push(days);}}
+  const retention={totalCustomers:activeCustomers.length,activeCustomers:activeCustomers.length,newCustomers:newCustomers.length,returningCustomers:returningCustomers.length,retentionRate:activeCustomers.length?returningCustomers.length/activeCustomers.length:0,periodSpend,avgSpendPerCustomer:activeCustomers.length?periodSpend/activeCustomers.length:0,totalItems:periodItems,avgItemsPerCustomer:activeCustomers.length?periodItems/activeCustomers.length:0,lifetimeSpend,ltv:activeCustomers.length?lifetimeSpend/activeCustomers.length:0,timeToSecondPurchaseDays:secondPurchaseGaps.length?secondPurchaseGaps.reduce((a,b)=>a+b,0)/secondPurchaseGaps.length:0,customersWithSecondPurchase:secondPurchaseGaps.length,cac:newCustomers.length?spend/newCustomers.length:0,topCustomers:[...activeCustomers].sort((a,b)=>b.orders-a.orders||b.spend-a.spend).slice(0,20)};
+
+  const gaRowsByDate=new Map();
+  for(const row of ga4Daily){
+    const date=dateCandidates(row[9],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));
+    if(!date)continue;
+    if(!gaRowsByDate.has(date))gaRowsByDate.set(date,[]);
+    gaRowsByDate.get(date).push(row);
+  }
+  const gaByDate=new Map([...gaRowsByDate].map(([date,rows])=>[date,{
+    date,sessions:sumAt(rows,10),engagedSessions:sumAt(rows,11),addToCart:sumAt(rows,12),checkouts:sumAt(rows,13),
+    avgSessionDuration:weightedAt(rows,14,10),avgEngagementTime:weightedAt(rows,18,10),
+    avgPagesPerSession:weightedAt(rows,15,10),bounceRate:weightedAt(rows,17,10,true)
+  }]));
+
+  const websiteFunnel = { daily:[...gaByDate.values()].sort((a,b)=>a.date.localeCompare(b.date)), sessions, allShopifyOrders: orders.length, engagedSessions, engagementRate: sessions?engagedSessions/sessions:0, bounceRate: sessions?((ga4Daily.some(r=>String(r[17]??"").trim())?ga4BounceRate:1-engagedSessions/sessions)):0, addToCart:ga4AddToCart, checkouts:ga4Checkouts, shopifyDeliveredOrders:deliveredOrdersRows.length, sessionToCartRate:sessions?ga4AddToCart/sessions:0, cartToCheckoutRate:ga4AddToCart?ga4Checkouts/ga4AddToCart:0, checkoutToDeliveredRate:ga4Checkouts?deliveredOrdersRows.length/ga4Checkouts:0, avgSessionDuration, avgEngagementTime, avgPagesPerSession };
+  const metricValues={advertisingSpend:salesSpend,...periodMetaCounts,...periodMeta,totalOrders:orders.length,totalSales,deliveredOrders:deliveredOrdersRows.length,deliveredRevenue:revenue,eligibleFulfilledOrders,sessions,metaPurchases:adPurchases,metaCheckouts:adCheckouts,metaAddsToCart:adAddsToCart,metaLandingPageViews:adLandingPageViews,metaLinkClicks:adClicks,totalShippingCosts};
+  const metaOrganicByDate=new Map();
+  for(const r of orders){const channel=sourceChannel(r[idx.source]);if(channel!=="Facebook"&&channel!=="Instagram")continue;if(sourceTrafficType(r[idx.first])!=="Organic")continue;const date=dateCandidates(r[idx.date],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));if(!date)continue;metaOrganicByDate.set(date,(metaOrganicByDate.get(date)||0)+1);}
+  const aovByDate=new Map();for(const o of orders){const d=dateCandidates(o[idx.date],startDate,endDate)[0];if(!d)continue;const x=aovByDate.get(d)||{n:0,total:0};x.n++;x.total+=money(o[idx.total]);aovByDate.set(d,x)}
+const journeyColumn=key=>mapping.has(key)?mapCol(mapping,key,"orders.range",orderRaw):-1;
+  const daysColumn=journeyColumn("orders.daysToConversion"), sessionsColumn=journeyColumn("orders.sessionsToConversion");
+  const orderMetric=value=>{
+    const text=String(value??"").trim();
+    const number=Number(text);
+    return text!==""&&Number.isFinite(number)&&number>=0?number:null;
+  };
+  const journeyByDate=new Map();
+  let lineItemsSum=0, lineItemsOrders=0;
+  for(const row of orders){
+    const items=orderMetric(row[idx.itemsQuantity]);
+    if(items!==null){lineItemsSum+=items;lineItemsOrders++;}
+    const day=dateCandidates(row[idx.date],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));
+    if(!day)continue;
+    const daily=journeyByDate.get(day)||{days:0,nd:0,sessions:0,ns:0};
+    const days=orderMetric(row[daysColumn]), sessions=orderMetric(row[sessionsColumn]);
+    if(days!==null){daily.days+=days;daily.nd++;}
+    if(sessions!==null){daily.sessions+=sessions;daily.ns++;}
+    journeyByDate.set(day,daily);
+  }
+  const timingRows=[...journeyByDate.entries()];const timingSummary=timingRows.reduce((s,[date,j])=>({days:s.days+j.days,nd:s.nd+j.nd,sessions:s.sessions+j.sessions,ns:s.ns+j.ns}),{days:0,nd:0,sessions:0,ns:0});const conversionTiming={avgDaysToConvert:timingSummary.nd?timingSummary.days/timingSummary.nd:null,avgSessionsToConvert:timingSummary.ns?timingSummary.sessions/timingSummary.ns:null,daysOrderCount:timingSummary.nd,sessionsOrderCount:timingSummary.ns,daily:timingRows.map(([date,j])=>({date,avgDaysToConvert:j.nd?j.days/j.nd:null,avgSessionsToConvert:j.ns?j.sessions/j.ns:null}))};
+  const avgLineItems=lineItemsOrders?lineItemsSum/lineItemsOrders:null;
+  const allObjectiveSpendByDate=new Map();
+  for(const row of metaAllDaily){const date=metricDateKey(row[0]);if(date)allObjectiveSpendByDate.set(date,(allObjectiveSpendByDate.get(date)||0)+money(row[1]));}
+  cons
