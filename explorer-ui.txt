@@ -80,14 +80,23 @@ function renderMetaExplorer(){
   };
   const valueCell=(r,key)=>{
     const value=r.hasActivity?metric(r,key):null;
-    return '<span class="'+(value==null?'mx-no-activity':'mx-number')+'">'+fmt(value,key)+'</span>';
+    const base=previous.get(String(r.id));const prev=explorerState.compare==="previous"&&comparedKeys.has(key)?metric(base,key):null;
+    let change="";
+    if(value!=null&&prev!=null&&Number.isFinite(Number(value))&&Number.isFinite(Number(prev))){
+      if(Number(prev)===0){if(Number(value)>0)change='<small class="mx-change mx-change-neutral" title="Previous value was zero">New</small>';}
+      else{const delta=100*(Number(value)-Number(prev))/Math.abs(Number(prev));const lowerBetter=key==="cpa"||key==="cpm";
+        const better=(delta>0)!==lowerBetter;const same=Math.abs(delta)<0.05;
+        change='<small class="mx-change '+(same?'mx-change-neutral':better?'mx-change-positive':'mx-change-negative')+'" title="Change from previous period">'+(delta>0?'+':'')+delta.toFixed(1)+'%</small>';
+      }
+    }
+    return '<span class="'+(value==null?'mx-no-activity':'mx-number')+'">'+fmt(value,key)+'</span>'+change;
   };
   const statusClass=s=>/^active$/i.test(s)?"active":/^paused$/i.test(s)?"paused":/^archived$/i.test(s)?"archived":"unavailable";
   const display=rows.slice(0,explorerState.limit);
   const body=display.map(r=>{
     const thumb=level===2&&explorerUrl(r.thumbnail)?'<img class="mx-thumb" src="'+esc(explorerUrl(r.thumbnail))+'" loading="lazy" alt="">':"";
     const title=esc(r.name),id=esc(String(r.id||""));
-    const open=level<2?'<button class="mx-name-link" data-explorer-open="'+id+'" title="'+title+'">› '+title+'</button>':
+    const open=level<2?'<button class="mx-name-link" data-explorer-open="'+id+'" title="'+title+'">'+title+'</button>':
       explorerUrl(r.creativeUrl)?'<a class="mx-name-link" href="'+esc(explorerUrl(r.creativeUrl))+'" target="_blank" rel="noopener noreferrer" title="'+title+'">'+title+'</a>':
       '<span class="mx-name-link" title="'+title+'">'+title+'</span>';
     return '<tr><td><div class="mx-name-wrap"><span class="mx-dot '+statusClass(r.status)+'" title="'+esc(r.status)+'"></span>'+thumb+
