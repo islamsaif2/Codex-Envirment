@@ -7,7 +7,7 @@ const previous=[
 '    detailMode==="ads"?readPublicSheet(business.spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:W").catch(()=>[]):Promise.resolve([]),',
 '    detailMode==="channels"?readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A2:M").catch(()=>[]):Promise.resolve([])',
 '  ]);',
-'  const metaDetailRaw=(detailMode==="ads"||detailMode==="channels")?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter(row=>String(row[0]||"").trim()):[];'
+'  const metaDetailRaw=detailMode==="ads"?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter(row=>String(row[0]||"").trim()):[];'
 ].join("\n");
 const updated=[
 '  // Meta platform and placement breakdowns overlap: select exactly one.',
