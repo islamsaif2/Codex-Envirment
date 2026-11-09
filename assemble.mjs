@@ -25,3 +25,4 @@ console.log("Assembled Ultramedix dashboard", { originalCharacters: 382097, gene
 // Apply the Meta Explorer redesign after reconstructing the original Worker.
 await import("./enhance-explorer.mjs");
 await import("./fix-meta-reporting.mjs");
+await import("./enhance-meta-v3.mjs");
