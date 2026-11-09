@@ -107,3 +107,36 @@ body.theme-dark .pm-metric-toggle button.selected{background:#3c5575;color:#fff}
 body.theme-dark .pm-rate-note{background:#263c56;border-color:#46607d;color:#c0d1e7}
 body.theme-dark .pm-no-rate{fill:#c2d0e1}
 @media(max-width:700px){.pm-head-actions{justify-content:flex-start;width:100%}.pm-metric-toggle{width:100%;justify-content:center}.pm-metric-toggle button{flex:1}}
+
+
+/* Compact, closed-by-default Product Momentum accordion. */
+.pm-collapsed{padding:0!important;overflow:hidden;margin-bottom:18px!important}
+.pm-accordion-toggle{display:flex;align-items:center;gap:13px;width:100%;padding:12px 14px 17px;margin-bottom:15px;border:0;border-bottom:1px solid var(--pm-border);background:transparent;color:var(--pm-ink);text-align:left;cursor:pointer}
+.pm-collapsed .pm-accordion-toggle{margin:0;border:0;padding:18px 20px}
+.pm-accordion-icon{width:29px;height:29px;border:1px solid var(--pm-border);border-radius:8px;display:grid;place-items:center;color:#476990;background:#eef4fc;font-size:18px;flex-shrink:0}
+.pm-accordion-toggle>span:nth-child(2){display:grid;gap:3px;flex:1}
+.pm-accordion-toggle small{color:#7191b1;letter-spacing:.11em;font-size:9px;font-style:normal;font-weight:800}
+.pm-accordion-toggle strong{color:var(--pm-ink);font-size:17px;font-weight:820}
+.pm-accordion-toggle em{color:var(--pm-muted);font-size:11px;font-style:normal}
+.pm-open-label{color:var(--pm-muted);font-size:11px;font-weight:800}
+.pm-section:not(.pm-collapsed) .pm-head .pm-eyebrow{display:none}
+.pm-section:not(.pm-collapsed) .pm-head h3{display:none}
+.pm-section:not(.pm-collapsed) .pm-head{justify-content:flex-end}
+.pm-period-controls{display:grid;gap:11px;border:1px solid var(--pm-border);background:#f9fbfe;padding:16px;border-radius:13px;margin:16px 0 12px}
+.pm-period-heading{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.pm-period-heading strong{color:var(--pm-ink);font-size:13px}
+.pm-period-heading span{color:var(--pm-muted);font-size:11px}
+.pm-period-fields{display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap}
+.pm-period-fields label{display:grid;gap:4px;color:var(--pm-muted);font-size:10px;font-weight:800}
+.pm-period-fields input{height:35px;border:1px solid #d4dfeb;border-radius:8px;color:#2c4160;background:#fff;padding:0 9px;font:inherit;font-size:12px}
+.pm-period-apply,.pm-period-presets button{height:35px;padding:0 12px;border:1px solid #cfdded;border-radius:8px;background:#fff;color:#38608c;font-size:11px;font-weight:800;cursor:pointer}
+.pm-period-apply{background:#305e9c;border-color:#305e9c;color:#fff}
+.pm-period-presets{display:flex;gap:5px;flex-wrap:wrap}
+.pm-period-comparison{font-size:11px;color:#64758a;margin:0}
+.pm-period-comparison b{color:#43658f;margin:0 5px}
+.pm-period-error{font-size:11px;color:#b72e47;background:#fff0f2;border-radius:8px;padding:8px 10px;margin:0}
+body.theme-dark .pm-period-controls{background:#21354e;border-color:#405776}
+body.theme-dark .pm-period-fields input,body.theme-dark .pm-period-presets button{background:#1d3047;border-color:#4e6481;color:#f0f5ff}
+body.theme-dark .pm-period-apply{background:#446eaa;border-color:#446eaa;color:#fff}
+body.theme-dark .pm-accordion-icon{background:#2e4663;color:#d5e7ff;border-color:#4a6181}
+@media(max-width:700px){.pm-period-fields label{width:calc(50% - 5px)}.pm-period-fields input{width:100%}.pm-period-presets{width:100%}.pm-period-presets button{flex:1}.pm-period-heading{display:grid}}
