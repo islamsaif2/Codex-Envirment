@@ -18,6 +18,9 @@ jobs:
           node --check enhance-explorer.mjs
           node --check fix-meta-reporting.mjs
           node --check enhance-meta-v3.mjs
+          node --check enhance-v5.mjs
+          node --check enhance-v6.mjs
+          node --check daily-meta-polish.js
       - name: Assemble dashboard
         run: node assemble.mjs
       - name: Verify generated Worker
