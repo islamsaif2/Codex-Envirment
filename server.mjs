@@ -49,7 +49,7 @@ globalThis.caches = {
       const old = entries.get(key);
       if (old) { cacheBytes -= old.size; entries.delete(key); }
       const cacheControl = response.headers.get("Cache-Control") || "";
-      const seconds = Number(cacheControl.match(/max-age=(\\d+)/)?.[1] || 120);
+      const seconds = Number(cacheControl.match(/max-age=(\d+)/)?.[1] || 120);
       entries.set(key, { response, size, expires: Date.now() + seconds * 1000 });
       cacheBytes += size;
       while (cacheBytes > MAX_CACHE_BYTES && entries.size) {
