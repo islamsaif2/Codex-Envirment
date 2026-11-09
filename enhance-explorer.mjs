@@ -8,7 +8,7 @@ const catalogCode=`
   // All-time Meta entity catalog: keep paused, archived and zero-spend entities
   // visible even when they have no performance rows within the selected dates.
   const metaCatalogIndex=new Map();
-  for(const r of metaDetailRaw){
+  for(const r of metaCatalogRaw){
     const day=dateCandidates(r[0])[0];if(!day)continue;
     const campaign=String(r[1]||""),campaignId=String(r[2]||"");
     const adset=String(r[3]||""),adsetId=String(r[4]||"");
