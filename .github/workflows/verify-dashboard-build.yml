@@ -1,0 +1,26 @@
+name: Verify Ultramedix dashboard build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check build scripts
+        run: |
+          node --check assemble.mjs
+          node --check enhance-explorer.mjs
+          node --check fix-meta-reporting.mjs
+          node --check enhance-meta-v3.mjs
+      - name: Assemble dashboard
+        run: node assemble.mjs
+      - name: Verify generated Worker
+        run: node --check worker.mjs
+      - name: Verify server syntax
+        run: node --check server.mjs
