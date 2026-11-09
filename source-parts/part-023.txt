@@ -1,0 +1,209 @@
+t metaDailyByDate=[...allObjectiveSpendByDate.keys()].map(date=>{const r=metaSalesTrendMap.get(date)||{date,spend:0,impressions:0,linkClicks:0};return r;}).map(r=>{const date=r.date,ga=gaByDate.get(date),j=journeyByDate.get(date),aovData=aovByDate.get(date);return {date,avgDaysToConvert:j?.nd?j.days/j.nd:null,avgSessionsToConvert:j?.ns?j.sessions/j.ns:null,avgSessionDuration:ga?.avgSessionDuration??null,avgEngagementTime:ga?.avgEngagementTime??null,avgPagesPerSession:ga?.avgPagesPerSession??null,aov:aovData?aovData.total/aovData.n:null,ctr:r.impressions?r.linkClicks/r.impressions:0,cpm:r.impressions?r.spend/r.impressions*1000:0,metaOrganicOrders:metaOrganicByDate.get(date)||0,spend:allObjectiveSpendByDate.get(date)||0,...mappedMetaMetrics(metaByDate.get(date)||emptyMetaCounts(),r.spend)};}).sort((a,b)=>b.date.localeCompare(a.date));
+
+  const adFunnel = { daily:metaDailyByDate, metaLandingConversionRate:adLandingPageViews>0?adPurchases/adLandingPageViews:null, spend, linkClicks:adClicks, landingPageViews:adLandingPageViews, addToCart:adAddsToCart, checkouts:adCheckouts, metaPurchases:adPurchases, ctr, cpm, metaCpa:calc("metaCpa",metricValues,adPurchases?salesSpend/adPurchases:0), landingPageViewRate:calc("metaLandingPageViewRate",metricValues,adClicks?adLandingPageViews/adClicks:0), addToCartRate:calc("metaAddToCartRate",metricValues,adLandingPageViews?adAddsToCart/adLandingPageViews:0), checkoutRate:calc("metaCheckoutRate",metricValues,adAddsToCart?adCheckouts/adAddsToCart:0), metaPurchaseRate:calc("metaPurchaseRate",metricValues,adCheckouts?adPurchases/adCheckouts:0), shopifyAttributedOrders:attributedOrders.length, shopifyAttributedRevenue:attributedOrders.reduce((s,r)=>s+money(r[idx.total]),0), shopifyAttributedOrderRate:adClicks?attributedOrders.length/adClicks:0, costPerAttributedOrder:attributedOrders.length?salesSpend/attributedOrders.length:0, actualCostPerDeliveredAttributedOrder:attributedDeliveredOrders.length?salesSpend/attributedDeliveredOrders.length:0, attributedDeliveredOrders:attributedDeliveredOrders.length };
+  const deliveryByDate = new Map();
+  for (const r of orders) { const status=norm(r[idx.orderStatus]); if(status!=="delivered"&&!isReturnedStatus(status))continue; const rawDay=r[idx.date],serial=Number(rawDay); const day=(Number.isFinite(serial)&&serial>20000&&serial<100000)?new Date(Date.UTC(1899,11,30)+Math.floor(serial)*86400000).toISOString().slice(0,10):dateCandidates(rawDay,startDate,endDate)[0]; if (!day) continue; const item=deliveryByDate.get(day)||{date:day,totalOrders:0,deliveredOrders:0};item.totalOrders++;if(status==="delivered")item.deliveredOrders++;deliveryByDate.set(day,item); }
+  const deliveryRateTrend = [...deliveryByDate.values()].sort((a,b) => a.date.localeCompare(b.date)).map(x => ({ ...x, rate: x.totalOrders ? x.deliveredOrders / x.totalOrders : 0 }));
+  const allOrdersDaily=new Map(),allDeliveryDaily=new Map();
+  for(const r of orderRows){const date=dateCandidates(r[idx.date])[0];if(!date)continue;const item=allOrdersDaily.get(date)||{date,orders:0};item.orders++;allOrdersDaily.set(date,item);const status=norm(r[idx.orderStatus]);if(status==='delivered'||isReturnedStatus(status)){const d=allDeliveryDaily.get(date)||{date,totalOrders:0,deliveredOrders:0};d.totalOrders++;if(status==='delivered')d.deliveredOrders++;allDeliveryDaily.set(date,d)}}
+  const dailyOrderPerformance=[...allOrdersDaily.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  const deliveryRateHistory=[...allDeliveryDaily.values()].sort((a,b)=>a.date.localeCompare(b.date));
+
+
+  const shipGroups=new Map();
+  const quality={orders:orders.length,missingStatus:0,missingAttribution:0,missingConversion:0};
+  const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Cairo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  for(const r of orders){
+    const status=norm(r[idx.orderStatus]);
+    if(!status)quality.missingStatus++;
+    if(!norm(r[idx.sourceFirst])||!norm(r[idx.first]))quality.missingAttribution++;
+    if(orderMetric(r[daysColumn])===null||orderMetric(r[sessionsColumn])===null)quality.missingConversion++;
+    if(status==="delivered"||isReturnedStatus(status)||status==="cancelled"||status==="canceled"||isCancelledOrder(r))continue;
+    const label=String(r[idx.orderStatus]??"").trim()||"Missing status";
+    const group=shipGroups.get(status)||{stage:label,count:0,orders:[]};
+    const date=dateCandidates(r[idx.date],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));
+    const age=date?Math.max(0,Math.floor((Date.parse(today)-Date.parse(date))/86400000)):null;
+    group.count++;
+    group.orders.push({order:String(r[idx.order]??""),date:date||"",age});
+    shipGroups.set(status,group);
+  }
+  const shippingExceptions=[...shipGroups.values()].map(g=>({...g,orders:g.orders.sort((a,b)=>(b.age??-1)-(a.age??-1))})).sort((a,b)=>b.count-a.count);
+  const shiftDay=(day,n)=>new Date(Date.parse(day)+n*86400000).toISOString().slice(0,10);
+  const validDay=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(Date.parse(d));
+  let periodChanges=null;
+  if(validDay(startDate)&&validDay(endDate)&&endDate>=startDate){
+    const days=Math.round((Date.parse(endDate)-Date.parse(startDate))/86400000)+1;
+    const from=shiftDay(startDate,-days),to=shiftDay(startDate,-1);
+    const prior=orderRows.filter(r=>dateMatches(r[idx.date],from,to));
+    const dimensionChanges=getKeys=>{
+      const values=new Map();
+      for(const [rows,period] of [[orders,"current"],[prior,"previous"]]){
+        for(const row of rows)for(const label of getKeys(row)){
+          const key=norm(label),entry=values.get(key)||{label,current:0,previous:0};
+          entry[period]++;values.set(key,entry);
+        }
+      }
+      return [...values.values()].map(x=>({...x,delta:x.current-x.previous})).filter(x=>x.delta).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)||a.label.localeCompare(b.label)).slice(0,3);
+    };
+    const keys=(r,col)=>[String(r[col]??"").trim()||"Unknown"];
+    const counts=rows=>rows.reduce((a,r)=>{if(isDelivered(r))a.delivered++;else if(isReturnedStatus(norm(r[idx.orderStatus])))a.returned++;return a},{delivered:0,returned:0});
+    periodChanges={from,to,startDate,endDate,currentOrders:orders.length,previousOrders:prior.length,currentDelivery:counts(orders),previousDelivery:counts(prior),
+      channels:dimensionChanges(r=>keys(r,idx.sourceFirst)),
+      variants:dimensionChanges(r=>[...new Map(String(r[variantColumn]??"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean).map(s=>[norm(s),s])).values()]),
+      regions:dimensionChanges(r=>keys(r,idx.region))};
+  }
+  const drillDays=new Map(metricDaily.map(row=>[row.date,row]));
+  for(const day of metaDailyByDate){
+    const row=drillDays.get(day.date)||{date:day.date,orders:0,deliveryRate:null,avgLineItems:null,deliveredRevenue:0,deliveredOrders:0};
+    row.adSpend=(row.adSpend??0)+day.spend;
+    row.metaDelivered=metaByDate.get(day.date)?mappedMetaMetrics(metaByDate.get(day.date),row.adSpend).deliveredMetaAdsOrders:0;
+    row.actualCost=row.metaDelivered?mappedMetaMetrics(metaByDate.get(day.date),row.adSpend).actualCostPerOrder:null;
+    drillDays.set(day.date,row);
+  }
+  for(const [date,counts] of metaByDate){
+    const row=drillDays.get(date);
+    if(row&&row.metaDelivered==null){row.metaDelivered=mappedMetaMetrics(counts,0).deliveredMetaAdsOrders;row.actualCost=null;}
+  }
+
+  const channelWeeks=new Map(),outcomeRegions=new Map();
+  for(const row of channelAnalysisDaily){
+    const monday=new Date(row.date+"T12:00:00Z");
+    if(!Number.isFinite(monday.getTime()))continue;
+    monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
+    const week=monday.toISOString().slice(0,10);
+    const counts=channelWeeks.get(week)||{week,first:{paid:0,organic:0,unknown:0},last:{paid:0,organic:0,unknown:0}};
+    counts.first[row.medium.toLowerCase()]+=row.firstOrders;
+    counts.last[row.medium.toLowerCase()]+=row.lastOrders;
+    channelWeeks.set(week,counts);
+  }
+  for(const row of orders){
+    const status=norm(row[idx.orderStatus]);
+    if(isCancelledOrder(row)||status==="cancelled"||status==="canceled")continue;
+    const region=String(row[idx.region]??"").trim()||"Unspecified",key=norm(region);
+    const counts=outcomeRegions.get(key)||{region,delivered:0,returned:0,open:0,missing:0,total:0};
+    const outcome=status==="delivered"?"delivered":isReturnedStatus(status)?"returned":status?"open":"missing";
+    counts[outcome]++;counts.total++;
+    outcomeRegions.set(key,counts);
+  }
+  const weeklyChannelMix=[...channelWeeks.values()].sort((a,b)=>a.week.localeCompare(b.week));
+  const regionalShippingOutcomes=[...outcomeRegions.values()].sort((a,b)=>b.total-a.total||a.region.localeCompare(b.region));
+
+  const conversionJourney=orders.map(row=>{
+    const date=dateCandidates(row[idx.date],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate))||"";
+    const gender=norm(row[idx.gender]);
+    return [date,String(row[idx.first]??"").trim()||"Missing UTM content",
+      gender==="female"?"Female":gender==="male"?"Male":"Unknown",
+      String(row[idx.region]??"").trim()||"Unspecified",
+      orderMetric(row[daysColumn]),orderMetric(row[sessionsColumn])];
+  });
+
+  let regionsAnalysis;
+  if(regionRange){
+    const direct=norm(regionRaw[0]?.[11])==="unify ga4 and bosta region naming";
+    const [regionColumn,orderColumn,sessionColumn]=direct?[11,12,2]:[1,2,3];
+    const values=direct?[14,15,6,16]:[5,6,7,8];
+    const weights=direct?[17,18,19,20]:[9,10,11,12];
+    const merged=new Map();
+    for(const row of mappedDataRows(regionRaw,regionRange)){
+      if(!row[0]||!row[regionColumn]||!dateMatches(row[0],startDate,endDate))continue;
+      const region=String(row[regionColumn]).trim(),key=norm(region);
+      const item=merged.get(key)||{region,orders:0,sessions:0,values:[0,0,0,0],weights:[0,0,0,0]};
+      item.orders+=money(row[orderColumn]);item.sessions+=money(row[sessionColumn]);
+      if(direct){const bounceWeight=money(row[40]);item.delivered=(item.delivered||0)+money(row[35]);item.bounceSum=(item.bounceSum||0)+money(row[37])*bounceWeight;item.bounceWeight=(item.bounceWeight||0)+bounceWeight;}
+      for(let i=0;i<4;i++){
+        const weight=money(row[weights[i]]);
+        item.values[i]+=money(row[values[i]])*weight;
+        item.weights[i]+=weight;
+      }
+      merged.set(key,item);
+    }
+
+    if(direct){
+      const activityByRegion=new Map();
+      for(const row of mappedDataRows(regionRaw,regionRange)){
+        if(row[23]&&row[24]&&dateMatches(row[23],startDate,endDate)){
+          const item=merged.get(norm(row[24]));
+          if(item)item.returned=(item.returned||0)+money(row[33]);
+        }
+        if(!row[41]||!row[42]||!row[43]||!dateMatches(row[41],startDate,endDate))continue;
+        const region=norm(row[42]),id=String(row[43]);
+        const date=dateCandidates(row[41],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));
+        const first=dateCandidates(row[44])[0];
+        if(!date)continue;
+        if(!activityByRegion.has(region))activityByRegion.set(region,new Map());
+        const customers=activityByRegion.get(region),customer=customers.get(id)||{orders:0,date,first};
+        customer.orders+=money(row[45]);
+        if(date<customer.date)customer.date=date;
+        customers.set(id,customer);
+      }
+      for(const [region,customers] of activityByRegion){
+        const item=merged.get(region);
+        if(!item)continue;
+        item.newCustomers=0;item.returningCustomers=0;
+        for(const c of customers.values()){
+          if(c.orders>1||(c.first&&c.first<c.date))item.returningCustomers++;
+          else item.newCustomers++;
+        }
+      }
+    }
+    regionsAnalysis=[...merged.values()].map(r=>{
+      const [averageDaysToConvert,averageSessionsToConvert,averageSessionDuration,averageDeliveryMinutes]=r.values.map((v,i)=>r.weights[i]?v/r.weights[i]:null);
+      return {region:r.region,orders:r.orders,sessions:r.sessions,conversionRate:r.sessions?r.orders/r.sessions:null,averageDaysToConvert,averageSessionsToConvert,averageSessionDuration,averageDeliveryMinutes,deliveredOrders:direct?(r.delivered||0):null,deliveryRate:r.delivered||r.returned?(r.delivered||0)/((r.delivered||0)+(r.returned||0)):null,bounceRate:r.bounceWeight?r.bounceSum/r.bounceWeight:null,newCustomers:direct?(r.newCustomers||0):null,returningCustomers:direct?(r.returningCustomers||0):null};
+    }).sort((a,b)=>b.orders-a.orders||b.sessions-a.sessions||a.region.localeCompare(b.region));
+  }else{
+  const regions=new Map();
+  const getRegion=value=>{
+    const region=String(value??"").trim()||"Unspecified";
+    const key=norm(region);
+    if(!regions.has(key))regions.set(key,{region,orders:0,sessions:0,days:0,daysN:0,interactions:0,interactionsN:0,duration:0,durationN:0});
+    return regions.get(key);
+  };
+  for(const row of orders){
+    const group=getRegion(row[idx.region]);
+    group.orders++;
+    const days=orderMetric(row[daysColumn]),interactions=orderMetric(row[sessionsColumn]);
+    if(days!==null){group.days+=days;group.daysN++;}
+    if(interactions!==null){group.interactions+=interactions;group.interactionsN++;}
+  }
+  if(gaRegionColumn>=0){
+    for(const row of ga4Daily){
+      const group=getRegion(row[24]),sessions=money(row[10]),duration=orderMetric(row[14]);
+      group.sessions+=sessions;
+      if(sessions>0&&duration!==null){group.duration+=duration*sessions;group.durationN+=sessions;}
+    }
+  }
+  regionsAnalysis=[...regions.values()].map(r=>({
+    region:r.region,orders:r.orders,sessions:r.sessions,
+    conversionRate:r.sessions?r.orders/r.sessions:null,
+    averageDaysToConvert:r.daysN?r.days/r.daysN:null,
+    averageSessionsToConvert:r.interactionsN?r.interactions/r.interactionsN:null,
+    averageSessionDuration:r.durationN?r.duration/r.durationN:null
+  })).sort((a,b)=>b.orders-a.orders||b.sessions-a.sessions||a.region.localeCompare(b.region));
+  }
+
+  const adsFunnelDays=new Map();
+  for(const row of metaDaily){
+    const date=dateCandidates(row[0],startDate,endDate).find(d=>(!startDate||d>=startDate)&&(!endDate||d<=endDate));
+    if(!date)continue;
+    const day=adsFunnelDays.get(date)||{date,clicks:0,landing:0,carts:0,checkouts:0,purchases:0};
+    day.clicks+=money(row[4]);day.landing+=money(row[5]);day.carts+=money(row[6]);day.checkouts+=money(row[8]);day.purchases+=money(row[7]);
+    adsFunnelDays.set(date,day);
+  }
+  const funnelDays={
+    ads:[...adsFunnelDays.values()],
+    ga4:[...new Set([...gaByDate.keys(),...dailyMetrics.keys()])].map(date=>{
+      const ga=gaByDate.get(date),shopify=dailyMetrics.get(date);
+      return {date,sessions:ga?.sessions??null,engaged:ga?.engagedSessions??null,carts:ga?.addToCart??null,checkouts:ga?.checkouts??null,bounce:ga?.bounceRate??null,orders:shopify?.orders??0,delivered:shopify?.delivered??0};
+    })
+  };
+
+  const inventoryImageByVariant=new Map();
+  if(inventoryImagesRaw.length){
+    try {
+      const idCol=mapCol(mapping,"inventoryImages.variantId","inventoryImages.range",inventoryImagesRaw);
+      const urlCol=mapCol(mapping,"inventoryImages.url","inventoryImages.range",inventoryImagesRaw);
+      for(const row of mappedDataRows(inventoryImagesRaw,inventoryImagesRange)){
+        const variantId=String(row[idCol]??"").trim();
+        const imageUrl=String(row[urlCol]??"").trim();
+        if(variantId.startsWith("gid://shopify/ProductVariant/")&&imageUrl.startsWith("https://cdn.shopify.com/")){
+          inventoryImageBy
