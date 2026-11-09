@@ -27,3 +27,4 @@ await import("./enhance-explorer.mjs");
 await import("./fix-meta-reporting.mjs");
 await import("./enhance-meta-v3.mjs");
 await import("./enhance-v5.mjs");
+await import("./enhance-v6.mjs");
