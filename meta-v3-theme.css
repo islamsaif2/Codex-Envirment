@@ -102,3 +102,57 @@ body.theme-dark #meta-explorer .cal-day:hover{background:#345477}
 body.theme-dark #meta-explorer .cal-day.selected{background:#4f70bd;color:#fff}
 body.theme-dark #meta-explorer .cal-day.inside{background:#2e4b70;color:#e9f0ff}
 body.theme-dark #meta-explorer .cal-nav button{background:#233b59;color:#e7f0ff;border-color:#4a5b77}
+
+
+/* Explorer visual refinement: subtle zebra stripes and understated comparison tints. */
+#meta-explorer .mx-table tbody tr:nth-child(odd),
+#meta-explorer .mx-table tbody tr:nth-child(odd) td:first-child{background:#ffffff!important}
+#meta-explorer .mx-table tbody tr:nth-child(even),
+#meta-explorer .mx-table tbody tr:nth-child(even) td:first-child{background:#f8fafc!important}
+#meta-explorer .mx-table tbody tr:hover,
+#meta-explorer .mx-table tbody tr:hover td:first-child{background:#f0f4fa!important}
+#meta-explorer .mx-eval-good{background:#edf8f1!important;box-shadow:none!important}
+#meta-explorer .mx-eval-neutral{background:#fff8e9!important;box-shadow:none!important}
+#meta-explorer .mx-eval-bad{background:#fff1f1!important;box-shadow:none!important}
+#meta-explorer .mx-table col.mx-metric-col{width:102px!important}
+#meta-explorer .mx-table{min-width:1810px!important}
+#meta-explorer .mx-table thead th:not(:first-child),
+#meta-explorer .mx-table tbody td:not(:first-child),
+#meta-explorer .mx-table tfoot td:not(:first-child){text-align:center!important;padding-left:6px;padding-right:6px}
+#meta-explorer .mx-col-sort{text-align:center!important;display:inline-block}
+#meta-explorer .mx-below-controls{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-top:13px}
+#meta-explorer .mx-tabs{margin-top:0!important}
+#meta-explorer .mx-date-controls{margin-left:auto;display:flex;align-items:flex-end;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+#meta-explorer .mx-date-filter,#meta-explorer .mx-compare-date-filter{min-width:180px}
+body.theme-dark #meta-explorer .mx-table tbody tr:nth-child(odd),
+body.theme-dark #meta-explorer .mx-table tbody tr:nth-child(odd) td:first-child{background:#192537!important}
+body.theme-dark #meta-explorer .mx-table tbody tr:nth-child(even),
+body.theme-dark #meta-explorer .mx-table tbody tr:nth-child(even) td:first-child{background:#1c2a3d!important}
+body.theme-dark #meta-explorer .mx-table tbody tr:hover,
+body.theme-dark #meta-explorer .mx-table tbody tr:hover td:first-child{background:#24364b!important}
+body.theme-dark #meta-explorer .mx-eval-good{background:#234336!important;box-shadow:none!important}
+body.theme-dark #meta-explorer .mx-eval-neutral{background:#4b3e29!important;box-shadow:none!important}
+body.theme-dark #meta-explorer .mx-eval-bad{background:#492f35!important;box-shadow:none!important}
+/* Top-right icon toggle available on every page, including Ads with hidden header. */
+body .theme-toggle{position:fixed!important;top:13px;right:17px;left:auto;bottom:auto;z-index:1200;display:flex!important;width:40px!important;height:40px!important;padding:0!important;margin:0!important;border-radius:50%!important;border:1px solid #cad5e4;background:#ffffff!important;color:#253653!important;box-shadow:0 2px 9px #1822381a;font-size:23px!important;font-weight:700;line-height:1;cursor:pointer}
+body .theme-toggle:hover{background:#edf3fe!important}
+body.theme-dark .theme-toggle{background:#293952!important;color:#ffe5a3!important;border-color:#526987}
+body.theme-dark .theme-toggle:hover{background:#354966!important}
+/* Higher contrast on dark-mode KPI buttons, card labels, and chart subtitles. */
+body.theme-dark .kpi .kt,
+body.theme-dark .kpi .kt *,
+body.theme-dark .kpi .kv,
+body.theme-dark .kpi .kv *,
+body.theme-dark .kpi small,
+body.theme-dark .kpi button,
+body.theme-dark .kpi .hint,
+body.theme-dark .trend-kpi .trend-dates{color:#f0f5ff!important}
+body.theme-dark .kpi,body.theme-dark .trend-kpi{background:#1c2b42!important;border-color:#3e526b!important}
+body.theme-dark .kpi.wide,body.theme-dark .kpi.wide *{color:#fff!important}
+body.theme-dark .panel .btn:not(.primary){color:#f2f6ff!important;background:#243650!important;border-color:#50637c!important}
+body.theme-dark .section-head .muted,body.theme-dark .section-head p{color:#d1ddec!important}
+@media(max-width:720px){
+#meta-explorer .mx-below-controls{align-items:stretch}
+#meta-explorer .mx-date-controls{margin-left:0;justify-content:flex-start}
+body .theme-toggle{top:9px;right:10px}
+}
