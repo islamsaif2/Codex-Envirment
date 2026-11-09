@@ -1,0 +1,128 @@
+Variant.set(variantId,imageUrl);
+        }
+      }
+    } catch(error) {
+      console.warn("Inventory image mapping could not be read:",error.message);
+    }
+  }
+  const inventory=inventoryRange?{
+    available:inventoryRaw.length>0,
+    status:String((inventoryRaw[1]?.[21]||inventoryRaw[6]?.[23])??""),
+    demandBasis:String((inventoryRaw[2]?.[21]||inventoryRaw[11]?.[23])??""),
+    updated:String(inventoryRaw[1]?.[9]??""),
+    variants:mappedDataRows(inventoryRaw,inventoryRange).filter(r=>String(r[0]??"").startsWith("gid://shopify/ProductVariant/")).map(r=>{
+      const optional=i=>String(r[i]??"").trim()===""?null:money(r[i]);
+      return {product:String(r[1]??""),variant:String(r[2]??""),sku:String(r[3]??""),active:norm(r[4])==="active",tracked:norm(r[5])==="true",
+        stock:optional(6),units7:optional(7),units28:optional(8),perDay:optional(14),cover:optional(15),runout:String(r[16]??""),status:String(r[20]??""),imageUrl:inventoryImageByVariant.get(String(r[0]??""))||""};
+    })
+  }:null;
+  const detailDaily=[...drillDays.values()].sort((a,b)=>a.date.localeCompare(b.date));
+
+  return {
+    business: { id: business.id, name: business.name, spreadsheetTitle: workbook.spreadsheetTitle },
+    generatedAt: new Date().toISOString(),
+    dateRange: { startDate: startDate || null, endDate: endDate || null },
+    websiteFunnel,
+    adFunnel,
+    deliveryRateTrend,
+    dailyOrderPerformance,
+    funnelDays,
+    inventory,
+    variants,
+    metricDaily:detailDaily,
+    conversionTiming,
+    conversionJourney,
+    regionsAnalysis,
+    quality,
+    periodChanges,
+    shippingExceptions,
+    weeklyChannelMix,
+    regionalShippingOutcomes,
+    deliveryRateHistory,
+    shippingStatusCounts,
+    cancellationReasons,
+    shippingStatusOrder,
+    overviewCardOrder,
+    regionPerformance,
+    demographics:demographics,
+    genderOrders,
+    metrics: { avgLineItems, avgOrdersPerDay, totalOrders: orders.length, totalSales, deliveredOrders: deliveredOrdersRows.length, fulfilledOrders: fulfilledOrders.length, deliveredRevenue: revenue, totalOrderDiscounts, deliveredOrderDiscounts, freeShippingDiscounts, advertisingSpend: spend, costPerOrderAds: periodMeta.costPerOrder, actualCostPerOrderAds: periodMeta.actualCostPerOrder, adAttributedOrders: attributedOrders.length, metaAdsOrders: periodMeta.metaAdsOrders, deliveredMetaAdsOrders: periodMeta.deliveredMetaAdsOrders, metaAdsDeliveryRate: periodMeta.metaAdsDeliveryRate, totalFirstClickOrders: allAttributedOrders.length, actualAdAttributedDeliveredOrders: attributedDeliveredOrders.length, revenueAfterDeliveryAndAdCosts: calc("revenueAfterDeliveryAndAdCosts",metricValues,revenue-spend-totalShippingCosts), totalShippingCosts, deliveryRate: calc("deliveryRate",metricValues,eligibleFulfilledOrders?deliveredOrdersRows.length/eligibleFulfilledOrders:0), eligibleFulfilledOrders, cancelledBeforePickupOrders: cancelledBeforePickupOrders.length, averageOrderValue: calc("averageOrderValue",metricValues,orders.length?totalSales/orders.length:0), sessions, conversionRate: calc("conversionRate",metricValues,sessions?orders.length/sessions:0), engagedSessions, adClicks, adLandingPageViews, adAddsToCart, adCheckouts, adPurchases, ctr, cpm, ctrTrend, cpmTrend, clickToPurchaseRate },
+    channelAnalysis,
+    metaPlatformAnalysis,
+    metaExplorerRows,
+    metaStatusById,
+    metaPlacementRows,
+    detailMode,
+    orderVisitChannelAnalysis,
+    sourceOrders: sourceCountsFirst,
+    sourceOrdersFirst: sourceCountsFirst,
+    sourceOrdersLast: sourceCountsLast,
+    paidOrganicFirst,
+    paidOrganicLast,
+    topProducts,
+    weeklyProducts:weeklyProductData(orderRows,idx,productColumnPairs),
+    firstProducts,
+    secondProducts,
+    collectionPages,
+    pagesAnalysis,
+    attachRates,
+    topCustomers,
+    retention,
+    notes: ["Delivery rate = Delivered ÷ (Delivered + Returned to business).", "Delivered revenue is delivered order sales less order discounts from column T.", "Revenue after delivery rate / ad costs / discounts / shipping costs = delivered revenue after order discounts minus Meta ad spend and original shipping costs from column Y.", "CPM, CTR, and other marketing fields are read from their editable Website Mapping entries.", "Meta Ads and GA4 metrics are read from their raw databases in Monthly Revenue & ads; date filters use each source database Day column.", "Product delivery rate counts product lines whose Fulfillment status is exactly Fulfilled; product revenue still counts Paid lines. Product sessions are summed across every matching daily page-title row in the selected date range; matching ignores the Ultramedix store-name suffix and common size/variant suffixes."],
+  };
+}
+function isAllowedOrigin(origin) {
+  if (!origin || origin === "http://localhost:5173") return true;
+  try { const u = new URL(origin); return u.protocol === "https:" && (u.hostname.endsWith(".pages.dev") || u.hostname === "business-analytics.pages.dev" || u.hostname === "ultramedix-analytics-api.islam-ahmed-solutions.workers.dev"); } catch { return false; }
+}
+export default {
+  async fetch(request, env, ctx) {
+    const origin = request.headers.get("Origin"); if (origin && !isAllowedOrigin(origin)) return json({ error: "Origin not allowed" }, 403);
+    const cors = { "Access-Control-Allow-Origin": origin || "null", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type", "Vary": "Origin" };
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    const url = new URL(request.url); const path = url.pathname;
+    if ((path === "/" || path === "/index.html") && request.method === "GET") return new Response(APP_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
+    if (path === "/api/health" && request.method === "GET") return json({ status: "online", service: "Business Analytics API", publicSpreadsheetAccess: true, spreadsheetConfigured: !!env.SPREADSHEET_ID, accessProtectionConfigured: false, authenticationRequired: false, businessStoreConfigured: !!env.BUSINESS_STORE }, 200, cors);
+    try {
+      if (!env.SPREADSHEET_ID) throw new Error("Default spreadsheet is not configured");
+      if (path === "/api/businesses" && request.method === "GET") {
+        const businesses = await getBusinesses(env); return json({ businesses }, 200, cors);
+      }
+      if (path === "/api/businesses" && request.method === "POST") {
+        if (!env.BUSINESS_STORE) throw new Error("Business storage is not configured. Create a Cloudflare KV namespace and bind it as BUSINESS_STORE.");
+        const body = await request.json(); if (!body.name || !body.spreadsheetUrl) throw new Error("Business name and Google Sheets link are required");
+        const existing = await getBusinesses(env); if (existing.length >= 25) throw new Error("Maximum 25 businesses");
+        const added = await validateBusiness(env, body.name, body.spreadsheetUrl);
+        if (existing.some(b => b.spreadsheetId === added.spreadsheetId)) throw new Error("This spreadsheet is already connected");
+        const saved = [...existing.filter(b => b.id !== "ultramedix"), added]; await env.BUSINESS_STORE.put("businesses", JSON.stringify(saved));
+        return json({ success: true, business: added }, 201, cors);
+      }
+      if (path === "/api/dashboard" && request.method === "GET") {
+        const id = url.searchParams.get("businessId") || "ultramedix"; const business = await getBusiness(env, id); if (!business) throw new Error("Business not found");
+        const startDate = url.searchParams.get("startDate") || ""; const endDate = url.searchParams.get("endDate") || "";
+        const detailMode = ["ads","channels"].includes(url.searchParams.get("details")) ? url.searchParams.get("details") : "";
+        // Cache identical reports for 120s at the edge to avoid repeated expensive sheet reads.
+        const key=new Request(url.toString(),{method:"GET"});
+        let hit=null;try{hit=await caches.default.match(key);}catch(_){}
+        if(hit)return new Response(hit.body,{status:200,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Analytics-Cache":"EDGE",...cors}});
+        // KV persists successful report JSON across edge locations and Worker instances.
+        // Include business, dates and detail mode so separate report slices never collide.
+        const persistentKey="dashboard-cache:v3:"+id+":"+(startDate||"all")+":"+(endDate||"all")+":"+(detailMode||"base");
+        try{const persisted=await env.BUSINESS_STORE.get(persistentKey);if(persisted){
+          if(ctx?.waitUntil)ctx.waitUntil(caches.default.put(key,new Response(persisted,{status:200,headers:{"Content-Type":"application/json","Cache-Control":"public,max-age=120"}})).catch(()=>{}));
+          return new Response(persisted,{status:200,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Analytics-Cache":"PERSISTENT",...cors}});
+        }}catch(error){console.warn("Dashboard KV cache read error: "+String(error));}
+        const report=await buildDashboard(env,business,startDate,endDate,detailMode);
+        const compact=JSON.stringify(report);
+        try{if(ctx?.waitUntil){
+          ctx.waitUntil(caches.default.put(key,new Response(compact,{status:200,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public,max-age=120"}})).catch(()=>{}));
+          if(compact.length<9000000)ctx.waitUntil(env.BUSINESS_STORE.put(persistentKey,compact,{expirationTtl:300}).catch(e=>console.warn("KV report cache write failed: "+String(e))));
+        }}catch(error){console.warn("Dashboard report caching failed: "+String(error));}
+        return new Response(compact,{status:200,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Analytics-Cache":"CALCULATED",...cors}});
+      }
+      return json({ error: "Endpoint not found" }, 404, cors);
+    } catch (error) {
+      return json({ error: error.message || "Internal server error" }, 500, cors);
+    }
+  }
+};
