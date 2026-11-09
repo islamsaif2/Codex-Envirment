@@ -26,3 +26,4 @@ console.log("Assembled Ultramedix dashboard", { originalCharacters: 382097, gene
 await import("./enhance-explorer.mjs");
 await import("./fix-meta-reporting.mjs");
 await import("./enhance-meta-v3.mjs");
+await import("./enhance-v5.mjs");
