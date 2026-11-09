@@ -7,7 +7,7 @@ const previous=[
 '    detailMode==="ads"?readPublicSheet(business.spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:W").catch(()=>[]):Promise.resolve([]),',
 '    detailMode==="channels"?readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A2:M").catch(()=>[]):Promise.resolve([])',
 '  ]);',
-'  const metaDetailRaw=detailMode==="ads"?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter(row=>String(row[0]||"").trim()):[];'
+'  const metaDetailRaw=(detailMode==="ads"||detailMode==="channels")?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter(row=>String(row[0]||"").trim()):[];'
 ].join("\n");
 const updated=[
 '  // Meta platform and placement breakdowns overlap: select exactly one.',
@@ -21,9 +21,9 @@ const updated=[
 '  const placementDays=new Set();',
 '  marketingRaw.slice(1).forEach((row,i)=>{const day=dateCandidates(row[0])[0];if(day&&placementByDataRow[i])placementDays.add(day);});',
 '  const isCanonicalMetaRow=(row,i)=>{const day=dateCandidates(row[0])[0];return !day||!placementDays.has(day)||Boolean(placementByDataRow[i]);};',
-'  const metaDetailRaw=detailMode==="ads"?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter((row,i)=>String(row[0]||"").trim()&&isCanonicalMetaRow(marketingRaw[i+1],i)):[];',
+'  const metaDetailRaw=(detailMode==="ads"||detailMode==="channels")?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter((row,i)=>String(row[0]||"").trim()&&isCanonicalMetaRow(marketingRaw[i+1],i)):[];',
 '  // Preserve the complete historical entity index before canonical-spend filtering.',
-'  const metaCatalogRaw=detailMode==="ads"?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter(row=>String(row[1]||row[3]||row[5]||"").trim()):[];',
+'  const metaCatalogRaw=(detailMode==="ads"||detailMode==="channels")?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter(row=>String(row[1]||row[3]||row[5]||"").trim()):[];',
 '  // Zero out only duplicate Meta cells. GA4 columns AE:AP must remain untouched.',
 '  marketingRaw.slice(1).forEach((row,i)=>{if(!isCanonicalMetaRow(row,i))for(let col=0;col<17;col++)row[col]="";});'
 ].join("\n");
