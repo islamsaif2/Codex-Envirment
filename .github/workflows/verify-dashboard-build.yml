@@ -21,6 +21,8 @@ jobs:
           node --check enhance-v5.mjs
           node --check enhance-v6.mjs
           node --check daily-meta-polish.js
+          node --check enhance-v7.mjs
+          node --check product-momentum.js
       - name: Assemble dashboard
         run: node assemble.mjs
       - name: Verify generated Worker
