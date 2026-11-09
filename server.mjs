@@ -115,7 +115,7 @@ const server = http.createServer(async (req, res) => {
     if (body.length && req.method !== "GET" && req.method !== "HEAD") init.body = body;
     const request = new Request(url.href, init);
     const ctx = { waitUntil(promise) { Promise.resolve(promise).catch(error => console.warn("[cache]", error?.message || error)); } };
-    const response = await worker.fetch(request, env, ctx);
+    const response = req.method === "GET" && url.pathname === "/api/dashboard" ? await dashboardResponse(request, ctx) : await worker.fetch(request, env, ctx);
     const bytes = Buffer.from(await response.arrayBuffer());
     res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
     res.end(bytes);
