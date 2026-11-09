@@ -105,18 +105,18 @@ function renderMetaExplorer(){
   const dateInput=(title,id,value)=>'<div class="mx-filter"><label for="'+id+'">'+title+'</label><input type="date" id="'+id+'" value="'+esc(value||"")+'"></div>';
 
   const levelTabs='<div class="mx-tabs" role="group" aria-label="Explore performance level">'+["Campaigns","Ad sets","Ads"].map((name,i)=>'<button type="button" data-explorer-level="'+i+'" class="mx-tab '+(level===i?'is-active':'')+'">'+name+'</button>').join('')+'</div>';
-  return '<section class="panel mx-panel" id="meta-explorer"><div class="mx-top"><div class="mx-heading"><div><h3 class="mx-title">Meta Ads Performance Explorer</h3><p class="mx-subtitle">Campaigns, ad sets and ads · 7-day click</p></div><span class="mx-source">META · 7-day click</span></div>'+levelTabs+
+  return '<section class="panel mx-panel" id="meta-explorer"><div class="mx-top"><div class="mx-heading"><div><h3 class="mx-title">Meta Ads Performance Explorer</h3><p class="mx-subtitle">Campaigns, ad sets and ads · 7-day click</p></div><span class="mx-source">META · 7-day click</span></div>'+
     '<div class="mx-controls">'+
     filter("Objective","explorer-objective",objectiveOptions,explorerState.objective,"All objectives")+
     filter("Platform","explorer-platform",platformOptions,explorerState.platform,"All platforms")+
     filter("Delivery status","explorer-status",statusOptions,explorerState.status,"All statuses")+
     '<div class="mx-filter"><label for="explorer-compare">Comparison</label><select id="explorer-compare"><option value="peers" '+(explorerState.compare==="peers"?"selected":"")+'>Compare active ads</option><option value="previous" '+(explorerState.compare==="previous"?"selected":"")+'>Previous period</option></select></div>'+
-    '<div class="mx-filter mx-date-filter"><label>Date range</label>'+calendarControl(dateFrom,dateTo,true)+'</div>'+
-    (explorerState.compare==="previous"?'<div class="mx-filter mx-compare-date-filter"><label>Compare period</label>'+calendarControl(explorerState.prevFrom,explorerState.prevTo,false)+'</div>':"")+'</div></div>'+
+    '</div><div class="mx-below-controls">'+levelTabs+'<div class="mx-date-controls"><div class="mx-filter mx-date-filter"><label>Date range</label>'+calendarControl(dateFrom,dateTo,true)+'</div>'+
+    (explorerState.compare==="previous"?'<div class="mx-filter mx-compare-date-filter"><label>Compare period</label>'+calendarControl(explorerState.prevFrom,explorerState.prevTo,false)+'</div>':"")+'</div></div></div>'+
     (level&&explorerState.campaign?'<div class="mx-backbar"><button class="mx-back" id="explorer-back">← Back to '+(level===2?'ad sets':'campaigns')+'</button></div>':'')+
     '<div class="mx-scroll"><table class="mx-table"><colgroup><col class="mx-name-col">'+keys.map(()=>'<col class="mx-metric-col">').join('')+'</colgroup>'+
     '<thead><tr><th>'+["Campaign","Ad set","Ad"][level]+'</th>'+keys.map((key,i)=>'<th><button class="mx-col-sort" data-explorer-sort="'+key+'">'+labels[i]+(explorerState.sort===key?(explorerState.asc?' ↑':' ↓'):' ↕')+'</button></th>').join('')+'</tr></thead>'+
-    '<tbody>'+(body||'<tr><td colspan="'+(keys.length+1)+'" style="padding:24px;text-align:center">No matching campaigns, ad sets, or ads.</td></tr>')+'</tbody>'+
+    '<tbody>'+(body||'<tr><td colspan="'+(keys.length+1)+'" style="padding:24px;text-align:center">No matching entities for the selected filters. Try All objectives, All platforms, or another date range.</td></tr>')+'</tbody>'+
     '<tfoot>'+totalRow+'</tfoot></table></div>'+
     (rows.length>explorerState.limit?'<div class="mx-foot"><button id="explorer-more" class="mx-more">Load more rows</button></div>':'')+'</section>';
 }
