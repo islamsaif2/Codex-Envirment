@@ -1,6 +1,6 @@
 (function(){
   const palette=["#4066D4","#DC7849","#2F9A83","#9A6BD0","#D9A02E","#4C91BD","#D96691","#648C4D","#98664C","#7C83CA","#26A3B2","#B47B5D","#7F6AAA","#A4A13C","#CF6990","#6B9BA8","#8D9D47","#AA78B4","#447FBC","#D38B63"];
-  const state={shown:5,rows:12,hidden:new Set(),sort:"orders",search:"",metric:"orders"};
+  const state={shown:5,rows:5,hidden:new Set(),sort:"orders",search:"",metric:"orders",expanded:false,periodFrom:"",periodTo:"",periodError:""};
   const e=s=>esc(String(s??""));
   const fmtN=n=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0});
   const totals=p=>p.daily.reduce((n,x)=>n+x,0);
@@ -23,7 +23,7 @@
   });
   const valuesFor=p=>state.metric==="rate"?rollingRate(p):rolling(p);
   const percent=x=>Number.isFinite(x)?(x*100).toFixed(2)+"%":"—";
-  const diffFor=p=>state.metric==="rate"?(weeklyRate(p)==null||weeklyRate(p,7)==null?null:weeklyRate(p)-weeklyRate(p,7)):recent(p)-previous(p);
+  const diffFor=p=>{const x=momentumPeriod(p);return x.current==null||x.previous==null?null:x.current-x.previous;};
   const smoothWithGaps=(vals,left,top,w,h,max)=>{
     const n=vals.length;let result="",i=0;
     while(i<n){
@@ -63,16 +63,50 @@
     }return d;
   };
   const nLabel=v=>v===0?"0":Number.isInteger(v)?String(v):v.toFixed(1);
+  // Independent date selection for the individual product rows.
+  const momentumRange=()=>{
+    const days=getData().days||[];if(!days.length)return null;
+    const end=days.at(-1);
+    const shift=(day,n)=>{const d=new Date(day+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
+    if(!state.periodTo){state.periodTo=end;state.periodFrom=shift(end,-27);}
+    const from=state.periodFrom,to=state.periodTo;
+    const first=days.indexOf(from),last=days.indexOf(to);
+    if(first<0||last<first)return null;
+    const duration=last-first+1,previousStart=first-duration,previousEnd=first-1;
+    return{from,to,first,last,duration,previousStart,previousEnd,
+      compareFrom:previousStart>=0?days[previousStart]:null,
+      compareTo:previousEnd>=0?days[previousEnd]:null,
+      selectedDays:days.slice(first,last+1),fullDays:days,
+      hasPrevious:previousStart>=0&&duration<=60};
+  };
+  const momentumPeriod=p=>{
+    const x=momentumRange();if(!x)return{current:null,previous:null};
+    const evalBlock=(start,end)=>{
+      if(start<0||end>=p.daily.length)return null;
+      const orders=p.daily.slice(start,end+1).reduce((a,b)=>a+b,0);
+      if(state.metric!=="rate")return orders;
+      if(!Array.isArray(p.sessions))return null;
+      const ss=p.sessions.slice(start,end+1);
+      if(ss.length!==end-start+1||ss.some(v=>v===null||!Number.isFinite(v)))return null;
+      const total=ss.reduce((a,b)=>a+b,0);
+      return total>0?orders/total:null;
+    };
+    return{current:evalBlock(x.first,x.last),
+      previous:x.hasPrevious?evalBlock(x.previousStart,x.previousEnd):null};
+  };
+  const momentumPlot=p=>{
+    const x=momentumRange();return x?{...p,daily:p.daily.slice(x.first,x.last+1),
+      sessions:Array.isArray(p.sessions)?p.sessions.slice(x.first,x.last+1):[]}:p;
+  };
   function trendStatus(p){
-    if(p.daily.length<14)return{label:"Not enough data",className:"steady"};
+    const values=momentumPeriod(p),now=values.current,prior=values.previous;
+    if(now==null||prior==null)return{label:"Not enough data",className:"steady"};
     if(state.metric==="rate"){
-      const now=weeklyRate(p),prior=weeklyRate(p,7);
-      if(now==null||prior==null)return{label:"Insufficient traffic data",className:"steady"};
       if(now>prior&&(prior===0||now>=prior*1.2))return{label:"Rising",className:"up"};
       if(now<prior&&prior>0&&now<=prior*.8)return{label:"Falling",className:"down"};
       return{label:"Stable",className:"steady"};
     }
-    const now=recent(p),prior=previous(p),delta=now-prior;
+    const delta=now-prior;
     if(delta>=2&&now>=prior*1.2)return{label:prior===0?"New growth":"Rising",className:"up"};
     if(delta<=-2&&now<=prior*.8)return{label:"Falling",className:"down"};
     return{label:"Stable",className:"steady"};
@@ -104,13 +138,13 @@
     return '<div class="pm-plot" data-n="'+days.length+'">'+svg+'<div class="pm-tooltip" hidden></div></div>';
   }
   function smallGraph(p,days){
-    const values=valuesFor(p),valid=values.filter(Number.isFinite),average=valid.length?valid.reduce((a,b)=>a+b,0)/valid.length:0;
+    const plot=momentumPlot(p),values=valuesFor(plot),valid=values.filter(Number.isFinite),average=valid.length?valid.reduce((a,b)=>a+b,0)/valid.length:0;
     // The dotted reference is the average of the displayed moving-average line.
     const low=average*.8,high=average*1.2;
     const W=510,H=127,L=14,R=14,T=14,B=25,PW=W-L-R,PH=H-T-B;
     const max=Math.max(state.metric==="rate"?.01:1,...valid,high*1.1);
     const yy=v=>T+PH-PH*v/max;
-    const last=p.daily.length-1,prevPoint=p.daily.length-8;
+    const last=plot.daily.length-1,prevPoint=plot.daily.length-8;
     const prevValue=prevPoint>=0?values[prevPoint]:null;
     const status=trendStatus(p);
     const color=status.className==='up'?'#259c70':status.className==='down'?'#d45c68':'#5579c0';
@@ -144,15 +178,15 @@
     const data=getData();return(data.products||[]).filter(p=>Array.isArray(p.daily)&&p.daily.length===(data.days||[]).length);
   }
   function boardHtml(){
-    const data=getData(),days=data.days||[],products=allProducts();
+    const data=getData(),fullDays=data.days||[],days=fullDays.slice(-28),products=allProducts();
     if(!days.length||!products.length)return '<section class="panel pm-section"><h3>Product Momentum</h3><p class="hint">No product order trends are available for the selected period.</p></section>';
-    const top=products.slice(0,state.shown).map((p,i)=>({product:p,index:i,color:palette[i%palette.length]}));
+    const top=products.slice().sort((a,b)=>b.daily.slice(-28).reduce((x,y)=>x+y,0)-a.daily.slice(-28).reduce((x,y)=>x+y,0)).slice(0,state.shown).map((p,i)=>({product:{...p,daily:p.daily.slice(-28),sessions:p.sessions?.slice(-28)},index:i,color:palette[i%palette.length]}));
     const visible=top.filter(x=>!state.hidden.has(x.product.name));
     const legend=top.map(x=>'<button type="button" class="pm-legend-item'+(state.hidden.has(x.product.name)?' is-muted':'')+'" data-pm-toggle="'+x.index+'" title="Toggle product line">'+
-      '<span class="pm-swatch" style="background:'+x.color+'"></span><span class="pm-legend-name">'+e(x.product.name)+'</span><span class="pm-legend-count">'+fmtN(x.product.total)+'</span></button>').join("");
+      '<span class="pm-swatch" style="background:'+x.color+'"></span><span class="pm-legend-name">'+e(x.product.name)+'</span><span class="pm-legend-count">'+fmtN(x.product.daily.reduce((a,b)=>a+b,0))+'</span></button>').join("");
     const options=[5,10,20].filter(n=>n<=products.length||n===5);
     const controls=options.map(n=>'<button type="button" class="pm-range-button'+(state.shown===n?' is-active':'')+'" data-pm-show="'+n+'">Top '+n+'</button>').join("");
-    const rising=products.filter(p=>trendStatus(p).className==="up").length,falling=products.filter(p=>trendStatus(p).className==="down").length;
+    const range=momentumRange(),rising=products.filter(p=>trendStatus(p).className==="up").length,falling=products.filter(p=>trendStatus(p).className==="down").length;
     const sorted=products.filter(p=>p.name.toLowerCase().includes(state.search.toLowerCase()));
     sorted.sort((a,b)=>{
       if(state.sort==="rise")return(diffFor(b)??-Infinity)-(diffFor(a)??-Infinity)||b.total-a.total;
@@ -161,14 +195,14 @@
       return b.total-a.total||a.name.localeCompare(b.name);
     });
     const rows=sorted.slice(0,state.rows).map(p=>{
-      const now=state.metric==="rate"?weeklyRate(p):recent(p),prev=state.metric==="rate"?weeklyRate(p,7):previous(p);
+      const comparison=momentumPeriod(p),now=comparison.current,prev=comparison.previous;
       const diff=now==null||prev==null?null:now-prev,status=trendStatus(p);
       const relative=diff==null?"—":prev?((diff/Math.abs(prev))*100).toFixed(0)+"%":now?"New":"0%";
-      const fmtMetric=v=>state.metric==="rate"?percent(v):fmtN(v);
+      const fmtMetric=v=>v==null?"—":state.metric==="rate"?percent(v):fmtN(v);
       const changeText=state.metric==="rate"?(diff==null?"—":(diff>0?"+":"")+(diff*100).toFixed(2)+" pp · "+relative):(diff==null?"—":(diff>0?"+":"")+fmtN(diff)+" · "+relative);
       return '<article class="pm-product-row"><div class="pm-product-name"><strong>'+e(p.name)+'</strong><span class="pm-status '+status.className+'">'+status.label+'</span></div>'+
-      '<div class="pm-product-numbers"><span><small>Last 7d</small><b>'+fmtMetric(now)+'</b></span><span><small>Previous 7d</small><b>'+fmtMetric(prev)+'</b></span><span class="pm-delta '+status.className+'"><small>Change</small><b>'+changeText+'</b></span></div>'+
-      '<div class="pm-mini">'+smallGraph(p,days)+'</div></article>';
+      '<div class="pm-product-numbers"><span><small>Selected period</small><b>'+fmtMetric(now)+'</b></span><span><small>Previous equal period</small><b>'+fmtMetric(prev)+'</b></span><span class="pm-delta '+status.className+'"><small>Change</small><b>'+changeText+'</b></span></div>'+
+      '<div class="pm-mini">'+smallGraph(p,range?.selectedDays||[])+'</div></article>';
     }).join("");
     return '<section class="panel pm-section" id="product-momentum"><div class="pm-head"><div><span class="pm-eyebrow">PRODUCT ANALYTICS</span><h3>Product Momentum</h3><p>See which products are accelerating, slowing down, or recovering — all on the same timeline.</p></div><div class="pm-head-actions"><div class="pm-metric-toggle" role="group" aria-label="Product momentum metric"><button type="button" data-pm-metric="orders" class="'+(state.metric==="orders"?"selected":"")+'" aria-pressed="'+(state.metric==="orders")+'">Orders</button><button type="button" data-pm-metric="rate" class="'+(state.metric==="rate"?"selected":"")+'" aria-pressed="'+(state.metric==="rate")+'">Conversion rate</button></div><div class="pm-meta">'+days.length+' days · '+fmtN(products.length)+' products</div></div></div>'+
       '<div class="pm-combined"><div class="pm-combined-head"><div><h4>Top Products Trend</h4><p>'+(state.metric==="rate"?"Rolling 7-day orders / matched product-page sessions · one color per product":"Smoothed 7-day average of daily orders · one color per product")+'</p></div><div class="pm-count-controls">'+controls+'</div></div>'+
