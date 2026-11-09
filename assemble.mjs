@@ -21,3 +21,6 @@ source = source.replace(
 );
 fs.writeFileSync("worker.mjs", source, "utf8");
 console.log("Assembled Ultramedix dashboard", { originalCharacters: 382097, generatedBytes: Buffer.byteLength(source), htmlBytes: Buffer.byteLength(html) });
+
+// Apply the Meta Explorer redesign after reconstructing the original Worker.
+await import("./enhance-explorer.mjs");
