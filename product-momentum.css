@@ -82,3 +82,12 @@ body.theme-dark .pm-down{background:#52353c;color:#ffc0ca}
 body.theme-dark .pm-status.steady{background:#304158;color:#d8e7fa}
 @media(max-width:1060px){.pm-product-row{grid-template-columns:minmax(130px,1fr) minmax(165px,1fr);gap:9px}.pm-mini{grid-column:1/-1}}
 @media(max-width:700px){.pm-section{padding:14px!important}.pm-combined-body{grid-template-columns:1fr}.pm-legend{max-height:none;border-right:0;border-bottom:1px solid var(--pm-border);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.pm-legend-title{grid-column:1/-1}.pm-product-row{grid-template-columns:1fr;padding:15px;gap:13px}.pm-mini{grid-column:auto}.pm-product-numbers{gap:20px}.pm-combined-head{padding:14px}.pm-count-controls{width:100%;justify-content:center}.pm-toolbar label{flex:1}.pm-toolbar input,.pm-toolbar select{min-width:0;width:100%}}
+
+
+/* The trend now plots a smooth seven-day rolling mean, not raw zigzag spikes. */
+.pm-period-label{font-size:10px;fill:#7788a2;font-family:inherit;font-weight:700}
+.pm-small-svg path{stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.pm-small-svg circle{vector-effect:non-scaling-stroke}
+.pm-mini{overflow:visible}
+body.theme-dark .pm-period-label{fill:#b8c9e0}
+body.theme-dark .pm-small-axis,body.theme-dark .pm-avg-label{fill:#aebed4}
