@@ -1,0 +1,20 @@
+
+/* Channel source badges and aligned analytical panels. */
+#content .source-brand-icon{display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;width:28px;height:25px;margin-right:7px;flex:none}
+#content .source-brand-icon svg{max-width:100%;max-height:100%;display:block}
+#content section.panel h3:has(.source-brand-icon){display:flex;align-items:center;gap:2px}
+.channel-summary-grid{display:grid;grid-template-columns:minmax(290px,.85fr) minmax(0,1.65fr);gap:16px;align-items:stretch;margin:16px 0}
+.channel-summary-grid>section.panel{margin:0!important;min-width:0;height:100%}
+.channel-summary-grid .source-pie{display:flex;flex-direction:column;justify-content:flex-start}
+.channel-summary-grid .source-pie .retention-chart{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;flex:1;padding-top:12px}
+.channel-summary-grid .source-pie .legend{width:min(320px,100%)}
+.channel-summary-grid .mix-panel{overflow-x:hidden}
+.channel-summary-grid .mix-panel .insight-table{width:100%;min-width:580px}
+.meta-analysis-grid.meta-visual-balanced{align-items:stretch!important}
+.meta-analysis-grid.meta-visual-balanced>.meta-visual-panel{height:440px!important;max-height:440px!important;min-height:440px!important;min-width:0;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:thin;scrollbar-color:#c4d0df transparent}
+.meta-analysis-grid.meta-visual-balanced>.meta-visual-panel h3{position:sticky;top:-1px;background:var(--pm-card-bg,#fff);z-index:2;padding-bottom:8px}
+.meta-analysis-grid.meta-visual-balanced>.meta-visual-panel .meta-visual-row{min-width:0}
+body.theme-dark .meta-analysis-grid.meta-visual-balanced>.meta-visual-panel h3{background:#192537!important;color:#f0f6ff}
+body.theme-dark .meta-analysis-grid.meta-visual-balanced>.meta-visual-panel{scrollbar-color:#526781 transparent}
+@media(max-width:950px){.channel-summary-grid{grid-template-columns:1fr}.channel-summary-grid .source-pie .retention-chart{flex-direction:row}.meta-analysis-grid.meta-visual-balanced>.meta-visual-panel{height:400px!important;max-height:400px!important;min-height:400px!important}}
+@media(max-width:540px){.channel-summary-grid .source-pie .retention-chart{flex-direction:column}}
