@@ -22,6 +22,8 @@ const updated=[
 '  marketingRaw.slice(1).forEach((row,i)=>{const day=dateCandidates(row[0])[0];if(day&&placementByDataRow[i])placementDays.add(day);});',
 '  const isCanonicalMetaRow=(row,i)=>{const day=dateCandidates(row[0])[0];return !day||!placementDays.has(day)||Boolean(placementByDataRow[i]);};',
 '  const metaDetailRaw=detailMode==="ads"?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter((row,i)=>String(row[0]||"").trim()&&isCanonicalMetaRow(marketingRaw[i+1],i)):[];',
+'  // Preserve the complete historical entity index before canonical-spend filtering.',
+'  const metaCatalogRaw=detailMode==="ads"?marketingRaw.slice(1).map((row,i)=>[...row.slice(0,17),...(metaDetailExtra[i]||Array(6).fill(""))]).filter(row=>String(row[1]||row[3]||row[5]||"").trim()):[];',
 '  // Zero out only duplicate Meta cells. GA4 columns AE:AP must remain untouched.',
 '  marketingRaw.slice(1).forEach((row,i)=>{if(!isCanonicalMetaRow(row,i))for(let col=0;col<17;col++)row[col]="";});'
 ].join("\n");
