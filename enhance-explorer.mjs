@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import vm from "node:vm";
 const filename="worker.mjs";
 let source=fs.readFileSync(filename,"utf8");
 const marker="  const metaStatusById={campaign:Object.fromEntries(metaLastStatus.campaign),adset:Object.fromEntries(metaLastStatus.adset),ad:Object.fromEntries(metaLastStatus.ad)};";
@@ -38,6 +39,9 @@ html=html.slice(0,start)+replace+"\n"+html.slice(end);
 const css=fs.readFileSync("explorer-styles.css","utf8");
 if(!html.includes("</style>"))throw Error("CSS injection anchor missing");
 html=html.replace("</style>",css+"\n</style>");
+const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]);
+for(const [index,js] of scripts.entries())if(js.trim())new vm.Script(js,{filename:"ultramedix-inline-"+index+".js"});
+console.log("Validated inline dashboard scripts:",scripts.length);
 source=source.replace(b64[1],Buffer.from(html,"utf8").toString("base64"));
 fs.writeFileSync(filename,source);
 console.log("Improved Meta Explorer UI installed, with historical inactive entities retained");
