@@ -86,3 +86,5 @@ body.theme-dark #meta-explorer .mx-eval-neutral .mx-number{color:#ffe6a7}
 body.theme-dark #meta-explorer .mx-eval-bad .mx-number{color:#ffb8c3}
 body.theme-dark #meta-explorer .mx-table tfoot td,body.theme-dark #meta-explorer .mx-table tfoot td:first-child{background:#2a405a;color:#f2f7ff;border-color:#526681}
 body.theme-dark #meta-explorer .mx-more{background:#243d5b;color:#b8d7ff;border-color:#426184}
+
+@media(max-width:720px){body .sidefoot{display:block!important;padding:8px 0}body .sidefoot>div{display:none}body .theme-toggle{margin:0}}
