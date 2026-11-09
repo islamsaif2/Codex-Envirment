@@ -1,11 +1,41 @@
 (function(){
   const palette=["#4066D4","#DC7849","#2F9A83","#9A6BD0","#D9A02E","#4C91BD","#D96691","#648C4D","#98664C","#7C83CA","#26A3B2","#B47B5D","#7F6AAA","#A4A13C","#CF6990","#6B9BA8","#8D9D47","#AA78B4","#447FBC","#D38B63"];
-  const state={shown:5,rows:12,hidden:new Set(),sort:"orders",search:""};
+  const state={shown:5,rows:12,hidden:new Set(),sort:"orders",search:"",metric:"orders"};
   const e=s=>esc(String(s??""));
   const fmtN=n=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0});
   const totals=p=>p.daily.reduce((n,x)=>n+x,0);
   const recent=p=>p.daily.slice(-7).reduce((n,x)=>n+x,0);
   const previous=p=>p.daily.slice(-14,-7).reduce((n,x)=>n+x,0);
+  const weeklyRate=(p,offset=0)=>{
+    if(!p.sessions||p.sessions.length!==p.daily.length)return null;
+    const end=p.daily.length-offset,start=end-7;if(start<0)return null;
+    const sessions=p.sessions.slice(start,end);
+    if(sessions.some(x=>x===null||!Number.isFinite(x)))return null;
+    const count=sessions.reduce((a,b)=>a+b,0);
+    return count>0?p.daily.slice(start,end).reduce((a,b)=>a+b,0)/count:null;
+  };
+  const rollingRate=p=>p.daily.map((_,i)=>{
+    if(i<6||!Array.isArray(p.sessions))return null;
+    const sessions=p.sessions.slice(i-6,i+1);
+    if(sessions.length!==7||sessions.some(x=>x===null||!Number.isFinite(x)))return null;
+    const denominator=sessions.reduce((a,b)=>a+b,0);
+    return denominator>0?p.daily.slice(i-6,i+1).reduce((a,b)=>a+b,0)/denominator:null;
+  });
+  const valuesFor=p=>state.metric==="rate"?rollingRate(p):rolling(p);
+  const percent=x=>Number.isFinite(x)?(x*100).toFixed(2)+"%":"—";
+  const diffFor=p=>state.metric==="rate"?(weeklyRate(p)==null||weeklyRate(p,7)==null?null:weeklyRate(p)-weeklyRate(p,7)):recent(p)-previous(p);
+  const smoothWithGaps=(vals,left,top,w,h,max)=>{
+    const n=vals.length;let result="",i=0;
+    while(i<n){
+      while(i<n&&!Number.isFinite(vals[i]))i++;
+      if(i>=n)break;
+      const start=i;while(i+1<n&&Number.isFinite(vals[i+1]))i++;
+      if(start===i){const p=point(vals,i,left,top,w,h,max);result+=" M"+p[0].toFixed(2)+" "+p[1].toFixed(2)+" l0 0";}
+      else{const part=vals.slice(start,i+1);result+=" "+smooth(part,left+start*w/(n-1),top,(i-start)*w/(n-1),h,max);}
+      i++;
+    }
+    return result.trim();
+  };
   const getData=()=>dashboard&&dashboard.productMomentum?dashboard.productMomentum:{days:[],products:[]};
   const point=(values,i,left,top,w,h,max)=>[left+(values.length<2?w/2:i*w/(values.length-1)),top+h-h*values[i]/Math.max(1,max)];
   const poly=(values,left,top,w,h,max)=>values.map((v,i)=>{const xy=point(values,i,left,top,w,h,max);return(i?"L":"M")+xy[0].toFixed(1)+" "+xy[1].toFixed(1);}).join(" ");
@@ -35,6 +65,13 @@
   const nLabel=v=>v===0?"0":Number.isInteger(v)?String(v):v.toFixed(1);
   function trendStatus(p){
     if(p.daily.length<14)return{label:"Not enough data",className:"steady"};
+    if(state.metric==="rate"){
+      const now=weeklyRate(p),prior=weeklyRate(p,7);
+      if(now==null||prior==null)return{label:"Insufficient traffic data",className:"steady"};
+      if(now>prior&&(prior===0||now>=prior*1.2))return{label:"Rising",className:"up"};
+      if(now<prior&&prior>0&&now<=prior*.8)return{label:"Falling",className:"down"};
+      return{label:"Stable",className:"steady"};
+    }
     const now=recent(p),prior=previous(p),delta=now-prior;
     if(delta>=2&&now>=prior*1.2)return{label:prior===0?"New growth":"Rising",className:"up"};
     if(delta<=-2&&now<=prior*.8)return{label:"Falling",className:"down"};
@@ -42,14 +79,14 @@
   }
   function bigGraph(series,days){
     const W=820,H=314,L=47,R=18,T=20,B=38,PW=W-L-R,PH=H-T-B;
-    const lines=series.map(x=>({...x,values:rolling(x.product)}));
-    const max=Math.max(1,...lines.flatMap(x=>x.values));
-    const upper=Math.ceil(max*4)/4||1;
-    let svg='<svg class="pm-big-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Smoothed seven-day daily orders average per product">';
+    const lines=series.map(x=>({...x,values:valuesFor(x.product)}));
+    const max=Math.max(state.metric==="rate"?.01:1,...lines.flatMap(x=>x.values.filter(Number.isFinite)));
+    const upper=state.metric==="rate"?Math.ceil(max*100/4)*4/100:(Math.ceil(max*4)/4||1);
+    let svg='<svg class="pm-big-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Seven-day rolling product metric over time">';
     for(let i=0;i<=4;i++){
       const y=T+PH*i/4;
       svg+='<path d="M'+L+' '+y+'H'+(W-R)+'" stroke="currentColor" stroke-opacity=".11"/>';
-      svg+='<text class="pm-axis" x="'+(L-9)+'" y="'+(y+4)+'" text-anchor="end">'+(upper*(1-i/4)).toFixed(1)+'</text>';
+      svg+='<text class="pm-axis" x="'+(L-9)+'" y="'+(y+4)+'" text-anchor="end">'+(state.metric==='rate'?percent(upper*(1-i/4)):(upper*(1-i/4)).toFixed(1))+'</text>';
     }
     const positions=[0,Math.floor((days.length-1)/3),Math.floor(2*(days.length-1)/3),days.length-1].filter((n,i,a)=>n>=0&&a.indexOf(n)===i);
     for(const idx of positions){const x=point(days.map(()=>0),idx,L,T,PW,PH,1)[0];svg+='<text class="pm-axis" x="'+x.toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+e(days[idx].slice(5))+'</text>';}
@@ -57,22 +94,24 @@
       svg+='<path d="M'+split.toFixed(1)+' '+T+'V'+(T+PH)+'" stroke="#9aa8bd" stroke-width="1.2" stroke-dasharray="4 5" opacity=".65"/>';
     }
     for(const x of lines){
-      svg+='<path d="'+smooth(x.values,L,T,PW,PH,upper)+'" stroke="'+x.color+'" stroke-width="2.7" stroke-linejoin="round" stroke-linecap="round" fill="none" vector-effect="non-scaling-stroke"/>';
-      const last=point(x.values,x.values.length-1,L,T,PW,PH,upper);
-      svg+='<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3.3" fill="'+x.color+'" stroke="var(--pm-card-bg,#fff)" stroke-width="1.2"/>';
+      svg+='<path d="'+smoothWithGaps(x.values,L,T,PW,PH,upper)+'" stroke="'+x.color+'" stroke-width="2.7" stroke-linejoin="round" stroke-linecap="round" fill="none" vector-effect="non-scaling-stroke"/>';
+      const lastIndex=x.values.findLastIndex(Number.isFinite);
+      if(lastIndex>=0){const last=point(x.values,lastIndex,L,T,PW,PH,upper);
+        svg+='<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3.3" fill="'+x.color+'" stroke="var(--pm-card-bg,#fff)" stroke-width="1.2"/>';
+      }
     }
     svg+='</svg>';
     return '<div class="pm-plot" data-n="'+days.length+'">'+svg+'<div class="pm-tooltip" hidden></div></div>';
   }
   function smallGraph(p,days){
-    const values=rolling(p),average=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
+    const values=valuesFor(p),valid=values.filter(Number.isFinite),average=valid.length?valid.reduce((a,b)=>a+b,0)/valid.length:0;
     // The dotted reference is the average of the displayed moving-average line.
     const low=average*.8,high=average*1.2;
     const W=510,H=127,L=14,R=14,T=14,B=25,PW=W-L-R,PH=H-T-B;
-    const max=Math.max(1,...values,high*1.1);
+    const max=Math.max(state.metric==="rate"?.01:1,...valid,high*1.1);
     const yy=v=>T+PH-PH*v/max;
     const last=p.daily.length-1,prevPoint=p.daily.length-8;
-    const lastValue=values.at(-1)||0,prevValue=prevPoint>=0?values[prevPoint]:null;
+    const prevValue=prevPoint>=0?values[prevPoint]:null;
     const status=trendStatus(p);
     const color=status.className==='up'?'#259c70':status.className==='down'?'#d45c68':'#5579c0';
     let svg='<svg viewBox="0 0 '+W+' '+H+'" class="pm-small-svg" role="img" aria-label="'+e(p.name)+' smoothed seven-day average; previous seven days '+previous(p)+' orders and last seven days '+recent(p)+' orders">';
@@ -87,15 +126,17 @@
       svg+='<text class="pm-period-label" text-anchor="end" x="'+(boundary-6).toFixed(1)+'" y="'+(H-3)+'">Prev 7d</text>';
       svg+='<text class="pm-period-label" text-anchor="start" x="'+(boundary+6).toFixed(1)+'" y="'+(H-3)+'">Last 7d</text>';
     }
-    svg+='<path d="'+smooth(values,L,T,PW,PH,max)+'" fill="none" stroke="'+color+'" stroke-width="3" stroke-linecap="round"/>';
-    if(last>=13&&prevValue!==null){
+    svg+='<path d="'+smoothWithGaps(values,L,T,PW,PH,max)+'" fill="none" stroke="'+color+'" stroke-width="3" stroke-linecap="round"/>';
+    if(last>=13&&Number.isFinite(prevValue)){
       const prev=point(values,prevPoint,L,T,PW,PH,max);
       svg+='<circle cx="'+prev[0].toFixed(1)+'" cy="'+prev[1].toFixed(1)+'" r="4" fill="#fff" stroke="'+color+'" stroke-width="2"/>';
     }
-    const current=point(values,last,L,T,PW,PH,max);
-    svg+='<circle cx="'+current[0].toFixed(1)+'" cy="'+current[1].toFixed(1)+'" r="4.5" fill="'+color+'" stroke="#fff" stroke-width="1.5"/>';
+    if(Number.isFinite(values[last])){const current=point(values,last,L,T,PW,PH,max);
+      svg+='<circle cx="'+current[0].toFixed(1)+'" cy="'+current[1].toFixed(1)+'" r="4.5" fill="'+color+'" stroke="#fff" stroke-width="1.5"/>';
+    }
+    if(!valid.length)svg+='<text class="pm-no-rate" x="'+(W/2)+'" y="'+(H/2)+'" text-anchor="middle">No matched product-page sessions</text>';
     svg+='<text class="pm-small-axis" x="'+L+'" y="'+(H-3)+'">'+e(days[0]?.slice(5)||"")+'</text>';
-    if(average>0)svg+='<text class="pm-avg-label" text-anchor="end" x="'+(W-R)+'" y="'+Math.max(T+11,yy(average)-5)+'">Avg '+average.toFixed(1)+'</text>';
+    if(average>0)svg+='<text class="pm-avg-label" text-anchor="end" x="'+(W-R)+'" y="'+Math.max(T+11,yy(average)-5)+'">Avg '+(state.metric==="rate"?percent(average):average.toFixed(1))+'</text>';
     svg+='</svg>';
     return svg;
   }
