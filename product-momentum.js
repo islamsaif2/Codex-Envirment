@@ -155,23 +155,26 @@
     const rising=products.filter(p=>trendStatus(p).className==="up").length,falling=products.filter(p=>trendStatus(p).className==="down").length;
     const sorted=products.filter(p=>p.name.toLowerCase().includes(state.search.toLowerCase()));
     sorted.sort((a,b)=>{
-      if(state.sort==="rise")return(recent(b)-previous(b))-(recent(a)-previous(a))||b.total-a.total;
-      if(state.sort==="fall")return(recent(a)-previous(a))-(recent(b)-previous(b))||b.total-a.total;
+      if(state.sort==="rise")return(diffFor(b)??-Infinity)-(diffFor(a)??-Infinity)||b.total-a.total;
+      if(state.sort==="fall")return(diffFor(a)??Infinity)-(diffFor(b)??Infinity)||b.total-a.total;
       if(state.sort==="name")return a.name.localeCompare(b.name);
       return b.total-a.total||a.name.localeCompare(b.name);
     });
     const rows=sorted.slice(0,state.rows).map(p=>{
-      const now=recent(p),prev=previous(p),diff=now-prev,status=trendStatus(p);
-      const change=prev?((diff/prev)*100).toFixed(0)+"%":now?"New":"0%";
+      const now=state.metric==="rate"?weeklyRate(p):recent(p),prev=state.metric==="rate"?weeklyRate(p,7):previous(p);
+      const diff=now==null||prev==null?null:now-prev,status=trendStatus(p);
+      const relative=diff==null?"—":prev?((diff/Math.abs(prev))*100).toFixed(0)+"%":now?"New":"0%";
+      const fmtMetric=v=>state.metric==="rate"?percent(v):fmtN(v);
+      const changeText=state.metric==="rate"?(diff==null?"—":(diff>0?"+":"")+(diff*100).toFixed(2)+" pp · "+relative):(diff==null?"—":(diff>0?"+":"")+fmtN(diff)+" · "+relative);
       return '<article class="pm-product-row"><div class="pm-product-name"><strong>'+e(p.name)+'</strong><span class="pm-status '+status.className+'">'+status.label+'</span></div>'+
-      '<div class="pm-product-numbers"><span><small>Last 7d</small><b>'+fmtN(now)+'</b></span><span><small>Previous 7d</small><b>'+fmtN(prev)+'</b></span><span class="pm-delta '+status.className+'"><small>Change</small><b>'+(diff>0?'+':'')+diff+' · '+change+'</b></span></div>'+
+      '<div class="pm-product-numbers"><span><small>Last 7d</small><b>'+fmtMetric(now)+'</b></span><span><small>Previous 7d</small><b>'+fmtMetric(prev)+'</b></span><span class="pm-delta '+status.className+'"><small>Change</small><b>'+changeText+'</b></span></div>'+
       '<div class="pm-mini">'+smallGraph(p,days)+'</div></article>';
     }).join("");
-    return '<section class="panel pm-section" id="product-momentum"><div class="pm-head"><div><span class="pm-eyebrow">PRODUCT ANALYTICS</span><h3>Product Momentum</h3><p>See which products are accelerating, slowing down, or recovering — all on the same timeline.</p></div><div class="pm-meta">'+days.length+' days · '+fmtN(products.length)+' products</div></div>'+
-      '<div class="pm-combined"><div class="pm-combined-head"><div><h4>Top Products Trend</h4><p>Smoothed 7-day average of daily orders · one color per product</p></div><div class="pm-count-controls">'+controls+'</div></div>'+
+    return '<section class="panel pm-section" id="product-momentum"><div class="pm-head"><div><span class="pm-eyebrow">PRODUCT ANALYTICS</span><h3>Product Momentum</h3><p>See which products are accelerating, slowing down, or recovering — all on the same timeline.</p></div><div class="pm-head-actions"><div class="pm-metric-toggle" role="group" aria-label="Product momentum metric"><button type="button" data-pm-metric="orders" class="'+(state.metric==="orders"?"selected":"")+'" aria-pressed="'+(state.metric==="orders")+'">Orders</button><button type="button" data-pm-metric="rate" class="'+(state.metric==="rate"?"selected":"")+'" aria-pressed="'+(state.metric==="rate")+'">Conversion rate</button></div><div class="pm-meta">'+days.length+' days · '+fmtN(products.length)+' products</div></div></div>'+
+      '<div class="pm-combined"><div class="pm-combined-head"><div><h4>Top Products Trend</h4><p>'+(state.metric==="rate"?"Rolling 7-day orders / matched product-page sessions · one color per product":"Smoothed 7-day average of daily orders · one color per product")+'</p></div><div class="pm-count-controls">'+controls+'</div></div>'+
       '<div class="pm-combined-body"><div class="pm-legend"><div class="pm-legend-title">PRODUCTS <small>Orders in period</small></div>'+legend+'</div>'+bigGraph(visible,days)+'</div>'+
-      '<div class="pm-footnote">Click a product on the left to show or hide its line. Hover the chart to compare values by day.</div></div>'+
-      '<div class="pm-rows-head"><div><h4>Daily Momentum by Product</h4><p>Smoothed 7-day daily-order average · dashed = period baseline · shaded bands = ±20% · Rising/Falling compares last 7 vs previous 7 days</p></div><div class="pm-summary"><span class="pm-up">'+rising+' rising</span><span class="pm-down">'+falling+' falling</span></div></div>'+
+      '<div class="pm-footnote">Click a product on the left to show or hide its line. Hover the chart to compare values by day.</div>'+(state.metric==="rate"?'<p class="pm-rate-note">Conversion rate proxy = Shopify orders containing a product ÷ GA4 sessions on its matching product page. Sources are not session-attributed. Missing or zero product-page sessions display —, not 0%. Values can exceed 100% due to differing cohorts.</p>':'')+'</div>'+
+      '<div class="pm-rows-head"><div><h4>Daily Momentum by Product</h4><p>'+(state.metric==="rate"?"Rolling 7-day conversion proxy · dashed = average rate · shaded bands = ±20% · status compares two 7-day rates":"Smoothed 7-day daily-order average · dashed = period baseline · shaded bands = ±20% · status compares last 7 vs previous 7 days")+'</p></div><div class="pm-summary"><span class="pm-up">'+rising+' rising</span><span class="pm-down">'+falling+' falling</span></div></div>'+
       '<div class="pm-toolbar"><label>Search<input id="pm-search" type="search" placeholder="Find a product…" value="'+e(state.search)+'"></label><label>Sort<select id="pm-sort"><option value="orders"'+(state.sort==="orders"?" selected":"")+'>Most orders</option><option value="rise"'+(state.sort==="rise"?" selected":"")+'>Biggest rise</option><option value="fall"'+(state.sort==="fall"?" selected":"")+'>Biggest drop</option><option value="name"'+(state.sort==="name"?" selected":"")+'>Product name</option></select></label></div>'+
       '<div class="pm-product-rows">'+(rows||'<p class="hint">No products match your search.</p>')+'</div>'+
       (sorted.length>state.rows?'<button type="button" class="pm-more" id="pm-more">Load more products ('+(sorted.length-state.rows)+' remaining)</button>':'')+
@@ -180,6 +183,7 @@
   }
   function bindBoard(){
     const board=document.getElementById("product-momentum");if(!board)return;
+    board.querySelectorAll("[data-pm-metric]").forEach(b=>b.onclick=()=>{state.metric=b.dataset.pmMetric;renderBoardOnly();});
     board.querySelectorAll("[data-pm-show]").forEach(b=>b.onclick=()=>{state.shown=Number(b.dataset.pmShow);state.hidden.clear();renderBoardOnly();});
     board.querySelectorAll("[data-pm-toggle]").forEach(b=>b.onclick=()=>{const p=allProducts()[Number(b.dataset.pmToggle)];if(!p)return;if(state.hidden.has(p.name))state.hidden.delete(p.name);else state.hidden.add(p.name);renderBoardOnly();});
     const sort=board.querySelector("#pm-sort");if(sort)sort.onchange=()=>{state.sort=sort.value;state.rows=12;renderBoardOnly();};
@@ -192,7 +196,7 @@
         const rect=svg.getBoundingClientRect(),x=(ev.clientX-rect.left)*820/rect.width;
         const i=Math.max(0,Math.min(n-1,Math.round((x-47)/(820-47-18)*(n-1))));
         const selected=allProducts().slice(0,state.shown).map((p,j)=>({p,j})).filter(x=>!state.hidden.has(x.p.name));
-        tooltip.innerHTML='<strong>'+e(days[i])+' · 7-day average</strong>'+selected.map(x=>'<div><i style="background:'+palette[x.j%palette.length]+'"></i><span>'+e(x.p.name)+'</span><b>'+rolling(x.p)[i].toFixed(2)+'</b></div>').join("");
+        tooltip.innerHTML='<strong>'+e(days[i])+(state.metric==="rate"?" · rolling conversion rate":" · 7-day average")+'</strong>'+selected.map(x=>'<div><i style="background:'+palette[x.j%palette.length]+'"></i><span>'+e(x.p.name)+'</span><b>'+(state.metric==="rate"?percent(rollingRate(x.p)[i]):rolling(x.p)[i].toFixed(2))+'</b></div>').join("");
         tooltip.hidden=false;tooltip.style.left=Math.min(rect.width-10,Math.max(10,ev.clientX-rect.left))+"px";
       };
       svg.onpointerleave=()=>{tooltip.hidden=true;};
