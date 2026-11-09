@@ -1,0 +1,55 @@
+
+/* Daily Meta Ads — a grouped performance report with compact scorecards. */
+.meta-daily-panel{padding:20px!important;overflow:visible!important;border:1px solid #dce5f0!important;border-radius:16px!important}
+.meta-daily-panel>h3{font-size:18px!important;font-weight:800!important;letter-spacing:-.03em;color:#172b48!important;margin-bottom:5px!important}
+.meta-daily-panel>p.hint{color:#73829a;font-size:12px;line-height:1.5}
+.meta-daily-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0 19px}
+.meta-daily-summary-item{border:1px solid #e1e7f0;border-radius:12px;background:#f8fafc;padding:13px 15px;min-width:0}
+.meta-daily-summary-item span{display:block;color:#6e7d93;font-size:11px;font-weight:700;margin-bottom:7px}
+.meta-daily-summary-item strong{display:block;font-size:19px;color:#182d49;font-weight:800;letter-spacing:-.025em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.meta-daily-scroller{border:1px solid #e1e7ef;border-radius:12px;overflow:auto;max-height:640px}
+.meta-daily-panel .daily-meta-sticky-date{width:max-content!important;min-width:2560px!important;border-collapse:separate!important;border-spacing:0!important;table-layout:auto}
+.meta-daily-panel .daily-meta-sticky-date thead th{font-size:11px!important;white-space:normal;min-width:103px;max-width:160px;line-height:1.4;padding:12px 11px!important;color:#31445f!important;text-align:center!important;border-bottom:1px solid #dce5f0!important}
+.meta-daily-panel .daily-meta-sticky-date thead .meta-daily-groups th{position:sticky;top:0;z-index:9;height:32px;padding:8px 10px!important;font-size:10px!important;font-weight:850;letter-spacing:.07em;color:#406090!important;border-bottom:1px solid #dce5f0!important}
+.meta-daily-panel .daily-meta-sticky-date thead .meta-daily-headings th{position:sticky;top:32px;z-index:8;background:#f7f9fd!important;font-weight:750}
+.meta-daily-panel .daily-meta-sticky-date thead .meta-daily-groups th.meta-daily-date{position:sticky!important;left:0!important;top:0!important;z-index:15!important;background:#eaf1fc!important;min-width:118px;text-align:left!important}
+.meta-daily-panel .daily-meta-sticky-date .meta-daily-spend{background:#eaf1fc!important}
+.meta-daily-panel .daily-meta-sticky-date .meta-daily-media{background:#eef5f5!important}
+.meta-daily-panel .daily-meta-sticky-date .meta-daily-funnel{background:#f1eefb!important}
+.meta-daily-panel .daily-meta-sticky-date .meta-daily-shopify{background:#eef7f1!important}
+.meta-daily-panel .daily-meta-sticky-date .meta-daily-quality{background:#f9f4ec!important}
+.meta-daily-panel .daily-meta-sticky-date .meta-daily-other{background:#f6f6f7!important}
+.meta-daily-panel .daily-meta-sticky-date tbody tr{height:48px}
+.meta-daily-panel .daily-meta-sticky-date tbody td{padding:11px 12px!important;text-align:center!important;font-size:12px;color:#30415b;border-bottom:1px solid #eef1f5;font-variant-numeric:tabular-nums;white-space:nowrap}
+.meta-daily-panel .daily-meta-sticky-date tbody tr:nth-child(even){background:#f9fbfd}
+.meta-daily-panel .daily-meta-sticky-date tbody tr:nth-child(even) td:first-child{background:#f9fbfd!important}
+.meta-daily-panel .daily-meta-sticky-date tbody tr:hover td{background:#f2f7fe}
+.meta-daily-panel .daily-meta-sticky-date tbody td:first-child{font-weight:750;text-align:left!important;min-width:118px;background:#fff}
+.meta-daily-panel .daily-meta-sticky-date tbody td.meta-daily-extra{font-weight:750;color:#2d4e7a}
+.meta-daily-panel .daily-meta-sticky-date td.good{background:#ecf8ef!important;color:#247446!important}
+.meta-daily-panel .daily-meta-sticky-date td.average{background:#fff7e8!important;color:#8a650e!important}
+.meta-daily-panel .daily-meta-sticky-date td.bad{background:#fff0f0!important;color:#ad3a48!important}
+.meta-daily-panel #ads-load-more{margin-top:16px!important;border:1px solid #ced9e9!important;border-radius:9px!important;background:#f5f8fc!important;color:#2c4770!important;font-weight:800;padding:10px 18px}
+.meta-visual-head .meta-spend-label{display:block;margin-bottom:3px;color:#7b8ba1;font-size:10px;font-weight:700;letter-spacing:.03em}
+body.theme-dark .meta-daily-panel{border-color:#32465f!important;background:#17263b!important}
+body.theme-dark .meta-daily-panel>h3{color:#f1f6ff!important}
+body.theme-dark .meta-daily-summary-item{background:#233650;border-color:#3d526e}
+body.theme-dark .meta-daily-summary-item span,body.theme-dark .meta-visual-head .meta-spend-label{color:#b8c9e1}
+body.theme-dark .meta-daily-summary-item strong{color:#fff}
+body.theme-dark .meta-daily-scroller{border-color:#3d526b}
+body.theme-dark .daily-meta-sticky-date thead .meta-daily-groups th{color:#eaf1fd!important}
+body.theme-dark .daily-meta-sticky-date thead .meta-daily-headings th{color:#e7effe!important;background:#263b55!important}
+body.theme-dark .daily-meta-sticky-date thead .meta-daily-spend{background:#263e60!important}
+body.theme-dark .daily-meta-sticky-date thead .meta-daily-media{background:#23474a!important}
+body.theme-dark .daily-meta-sticky-date thead .meta-daily-funnel{background:#393456!important}
+body.theme-dark .daily-meta-sticky-date thead .meta-daily-shopify{background:#29483a!important}
+body.theme-dark .daily-meta-sticky-date thead .meta-daily-quality{background:#4b3e32!important}
+body.theme-dark .daily-meta-sticky-date tbody td,body.theme-dark .daily-meta-sticky-date tbody td:first-child{background:#1b2b40!important;color:#e8f1ff!important;border-color:#31445a}
+body.theme-dark .daily-meta-sticky-date tbody tr:nth-child(even) td{background:#1e3048!important}
+body.theme-dark .daily-meta-sticky-date tbody tr:hover td{background:#2c415f!important}
+body.theme-dark .daily-meta-sticky-date tbody td.meta-daily-extra{color:#b4d4ff!important}
+body.theme-dark .daily-meta-sticky-date td.good{background:#244937!important;color:#a5eac2!important}
+body.theme-dark .daily-meta-sticky-date td.average{background:#55462b!important;color:#ffe0a2!important}
+body.theme-dark .daily-meta-sticky-date td.bad{background:#512f38!important;color:#ffb6be!important}
+@media(max-width:920px){.meta-daily-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.meta-daily-panel{padding:12px!important}.meta-daily-summary-item{padding:10px}.meta-daily-summary-item strong{font-size:16px}}
