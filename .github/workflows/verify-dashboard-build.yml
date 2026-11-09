@@ -23,6 +23,8 @@ jobs:
           node --check daily-meta-polish.js
           node --check enhance-v7.mjs
           node --check product-momentum.js
+          node --check channel-layout-v8.js
+          node --check enhance-v8.mjs
       - name: Assemble dashboard
         run: node assemble.mjs
       - name: Verify generated Worker
