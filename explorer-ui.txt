@@ -45,12 +45,17 @@ function renderMetaExplorer(){
   const platformOptions=[...new Set([...catalog,...raw].map(r=>r.platform).filter(Boolean))].sort();
   const statusOptions=[...new Set([...catalogFiltered.map(x=>statuses[tagLevel]?.[level===0?(x.campaignId||x.campaign):level===1?(x.adsetId||x.adset):(x.adId||x.ad)]?.status||"Unavailable"),...rows.map(x=>x.status)])].sort((a,b)=>statusRank(a)-statusRank(b));
   const option=(arr,value,placeholder)=>'<option value="">'+placeholder+'</option>'+arr.map(x=>'<option value="'+esc(x)+'" '+(x===value?'selected':'')+'>'+esc(x)+'</option>').join('');
-  const keys=["spend","cpm","ctr","clicks","landing","carts","checkouts","purchases","cpa"];
-  const labels=["Spend","CPM","CTR","Outbound clicks","Landing views","Adds to cart","Checkouts","Purchases","CPA"];
+  const keys=["spend","purchases","cpa","messages","frequency","cpm","ctr","clicks","landing","carts","checkouts","rateClickLanding","rateLandingCart","rateCartCheckout","rateCheckoutPurchase"];
+  const labels=["Spend","Purchases","CPA","Messages","Frequency","CPM","CTR","Outbound clicks","Landing views","Adds to cart","Checkouts","Clicks → landing","Landing → cart","Cart → checkout","Checkout → purchase"];
+  const comparedKeys=new Set(["purchases","cpa","cpm","ctr","rateClickLanding","rateLandingCart","rateCartCheckout","rateCheckoutPurchase"]);
+  const metric=(r,key)=>{if(!r)return null;if(key==="rateClickLanding")return r.clicks>0?r.landing/r.clicks:null;if(key==="rateLandingCart")return r.landing>0?r.carts/r.landing:null;if(key==="rateCartCheckout")return r.carts>0?r.checkouts/r.carts:null;if(key==="rateCheckoutPurchase")return r.checkouts>0?r.purchases/r.checkouts:null;return r[key];};
+  const isRate=k=>k==="ctr"||k.startsWith("rate");
+
   const fmt=(value,key)=>{
     if(value==null||!Number.isFinite(Number(value)))return "—";
     const n=Number(value);
-    if(key==="ctr")return (n*100).toFixed(2)+"%";
+    if(isRate(key))return (n*100).toFixed(1)+"%";
+    if(key==="frequency")return n.toFixed(2)+"×";
     if(["spend","cpm","cpa"].includes(key))return "EGP "+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2});
     return n.toLocaleString("en-US",{maximumFractionDigits:0});
   };
@@ -58,22 +63,24 @@ function renderMetaExplorer(){
   const measured=rows.filter(r=>r.hasActivity&&r.spend>0&&statusRank(r.status)===0);
   const peerGroups=new Map();
   for(const r of measured){const k=r.objective||"all";if(!peerGroups.has(k))peerGroups.set(k,[]);peerGroups.get(k).push(r);}
-  const valueCell=(r,key)=>{
-    if(!r.hasActivity)return '<span class="mx-no-activity">—</span>';
-    const value=r[key];
-    const main='<div class="mx-number">'+fmt(value,key)+'</div>';
-    if(value==null)return main;
+  const cellTone=(r,key)=>{
+    if(!comparedKeys.has(key)||!r.hasActivity)return "";
+    const v=metric(r,key);if(v==null||!Number.isFinite(Number(v)))return "";
     let baseline=null;
-    if(explorerState.compare==="previous")baseline=previous.get(String(r.id))?.[key];
+    if(explorerState.compare==="previous")baseline=metric(previous.get(String(r.id)),key);
     else{
-      const peers=(peerGroups.get(r.objective||"all")||[]).filter(x=>x.id!==r.id&&x[key]!=null);
-      if(peers.length)baseline=peers.reduce((sum,x)=>sum+Number(x[key]),0)/peers.length;
+      const peers=(peerGroups.get(r.objective||"all")||[]).filter(x=>x.id!==r.id&&metric(x,key)!=null);
+      if(peers.length)baseline=peers.reduce((sum,x)=>sum+Number(metric(x,key)),0)/peers.length;
     }
-    if(baseline==null||!Number.isFinite(Number(baseline))||Number(baseline)===0)return main;
-    const delta=100*(Number(value)-Number(baseline))/Math.abs(Number(baseline));
+    if(baseline==null||!Number.isFinite(Number(baseline))||Number(baseline)===0)return "";
+    const delta=(Number(v)-Number(baseline))/Math.abs(Number(baseline));
+    if(Math.abs(delta)<.10)return "mx-eval-neutral";
     const lowerBetter=["cpm","cpa"].includes(key);
-    const color=Math.abs(delta)<10?"neutral":((delta>0)!==lowerBetter?"good":"bad");
-    return main+'<div class="mx-delta '+color+'">'+(delta>0?"▲ ":"▼ ")+Math.abs(delta).toFixed(1)+'%</div>';
+    return ((delta>0)!==lowerBetter)?"mx-eval-good":"mx-eval-bad";
+  };
+  const valueCell=(r,key)=>{
+    const value=r.hasActivity?metric(r,key):null;
+    return '<span class="'+(value==null?'mx-no-activity':'mx-number')+'">'+fmt(value,key)+'</span>';
   };
   const statusClass=s=>/^active$/i.test(s)?"active":/^paused$/i.test(s)?"paused":/^archived$/i.test(s)?"archived":"unavailable";
   const display=rows.slice(0,explorerState.limit);
@@ -85,34 +92,32 @@ function renderMetaExplorer(){
       '<span class="mx-name-link" title="'+title+'">'+title+'</span>';
     return '<tr><td><div class="mx-name-wrap"><span class="mx-dot '+statusClass(r.status)+'" title="'+esc(r.status)+'"></span>'+thumb+
       '<div class="mx-name-main">'+open+'<div class="mx-name-sub">'+id+' · '+esc(r.status)+(r.statusDate?' · '+esc(r.statusDate):'')+'</div></div></div></td>'+
-      keys.map(key=>'<td>'+valueCell(r,key)+'</td>').join('')+'</tr>';
+      keys.map(key=>'<td class="'+cellTone(r,key)+'">'+valueCell(r,key)+'</td>').join('')+'</tr>';
   }).join('');
-  const subtotal=grouped.reduce((tot,r)=>{for(const key of ["spend","clicks","landing","carts","checkouts","purchases"])tot[key]+=Number(r[key]||0);return tot;},{spend:0,clicks:0,landing:0,carts:0,checkouts:0,purchases:0});
+  const subtotal=grouped.reduce((tot,r)=>{for(const key of ["spend","clicks","landing","carts","checkouts","purchases","messages"])if(r[key]!=null)tot[key]+=Number(r[key]||0);return tot;},{spend:0,clicks:0,landing:0,carts:0,checkouts:0,purchases:0,messages:0});
   subtotal.cpa=subtotal.purchases?subtotal.spend/subtotal.purchases:null;
-  subtotal.cpm=null;subtotal.ctr=null;
-  const totalRow='<tr><td>Totals · selected dates</td>'+keys.map(key=>'<td>'+fmt(subtotal[key],key)+'</td>').join('')+'</tr>';
-  const active=rows.filter(r=>statusRank(r.status)===0).length,inactive=rows.length-active;
+  const totalImpressions=grouped.reduce((n,r)=>n+Number(r.impressions||0),0);
+  subtotal.cpm=totalImpressions?subtotal.spend*1000/totalImpressions:null;
+  subtotal.ctr=totalImpressions?grouped.reduce((n,r)=>n+Number(r.ctr||0)*Number(r.impressions||0),0)/totalImpressions:null;
+  subtotal.frequency=null;
+  const totalRow='<tr><td>Totals</td>'+keys.map(key=>'<td>'+fmt(metric(subtotal,key),key)+'</td>').join('')+'</tr>';
   const filter=(title,id,options,value,placeholder)=>'<div class="mx-filter"><label for="'+id+'">'+title+'</label><select id="'+id+'">'+option(options,value,placeholder)+'</select></div>';
   const dateInput=(title,id,value)=>'<div class="mx-filter"><label for="'+id+'">'+title+'</label><input type="date" id="'+id+'" value="'+esc(value||"")+'"></div>';
-  const crumbs=level?'<button class="mx-back" id="explorer-back">← Back</button>':"";
-  return '<section class="panel mx-panel" id="meta-explorer"><div class="mx-top"><div class="mx-heading"><div><h3 class="mx-title">Meta Ads Performance Explorer</h3><p class="mx-subtitle">Campaign → Ad set → Ad · Meta Ads reporting · Fixed 7-day click attribution</p></div><span class="mx-source">Ⓜ META ADS · 7-day click</span></div>'+
+
+  const levelTabs='<div class="mx-tabs" role="group" aria-label="Explore performance level">'+["Campaigns","Ad sets","Ads"].map((name,i)=>'<button type="button" data-explorer-level="'+i+'" class="mx-tab '+(level===i?'is-active':'')+'">'+name+'</button>').join('')+'</div>';
+  return '<section class="panel mx-panel" id="meta-explorer"><div class="mx-top"><div class="mx-heading"><div><h3 class="mx-title">Meta Ads Performance Explorer</h3><p class="mx-subtitle">Campaigns, ad sets and ads · 7-day click</p></div><span class="mx-source">META · 7-day click</span></div>'+levelTabs+
     '<div class="mx-controls">'+
     filter("Objective","explorer-objective",objectiveOptions,explorerState.objective,"All objectives")+
     filter("Platform","explorer-platform",platformOptions,explorerState.platform,"All platforms")+
     filter("Delivery status","explorer-status",statusOptions,explorerState.status,"All statuses")+
-    '<div class="mx-filter"><label for="explorer-compare">Comparison</label><select id="explorer-compare"><option value="peers" '+(explorerState.compare==="peers"?"selected":"")+'>Active peers</option><option value="previous" '+(explorerState.compare==="previous"?"selected":"")+'>Previous period</option></select></div>'+
+    '<div class="mx-filter"><label for="explorer-compare">Comparison</label><select id="explorer-compare"><option value="peers" '+(explorerState.compare==="peers"?"selected":"")+'>Compare active ads</option><option value="previous" '+(explorerState.compare==="previous"?"selected":"")+'>Previous period</option></select></div>'+
     dateInput("From","explorer-from",dateFrom)+dateInput("To","explorer-to",dateTo)+
     '<button class="mx-action" id="explorer-apply">Apply dates</button>'+
     (explorerState.compare==="previous"?dateInput("Compare from","explorer-prev-from",explorerState.prevFrom)+dateInput("Compare to","explorer-prev-to",explorerState.prevTo)+'<button class="mx-action" id="explorer-compare-apply">Compare</button>':"")+'</div></div>'+
-    '<div class="mx-stats">'+crumbs+'<span class="mx-level">'+["Campaigns","Ad sets","Ads"][level]+'</span>'+
-    '<span class="mx-chip"><strong>'+rows.length+'</strong> total</span>'+
-    '<span class="mx-chip"><span class="mx-dot active"></span><strong>'+active+'</strong> active</span>'+
-    '<span class="mx-chip"><span class="mx-dot paused"></span><strong>'+inactive+'</strong> other statuses</span>'+
-    '<span class="mx-stat">Latest known delivery status · includes historical inactive items</span></div>'+
+    (level&&explorerState.campaign?'<div class="mx-backbar"><button class="mx-back" id="explorer-back">← Back to '+(level===2?'ad sets':'campaigns')+'</button></div>':'')+
     '<div class="mx-scroll"><table class="mx-table"><colgroup><col class="mx-name-col">'+keys.map(()=>'<col class="mx-metric-col">').join('')+'</colgroup>'+
     '<thead><tr><th>'+["Campaign / delivery","Ad set / delivery","Ad / delivery"][level]+'</th>'+keys.map((key,i)=>'<th><button class="mx-col-sort" data-explorer-sort="'+key+'">'+labels[i]+(explorerState.sort===key?(explorerState.asc?' ↑':' ↓'):' ↕')+'</button></th>').join('')+'</tr></thead>'+
-    '<tbody>'+(body||'<tr><td colspan="10" style="padding:24px;text-align:center">No matching campaigns, ad sets, or ads.</td></tr>')+'</tbody>'+
+    '<tbody>'+(body||'<tr><td colspan="'+(keys.length+1)+'" style="padding:24px;text-align:center">No matching campaigns, ad sets, or ads.</td></tr>')+'</tbody>'+
     '<tfoot>'+totalRow+'</tfoot></table></div>'+
-    '<div class="mx-foot"><span>Showing '+Math.min(display.length,rows.length)+' of '+rows.length+' · Entities with no activity in the date range display — · EGP currency</span>'+
-    (rows.length>explorerState.limit?'<button id="explorer-more" class="mx-more">Load more rows</button>':'')+'</div></section>';
+    (rows.length>explorerState.limit?'<div class="mx-foot"><button id="explorer-more" class="mx-more">Load more rows</button></div>':'')+'</section>';
 }
