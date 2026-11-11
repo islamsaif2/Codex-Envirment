@@ -35,3 +35,4 @@ await import("./enhance-v10.mjs");
 await import("./enhance-v11.mjs");
 await import("./enhance-v12.mjs");
 await import("./enhance-v13.mjs");
+await import("./enhance-shopify-attribution.mjs");
