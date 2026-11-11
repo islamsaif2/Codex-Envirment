@@ -52,7 +52,7 @@ function decorate(element,source,label){
  if(!header.querySelector(".ultra-source-collection")){
   const span=document.createElement("span");span.className="ultra-source-collection";
   for(const k of source||["shopify"])span.innerHTML+=icon(k);
-  header.insertBefore(span,header.firstChild);
+  header.insertBefore(span,header.querySelector('.kpi-badge-slot')||null);
  }
  element.dataset.ultraMetric=label;
  element.classList.add("ultra-overview-card");
