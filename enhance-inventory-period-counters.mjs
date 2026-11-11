@@ -72,8 +72,6 @@ replaceExact(
 "const totals={red:0,orange:0,green:0}; // Recomputed on every render for the selected period",
 "count reset");
 html=html.slice(0,begin)+segment+html.slice(end);
-for(const [i,match] of [...html.matchAll(/<script[^>]*>([\\s\\S]*?)<\\/script>/gi)].entries()){
-  if(match[1].trim())new vm.Script(match[1],{filename:"inventory-counter-ui-"+i});
-}
+new vm.Script(segment,{filename:"inventory-counter-function.js"});
 fs.writeFileSync("worker.mjs",worker.replace(embedded[1],Buffer.from(html,"utf8").toString("base64")));
 console.log("Inventory counters now use the selected demand period (7/28/60), with all-time using the current cover estimate.");
