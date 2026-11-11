@@ -118,3 +118,28 @@ body.ultra-compact-overview #content .ultra-operation-row>.kpi {
     flex-basis:100%!important;
   }
 }
+
+
+/* Business Overview: three equal cards spanning the full section width.
+   Operations keeps its existing row layout and centering. */
+body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row{
+  width:100%;
+  gap:14px!important;
+  justify-content:space-between!important;
+}
+body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row>.kpi{
+  flex:1 1 calc((100% - 28px)/3)!important;
+  max-width:none!important;
+  width:auto!important;
+  min-width:0!important;
+}
+@media(max-width:1000px){
+  body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row>.kpi{
+    flex:1 1 calc((100% - 14px)/2)!important;
+  }
+}
+@media(max-width:540px){
+  body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row>.kpi{
+    flex:1 1 100%!important;
+  }
+}
