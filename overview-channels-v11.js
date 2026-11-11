@@ -55,12 +55,12 @@ function titleFix(){
 function aliases(){
  if(typeof sparkSpecs!=="undefined"){
   Object.assign(sparkSpecs,{
-   "Meta Total Orders":["metric",paidModel==="last"?"ultra11sheetOrders":"ultra11firstOrders"],
+   "Meta Total Orders":["metric",paidModel==="last"?"ultra11lastOrders":"ultra11firstOrders"],
    "Meta Total Sales":["metric",paidModel==="last"?"ultra11lastSales":"ultra11firstSales"],
    "Meta Delivered Sales":["metric",paidModel==="last"?"ultra11lastDeliveredSales":"ultra11firstDeliveredSales"],
    "Meta Delivered Orders":["metric",paidModel==="last"?"ultra11lastDeliveredOrders":"ultra11firstDeliveredOrders"],
    "Meta Delivery Rate":["metric",paidModel==="last"?"ultra11lastDeliveryRate":"ultra11firstDeliveryRate"],
-   "Meta Orders":["metric",paidModel==="last"?"ultra11sheetOrders":"ultra11firstOrders"],
+   "Meta Orders":["metric",paidModel==="last"?"ultra11lastOrders":"ultra11firstOrders"],
    "Meta Orders / Purchases":["ads","purchases"],
    "Meta Cost Per Order":paidModel==="meta"?["special","metaCPA"]:["metric",paidModel==="last"?"ultra11lastCPA":"ultra11firstCPA"],
    "Meta Actual Cost Per Order":paidModel==="meta"?["metric","ultra11unavailableActualCPA"]:["metric",paidModel==="last"?"ultra11lastActualCPA":"ultra11firstActualCPA"]
@@ -101,7 +101,7 @@ function paintPaid(){
  aliases();
  const spend=Number(m.advertisingSpend);
  const source=detail[paidModel === "last" ? "lastClick" : "firstClick"] || {};
- const shopifyOrders=paidModel==="last"?detail.lastClickShopifyOrders:source.orders;
+ const shopifyOrders=source.orders;
  const orders=shopifyOrders==null?null:Number(shopifyOrders);
  const delivered=source.deliveredOrders==null?null:Number(source.deliveredOrders);
  const cpa=orders>0&&Number.isFinite(spend)?spend/orders:null;
@@ -120,17 +120,15 @@ function paintPaid(){
    cards=[
      kpi("Meta Total Spend",cash(m.advertisingSpend),"Meta Ads total spend from Meta",["meta"]),
      kpi("Meta Orders",number(orders),model==="last"?
-       "Paid Facebook + Instagram ShopifyQL last-click orders from Shopify Sessions Data":
-       "Qualified first-visit Facebook + Instagram paid Shopify orders",["shopify"]),
+       "Paid Facebook + Instagram orders from Order Tracking Details: cleaned last-visit source (AY) and Paid/Organic (AX)":
+       "Paid Facebook + Instagram orders from Order Tracking Details: cleaned first-visit source (AZ) and Paid/Organic (AW)",["shopify"]),
      kpi("Meta Cost Per Order",cash(cpa),"Meta spend divided by "+model+"-click Shopify-attributed orders",["meta","shopify"]),
      kpi("Meta Delivery Rate",percent(source.deliveryRate),"Attributed delivered orders divided by delivered plus returned",["shopify","bosta"]),
      kpi("Meta Delivered Sales",cash(source.deliveredSales),"Delivered revenue for attributed Shopify orders after discounts",["shopify","bosta"]),
      kpi("Meta Delivered Orders",number(delivered),"Delivered orders under "+model+"-click Shopify attribution",["shopify","bosta"]),
      kpi("Meta Actual Cost Per Order",cash(actual),"Meta spend divided by delivered attributed Shopify orders",["meta","shopify"])
    ];
-   notes=model==="last"?
-     "Last-click order count comes from Shopify Sessions Data. Delivered orders and sales use order-level last-visit UTMs, so attribution populations can differ.":
-     "First-click attribution uses qualified paid Shopify first-visit UTMs and original campaign-matching conditions.";
+   notes="Shopify-attributed Paid Ads cards use paid Facebook + Instagram orders from Order Tracking Details ("+(model==="first"?"first visit AZ/AW":"last visit AY/AX")+"). Delivery rate = delivered / (delivered + returned).";
  }
  area.replaceChildren();
  slot(area,cards);
@@ -157,7 +155,7 @@ function renderChannelPanel(){
  const selector = $("#source-attribution");
  const panel = selector?.closest("section.panel");
  if (!panel) return;
- selector.replaceChildren(new Option("First Click (Order UTMs)","first"),new Option("Last Click (Order UTMs)","last"));
+ selector.replaceChildren(new Option("First Click (Shopify Attribution)","first"),new Option("Last Click (Shopify Attribution)","last"));
  selector.value=channelModel;
  selector.onchange=()=>{channelModel=selector.value;refreshChannelData(panel);};
  refreshChannelData(panel);
@@ -186,7 +184,7 @@ function refreshChannelData(panel){
    const delta=typeof x==="string"?x.localeCompare(y):x-y;
    return direction*delta||a.channel.localeCompare(b.channel);
   });
-  tbody.innerHTML=rows.slice(0,visible).map(r=>'<tr><td>'+channelLabel(r)+'</td><td class="channel-number">'+number(r.orders)+'</td><td class="channel-number">'+number(r.sessions)+'</td><td class="channel-number">'+percent(r.rate)+'</td></tr>').join("")||'<tr><td colspan="4">No attribution data for these dates. Run the V6 Shopify Attribution sync for this range.</td></tr>';
+  tbody.innerHTML=rows.slice(0,visible).map(r=>'<tr><td>'+channelLabel(r)+'</td><td class="channel-number">'+number(r.orders)+'</td><td class="channel-number">'+number(r.sessions)+'</td><td class="channel-number">'+percent(r.rate)+'</td></tr>').join("")||'<tr><td colspan="4">No attribution data for these dates. Sync Shopify Sessions Attribution for this range.</td></tr>';
   channelColumns.forEach(([column,label],index)=>{
    const cell=headings[index];
    cell.setAttribute("aria-sort",column===key?(direction===-1?"descending":"ascending"):"none");
