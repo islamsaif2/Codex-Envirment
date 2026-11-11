@@ -1,0 +1,56 @@
+/* Compact desktop density; preserves card grouping, charts and all interactions. */
+body .layout{grid-template-columns:180px minmax(0,1fr)}
+body .side{padding:18px 10px;gap:20px}
+body .brand{gap:8px;padding:0 5px}
+body .logo{width:29px;height:29px;border-radius:9px;font-size:17px}
+body .brand strong{font-size:11px;letter-spacing:1px}
+body .brand small{font-size:8px;letter-spacing:1.5px}
+body .label{font-size:9px;margin:3px 7px 6px;letter-spacing:1px}
+body .nav{gap:3px}
+body .nav button,body .sheet-btn{font-size:11px;padding:9px 8px;border-radius:6px;line-height:1.4}
+body .sidefoot{font-size:10px;padding:7px}
+body .main{padding:18px 24px 24px;max-width:1580px}
+body .top{gap:12px;margin-bottom:12px}
+body .top h1{font-size:20px;letter-spacing:-.4px;margin-bottom:3px}
+body .crumb{font-size:10px;margin-bottom:4px}
+body .muted{font-size:11px}
+body .banner{padding:7px 10px;font-size:10px;border-radius:7px;margin-bottom:12px}
+body .section-head{margin:12px 0 9px;gap:12px;flex-wrap:wrap}
+body .section-head h2{font-size:14px}
+body .btn{padding:7px 10px;font-size:11px;border-radius:6px}
+body .date-range{gap:7px}
+body .date-range input,body .date-range .btn{padding:6px 9px;font-size:11px;min-height:30px}
+body .panel{padding:13px;border-radius:9px}
+body .panel h3{font-size:13px}
+body #content .grid:not(.ultra-metric-row){gap:12px}
+body #content .kpi{padding:12px;border-radius:8px;min-height:100px}
+body #content .kpi .kt{font-size:12px!important;line-height:1.35!important}
+body #content .kpi .kv{font-size:22px!important;line-height:1.2!important;margin:6px 0 3px!important}
+body #content .kpi small{font-size:10px!important;line-height:1.4!important}
+body #content .ultra-overview-v10{gap:22px;margin:2px 0 20px}
+body #content .ultra-overview-section{gap:10px}
+body #content .ultra-overview-heading{padding-bottom:0}
+body #content .ultra-overview-heading h2{font-size:16px;margin-bottom:3px}
+body #content .ultra-overview-heading p{font-size:11px;line-height:1.4;margin-bottom:8px}
+body #content .ultra-overview-row{gap:12px}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi{min-height:168px;padding:12px!important;gap:4px}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .kt{font-size:12px!important;line-height:1.35!important;min-height:29px!important;padding-right:43px!important}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .kv{font-size:22px!important;line-height:1.2!important}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi small{font-size:10px!important;line-height:1.4!important}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .ultra-source-mark{width:14px!important;height:14px!important}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .kpi-badge-slot{top:19px!important;padding:1px 3px}
+body #content .kpi .kpi-delta{font-size:10px}
+body #content .kpi .period-details{min-height:52px;margin-top:5px}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .period-details{min-height:52px;margin-top:auto}
+body #content .kpi .period-details svg{max-height:58px}
+body #content .ultra-overview-v10 .ultra-v11-paid-grid{gap:12px!important}
+body #content .ultra-v11-paid-grid>.kpi{flex-basis:calc((100% - 36px)/4)}
+body #content .ultra-v11-select{font-size:11px!important;min-height:30px}
+body #content .ultra-v11-paid-note{font-size:11px;line-height:1.4}
+body #content .ultra-detail-panel{padding:16px}
+body .tablewrap th,body .tablewrap td{padding:8px 9px}
+@media(max-width:1100px){body #content .ultra-v11-paid-grid>.kpi{flex-basis:calc((100% - 24px)/3)}}
+@media(max-width:900px){body .layout{grid-template-columns:160px minmax(0,1fr)}body .main{padding:16px}body #content .ultra-v11-paid-grid>.kpi{flex-basis:calc((100% - 12px)/2)}}
+@media(max-width:720px){body .layout{grid-template-columns:1fr}body .side{padding:12px;gap:12px}body .main{padding:14px}body .nav{grid-template-columns:repeat(2,minmax(0,1fr))}body .nav button{min-height:40px}body .date-range{margin-top:4px}body .section-head{align-items:flex-start}body .btn{min-height:36px}}
+@media(max-width:570px){body #content .ultra-v11-paid-grid>.kpi{flex-basis:100%}body #content .ultra-overview-v10 .ultra-overview-row>.kpi{min-height:160px}body .top{flex-wrap:wrap}}
+
