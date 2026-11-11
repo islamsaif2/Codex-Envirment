@@ -85,8 +85,20 @@ worker = replace(worker, "  const detailDaily=[...drillDays.values()]", `  for (
     drillDays.set(date,row);
   }
   const detailDaily=[...drillDays.values()]`);
+worker = replace(worker, 'readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A1:M")', 'readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A1:R")');
+worker = replace(worker, "    item.completed+=Math.max(0,money(r[ci.completed]));", `    const firstOrders = r[channelIndex("First Click Orders (Shopify)",13)];
+    if (String(firstOrders ?? "").trim() !== "") {
+      item.reportedFirstOrders = (item.reportedFirstOrders ?? 0) + Math.max(0,money(firstOrders));
+    } else {
+      item.firstOrdersMissing = true;
+    }
+    for (const [index,key] of [[14,"firstUtmSources"],[15,"firstUtmMediums"],[16,"lastUtmSources"],[17,"lastUtmMediums"]]) {
+      const values = String(r[index] ?? "").split(" | ").map(v=>v.trim()).filter(Boolean);
+      if (values.length) item[key] = [...new Set([...(item[key] ?? []),...values])].sort();
+    }
+    item.completed+=Math.max(0,money(r[ci.completed]));`);
 worker = replace(worker, "firstConversionRate:x.ordersAvailable", "fromSessionsSheet:true,firstConversionRate:x.ordersAvailable");
-worker = worker.replace(/dashboard-cache:v\d+:/g, "dashboard-cache:v12:");
+worker = worker.replace(/dashboard-cache:v\d+:/g, "dashboard-cache:v13:");
 
 html = replace(html, "const outcomeSeries=[['delivered','Delivered','#0f9d78'],['returned','Returned','#c24b45'],['open','Open','#536ff0'],['missing','Missing status','#8993a5']];", "const outcomeSeries=[['delivered','Delivered','#0f9d78'],['returned','Returned','#c24b45']];");
 html = replace(html, "Current Bosta outcomes for orders in the selected dates, grouped by shipping region. Canceled orders are excluded.", "Delivered and returned orders by shipping region, using Order Status from Order Tracking Details.");

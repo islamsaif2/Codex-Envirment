@@ -145,9 +145,15 @@ const channelColumns = [["channel","Channel"],["orders","Orders"],["sessions","S
 function channelRows(){
  const raw = dashboard?.channelAnalysis || [];
  return raw.filter(row=>row.fromSessionsSheet).map(row=>{
-  const orders = channelModel==="last" && row.ordersAvailable ? Number(row.shopifyOrders) : null;
-  return {channel:row.source+" · "+row.medium, sessions:row.sessions, orders,
-    rate:orders!==null && row.sessions>0 ? orders/row.sessions : null};
+  const first = channelModel==="first";
+  const orders = first ? row.reportedFirstOrders ?? null : row.ordersAvailable ? Number(row.shopifyOrders) : null;
+  const sources = row[first?"firstUtmSources":"lastUtmSources"] || [];
+  const mediums = row[first?"firstUtmMediums":"lastUtmMediums"] || [];
+  const utms = [sources.length?"UTM source: "+sources.join(", "):"",
+    mediums.length?"UTM medium: "+mediums.join(", "):""].filter(Boolean).join(" · ");
+  return {channel:row.source+" · "+row.medium, sessions:row.sessions, orders, utms,
+    firstOrdersMissing:row.firstOrdersMissing,
+    rate:orders!==null && row.sessions>0 && !(first && row.firstOrdersMissing) ? orders/row.sessions : null};
  });
 }
 function renderChannelPanel(){
@@ -166,13 +172,14 @@ function refreshChannelData(panel){
  const headings=table.tHead.rows[0].cells;
  let visible=8;
  const rows=channelRows();
- const barMetric=channelModel==="first"?"sessions":"orders";
+ const barMetric=channelModel==="first"&&!rows.some(row=>row.orders!=null)?"sessions":"orders";
  const barMax=rows.reduce((max,row)=>Math.max(max,row[barMetric]??0),0);
  function channelLabel(row){
   const value=row[barMetric];
   const width=Number.isFinite(value)&&barMax>0?value/barMax*100:0;
   const meter=value==null?"":'<span class="channel-meter" aria-hidden="true"><i style="width:'+width+'%"></i></span>';
-  return '<span class="channel-row-label"><strong>'+esc11(row.channel)+'</strong>'+meter+'</span>';
+  const title = row.utms ? ' title="'+row.utms.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")+'"' : "";
+  return '<span class="channel-row-label"><strong'+title+'>'+esc11(row.channel)+'</strong>'+meter+'</span>';
  }
  function draw(){
   const {key,direction}=channelSort;
@@ -210,8 +217,12 @@ function refreshChannelData(panel){
  draw();
  const hint=panel.querySelector(".hint");
  if(hint)hint.textContent=channelModel==="first"
-  ?"Shopify Sessions Data does not provide first-click order counts. Bars show sessions."
-  :"Shopify Sessions Data supplies sessions and last-click orders. Bars show orders. Conversion rate is orders divided by sessions.";
+  ? barMetric==="sessions"
+    ? "First-click order data has not been synced for these dates. Bars show sessions."
+    : rows.some(row=>row.firstOrdersMissing)
+      ? "First-click order counts are partial for these dates. Backfill the full range to complete them."
+      : "Bars show first-click orders. Conversion rate divides attributed orders by reported sessions."
+  : "Bars show last-click orders. Conversion rate divides attributed orders by reported sessions.";
 }
 function apply(){
  if(typeof page==="undefined")return;
