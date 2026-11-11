@@ -8,8 +8,8 @@
     scheduled=false;
     const overview=typeof page!=="undefined"&&page==="Overview";
     body.classList.toggle("ultra-compact-overview",overview);
-    if(!overview)return;
     const content=$("#content"),top=$(".main > header.top");
+    if(!overview){top?.querySelector(".ultra-overview-toolbar")?.remove();return;}
     if(!content||!top)return;
     // Keep the original title for accessibility and one-page hierarchy.
     const title=$("#page-title");
