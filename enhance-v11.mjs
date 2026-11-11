@@ -6,8 +6,8 @@ let worker=fs.readFileSync("worker.mjs","utf8");
 const sessionsAnchor="  const shopifyChannelSummary=new Map();";
 if(!worker.includes(sessionsAnchor))throw Error("V11: channel aggregation anchor missing");
 worker=worker.replace(sessionsAnchor,
-  '  const ultra11SessionRows=shopifySessionRaw;\\n'+
-  '  if(detailMode!=="channels"&&detailMode!=="ads")ultra11SessionRows.push(...await readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A2:M").catch(()=>[]));\\n'
+  ('  const ultra11SessionRows=shopifySessionRaw;\\n'+
+  '  if(detailMode!=="channels"&&detailMode!=="ads")ultra11SessionRows.push(...await readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A2:M").catch(()=>[]));\\n')
     .replaceAll('\\n','\n') + sessionsAnchor);
 const reportAnchor="\n  return {\n    business: { id: business.id,";
 if(!worker.includes(reportAnchor))throw Error("V11: report anchor missing");
