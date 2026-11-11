@@ -29,7 +29,11 @@
       bar.append(live);
     }
     const bar=top.querySelector(".ultra-overview-toolbar");
-    if(controls&&controls.parentElement!==bar)bar.prepend(controls);
+    if(controls&&controls.parentElement!==bar){
+      // Fresh render provides newly bound controls; discard the previous instance.
+      bar.querySelector(".dashboard-date-compare")?.remove();
+      bar.prepend(controls);
+    }
     if(firstSection)firstSection.remove();
     // Section grouping remains as rendered: no KPI cards or chart handlers are removed.
   }
