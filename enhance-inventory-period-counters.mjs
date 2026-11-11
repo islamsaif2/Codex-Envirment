@@ -21,15 +21,10 @@ function replaceExact(oldText,newText,label){
 // Use the current stock snapshot for quantity, and period-specific observed demand
 // for 28/60-day stock cover. The 7-day and All Time views use the script's
 // current stock estimate, because All Time has no defined daily demand denominator.
-replaceExact(
-`    const hasCover=Number.isFinite(row.cover);
-    const state=!row.active?states.inactive
-      :!row.tracked||!hasStock||row.status==='Update stock data'?states.review
-      :row.stock<=0?states.out
-      :!hasCover?states.review
-      :row.cover<=3?states.critical
-      :row.cover<=7?states.soon:states.good;`,
-`    const periodUnits=view.period===7?row.units7:view.period===28?row.units28:
+const riskStart=segment.indexOf("    const hasCover=Number.isFinite(row.cover);");
+const riskEnd=segment.indexOf("    if(state.tone!=='gray')",riskStart);
+if(riskStart<0||riskEnd<0)throw Error("Inventory counters: unable to locate risk status block");
+segment=segment.slice(0,riskStart)+`    const periodUnits=view.period===7?row.units7:view.period===28?row.units28:
       view.period===60?row.demand60:row.demandAll;
     const usablePeriodDemand=Number.isFinite(periodUnits)&&periodUnits>=0;
     const periodCover=view.period===28||view.period===60
@@ -42,8 +37,8 @@ replaceExact(
       :row.stock<=0?states.out
       :periodCover===null||periodCover===undefined||Number.isNaN(periodCover)?states.review
       :periodCover<=3?states.critical
-      :periodCover<=7?states.soon:states.good;`,
-"variant risk calculation");
+      :periodCover<=7?states.soon:states.good;
+`+segment.slice(riskEnd);
 replaceExact(
 "product.variants.push({row,state,units:view.period===7?row.units7:view.period===28?row.units28:view.period===60?row.demand60:row.demandAll});",
 "product.variants.push({row,state,units:periodUnits,cover:periodCover});",
