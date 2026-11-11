@@ -82,3 +82,39 @@ body.ultra-compact-overview #content .ultra-v11-select{min-height:32px;font-size
  body.ultra-compact-overview #content .ultra-overview-row{grid-template-columns:minmax(0,1fr)}
  body.ultra-compact-overview #content .ultra-v11-paid-grid>.kpi{flex-basis:100%}
 }
+
+
+/* Center the Overview and Operations card groups like Paid Ads.
+   Only the card grid is centered; metric text and section headings remain left aligned. */
+body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row,
+body.ultra-compact-overview #content .ultra-operation-row {
+  display:flex!important;
+  flex-wrap:wrap!important;
+  justify-content:center!important;
+  align-items:stretch!important;
+  gap:10px!important;
+}
+body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row>.kpi,
+body.ultra-compact-overview #content .ultra-operation-row>.kpi {
+  flex:0 0 calc((100% - 30px)/4)!important;
+  width:auto!important;
+  min-width:0!important;
+}
+@media(max-width:1400px){
+  body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row>.kpi,
+  body.ultra-compact-overview #content .ultra-operation-row>.kpi {
+    flex-basis:calc((100% - 20px)/3)!important;
+  }
+}
+@media(max-width:1000px){
+  body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row>.kpi,
+  body.ultra-compact-overview #content .ultra-operation-row>.kpi {
+    flex-basis:calc((100% - 10px)/2)!important;
+  }
+}
+@media(max-width:540px){
+  body.ultra-compact-overview #content .ultra-overview-business .ultra-overview-row>.kpi,
+  body.ultra-compact-overview #content .ultra-operation-row>.kpi {
+    flex-basis:100%!important;
+  }
+}
