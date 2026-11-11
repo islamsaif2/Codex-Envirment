@@ -37,3 +37,4 @@ await import("./enhance-v12.mjs");
 await import("./enhance-v13.mjs");
 await import("./enhance-inventory-period-counters.mjs");
 await import("./enhance-shopify-attribution.mjs");
+await import("./enhance-inventory-labels.mjs");
