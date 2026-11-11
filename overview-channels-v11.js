@@ -122,11 +122,11 @@ function paintPaid(){
      kpi("Meta Orders",number(orders),model==="last"?
        "Paid Facebook + Instagram orders from Order Tracking Details: cleaned last-visit source (AY) and Paid/Organic (AX)":
        "Paid Facebook + Instagram orders from Order Tracking Details: cleaned first-visit source (AZ) and Paid/Organic (AW)",["shopify"]),
-     kpi("Meta Cost Per Order",cash(cpa),"Meta spend divided by "+model+"-click Shopify-attributed orders",["meta","shopify"]),
-     kpi("Meta Delivery Rate",percent(source.deliveryRate),"Attributed delivered orders divided by delivered plus returned",["shopify","bosta"]),
-     kpi("Meta Delivered Sales",cash(source.deliveredSales),"Delivered revenue for attributed Shopify orders after discounts",["shopify","bosta"]),
-     kpi("Meta Delivered Orders",number(delivered),"Delivered orders under "+model+"-click Shopify attribution",["shopify","bosta"]),
-     kpi("Meta Actual Cost Per Order",cash(actual),"Meta spend divided by delivered attributed Shopify orders",["meta","shopify"])
+     kpi("Meta Cost Per Order",cash(cpa),"Meta spend / paid Facebook + Instagram "+model+"-visit orders in Order Tracking Details",["meta","shopify"]),
+     kpi("Meta Delivery Rate",percent(source.deliveryRate),"Order Tracking Details: paid Facebook + Instagram "+model+"-visit orders; delivered / (delivered + returned)",["shopify","bosta"]),
+     kpi("Meta Delivered Sales",cash(source.deliveredSales),"Delivered sales after discounts for paid Facebook + Instagram orders classified by "+model+" visit in Order Tracking Details",["shopify","bosta"]),
+     kpi("Meta Delivered Orders",number(delivered),"Delivered orders from Order Tracking Details classified as paid Facebook + Instagram by "+model+" visit",["shopify","bosta"]),
+     kpi("Meta Actual Cost Per Order",cash(actual),"Meta spend / delivered paid Facebook + Instagram "+model+"-visit orders in Order Tracking Details",["meta","shopify"])
    ];
    notes="Shopify-attributed Paid Ads cards use paid Facebook + Instagram orders from Order Tracking Details ("+(model==="first"?"first visit AZ/AW":"last visit AY/AX")+"). Delivery rate = delivered / (delivered + returned).";
  }
@@ -148,7 +148,7 @@ function channelRows(){
     row.traffic.length?"Shopify traffic type: "+row.traffic.join(", "):""
   ].filter(Boolean).join(" · ");
   return {channel:row.source+" · "+row.medium, sessions:row.sessions, orders:row.orders, utms,
-    rate:row.sessions>0 ? row.orders/row.sessions : null};
+    rate:row.sessions>0 && row.orders!=null ? row.orders/row.sessions : null};
  });
 }
 function renderChannelPanel(){
