@@ -92,10 +92,51 @@ worker=section(worker,'  const productOrderHistory = new Map();','  const invent
   const inventoryAsOf=dateCandidates(inventoryRaw[8]?.[23])[0]||
     new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Cairo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
   const inventoryStarts=[7,28,60].map(days=>shiftDay(inventoryAsOf,1-days));
+  const sizeKey=value=>{
+    const label=norm(value).replace(/[^a-z0-9]/g,"");
+    const aliases={small:"s",medium:"m",large:"l",xsmall:"xs",extrasmall:"xs",
+      xlarge:"xl",extralarge:"xl",xxlarge:"xxl",xxxlarge:"xxxl","2xl":"xxl","3xl":"xxxl","4xl":"xxxxl"};
+    return aliases[label]||label;
+  };
+  const currentSizes=new Map();
+  for(const variant of inventoryRange?mappedDataRows(inventoryRaw,inventoryRange):[]){
+    if(!String(variant[0]??"").startsWith("gid://shopify/ProductVariant/"))continue;
+    const key=productTitleKey(variant[1]),size=sizeKey(variant[2]);
+    const sizes=currentSizes.get(key)||new Set();
+    if(size)sizes.add(size);
+    currentSizes.set(key,sizes);
+  }
+  const variantDemand=new Map(),processedOrders=new Set();
+  const addDemand=(product,size,period)=>{
+    const key=product+"|"+period;
+    const counts=variantDemand.get(key)||{total:0,matched:0,sizes:new Map()};
+    counts.total++;
+    if(size&&currentSizes.get(product)?.has(size)){
+      counts.matched++;
+      counts.sizes.set(size,(counts.sizes.get(size)||0)+1);
+    }
+    variantDemand.set(key,counts);
+  };
   if(inventoryRange)for(const row of orderRows){
     const day=dateCandidates(row[idx.date])[0],order=String(row[idx.order]??"").trim();
     if(!day||!order||day>inventoryAsOf)continue;
-    const keys=new Set(getProductLines(row).map(([name])=>productTitleKey(name)).filter(Boolean));
+    const lines=getProductLines(row);
+    const keys=new Set(lines.map(([name])=>productTitleKey(name)).filter(Boolean));
+    const identity=day+"|"+order;
+    if(!processedOrders.has(identity)){
+      processedOrders.add(identity);
+      // Column AG records sizes in the same line order as the product list.
+      // Preserve empty size slots and reject a mismatch rather than guessing.
+      const sizes=String(row[variantColumn]??"").trimEnd().split(/\\r?\\n/);
+      const aligned=sizes.length===lines.length;
+      lines.forEach(([name],i)=>{
+        const key=productTitleKey(name);
+        if(!currentSizes.has(key))return;
+        const size=aligned?sizeKey(sizes[i]):"";
+        addDemand(key,size,0);
+        if(day>=inventoryStarts[2])addDemand(key,size,60);
+      });
+    }
     for(const key of keys){
       const counts=productOrderHistory.get(key)||[new Set(),new Set(),new Set(),new Set()];
       inventoryStarts.forEach((start,i)=>{if(day>=start)counts[i].add(order);});
@@ -105,6 +146,15 @@ worker=section(worker,'  const productOrderHistory = new Map();','  const invent
   }
 `);
 worker=change(worker,'orders60:history?.last60??0,ordersAll:history?.all??0,','orders7:history?.[0].size??0,orders28:history?.[1].size??0,orders60:history?.[2].size??0,ordersAll:history?.[3].size??0,');
+worker=change(worker,'      const history = productOrderHistory.get(productTitleKey(r[1]));',`      const key=productTitleKey(r[1]);
+      const history=productOrderHistory.get(key);
+      const historicDemand=period=>{
+        const demand=variantDemand.get(key+"|"+period);
+        if(!demand)return 0;
+        if(demand.matched/demand.total<0.95)return null;
+        return demand.sizes.get(sizeKey(r[2]))||0;
+      };`);
+worker=change(worker,'orders7:history?.[0].size??0,','demand60:historicDemand(60),demandAll:historicDemand(0),orders7:history?.[0].size??0,');
 worker=change(worker,'    available:inventoryRaw.length>0,','    available:inventoryRaw.length>0,orderHistoryThrough:inventoryAsOf,');
 worker=change(worker,'const periodMeta=mappedMetaMetrics(periodMetaCounts,salesSpend);','const periodMeta=mappedMetaMetrics(periodMetaCounts,spend);');
 worker=change(worker,'mappedMetaMetrics(metaByDate.get(date)||emptyMetaCounts(),r.spend)','mappedMetaMetrics(metaByDate.get(date)||emptyMetaCounts(),allObjectiveSpendByDate.get(date)||0)');
@@ -114,7 +164,7 @@ worker=change(worker,'const optional=i=>String(r[i]??"").trim()===""?null:money(
         const value=String(r[i]??"").trim().replace(/,/g,"");
         return value!==""&&Number.isFinite(Number(value))?Number(value):null;
       };`);
-worker=worker.replace(/dashboard-cache:v\d+:/g,"dashboard-cache:v15:");
+worker=worker.replace(/dashboard-cache:v\d+:/g,"dashboard-cache:v16:");
 html=change(html,`    if (view.period===60 || view.period===0) {
       const history = product.variants[0].row;
       product.unitsOrdered = view.period===60 ? history.orders60 : history.ordersAll;
@@ -123,7 +173,8 @@ html=change(html,`    if (view.period===60 || view.period===0) {
 html=change(html,`+(view.period===60||view.period===0?' · '+fmt(product.unitsOrdered)+' matched orders':'')`,`+' · '+fmt(product.unitsOrdered)+' unique product orders'`);
 html=change(html,`    const good = active.filter(v=>v.state===states.good).length;
     const red = active.filter(v=>v.state.tone==="red").length;
-    product.tone = !active.length?"gray":red>active.length/2?"red":good>active.length/2?"green":"orange";`,`    const demandOf = variant => variant.row.units28;
+    product.tone = !active.length?"gray":red>active.length/2?"red":good>active.length/2?"green":"orange";`,`    const demandOf = ({row}) => view.period===7 ? row.units7 :
+      view.period===28 ? row.units28 : view.period===60 ? row.demand60 : row.demandAll;
     const knownDemand = active.every(v=>Number.isFinite(demandOf(v))&&demandOf(v)>=0);
     const totalDemand = knownDemand ? active.reduce((sum,v)=>sum+demandOf(v),0) : 0;
     const flagged = active.filter(v=>v.state.tone==="red"||v.state.tone==="orange");
@@ -137,7 +188,9 @@ html=change(html,`    const good = active.filter(v=>v.state===states.good).lengt
     else if (topSizeFlagged || (totalDemand>0 && flaggedDemand*5>=totalDemand) ||
       (!totalDemand && flagged.length>0)) product.tone="orange";
     else product.tone="green";`);
-html=change(html,'Shopify stock by product and size. The card summarizes active sizes, and the dot beside each size shows its own stock risk.','Shopify stock by product and size. The card color reflects recent demand for at-risk sizes. The dot beside each size shows its own stock risk.');
-html=change(html,'Green means most active sizes are well stocked. Red means most are out of stock or have 3 days or less left. Other mixes are orange. A size with over 3 and up to 7 days left gets an orange dot. Sorting changes the order of the cards.',`Cards rank by unique product orders through '+esc(data.orderHistoryThrough||'the stock snapshot')+'. Variant rows show Shopify units. <strong>Size dots:</strong> Red = out of stock or 3 days or less left. Orange = over 3 and up to 7 days left, or stock data needs review. Green = more than 7 days left or stocked with no recorded demand.</p><p class="hint"><strong>Product card colors use units ordered in the last 28 days for active sizes.</strong> Red means all active sizes are out of stock or red sizes account for at least 50% of those units. Otherwise, orange means a best-selling size is flagged, red and orange sizes together account for at least 20% of units, or a size is flagged and there is no reliable demand history. Green means neither alert applies. Inactive sizes are excluded, and changing the sort does not change these colors.`);
+html=change(html,'Shopify stock by product and size. The card summarizes active sizes, and the dot beside each size shows its own stock risk.','Shopify stock by product and size. The card color reflects demand for at-risk sizes in the selected period. The dot beside each size shows its own stock risk.');
+html=change(html,'Green means most active sizes are well stocked. Red means most are out of stock or have 3 days or less left. Other mixes are orange. A size with over 3 and up to 7 days left gets an orange dot. Sorting changes the order of the cards.',`Cards rank by unique product orders through '+esc(data.orderHistoryThrough||'the stock snapshot')+'. Variant rows show demand for the selected period. <strong>Size dots:</strong> Red = out of stock or 3 days or less left. Orange = over 3 and up to 7 days left, or stock data needs review. Green = more than 7 days left or stocked with no recorded demand.</p><p class="hint"><strong>Product card colors follow the selected period for active sizes. Last 7 and 28 Days use Shopify variant units. Last 60 Days and All Time use product lines matched to a size in Order Tracking Details. If fewer than 95% of a product’s lines can be matched, its demand needs review.</strong> Red means all active sizes are out of stock or red sizes account for at least 50% of demand. Otherwise, orange means a best-selling size is flagged, red and orange sizes together account for at least 20% of demand, or a size is flagged and there is no reliable demand history. Green means neither alert applies. Inactive sizes are excluded. Size dots always show stock risk using the current stock estimate.`);
+html=change(html,'units:view.period===7?row.units7:view.period===28?row.units28:null','units:view.period===7?row.units7:view.period===28?row.units28:view.period===60?row.demand60:row.demandAll');
+html=change(html,"'Variant units unavailable'","'Matched product lines'");
 for(const [i,script] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].entries())new vm.Script(script[1],{filename:"reporting-ui-"+i});
 fs.writeFileSync("worker.mjs",worker.replace(embedded[1],Buffer.from(html).toString("base64")));
