@@ -134,6 +134,7 @@ worker=section(worker,'  const productOrderHistory = new Map();','  const invent
         if(!currentSizes.has(key))return;
         const size=aligned?sizeKey(sizes[i]):"";
         addDemand(key,size,0);
+        if(day>=inventoryStarts[0])addDemand(key,size,7);
         if(day>=inventoryStarts[2])addDemand(key,size,60);
       });
     }
@@ -155,6 +156,7 @@ worker=change(worker,'      const history = productOrderHistory.get(productTitle
         return demand.sizes.get(sizeKey(r[2]))||0;
       };`);
 worker=change(worker,'orders7:history?.[0].size??0,','demand60:historicDemand(60),demandAll:historicDemand(0),orders7:history?.[0].size??0,');
+worker=change(worker,'units7:optional(7),','units7:historicDemand(7),');
 worker=change(worker,'    available:inventoryRaw.length>0,','    available:inventoryRaw.length>0,orderHistoryThrough:inventoryAsOf,');
 worker=change(worker,'const periodMeta=mappedMetaMetrics(periodMetaCounts,salesSpend);','const periodMeta=mappedMetaMetrics(periodMetaCounts,spend);');
 worker=change(worker,'mappedMetaMetrics(metaByDate.get(date)||emptyMetaCounts(),r.spend)','mappedMetaMetrics(metaByDate.get(date)||emptyMetaCounts(),allObjectiveSpendByDate.get(date)||0)');
@@ -164,7 +166,7 @@ worker=change(worker,'const optional=i=>String(r[i]??"").trim()===""?null:money(
         const value=String(r[i]??"").trim().replace(/,/g,"");
         return value!==""&&Number.isFinite(Number(value))?Number(value):null;
       };`);
-worker=worker.replace(/dashboard-cache:v\d+:/g,"dashboard-cache:v16:");
+worker=worker.replace(/dashboard-cache:v\d+:/g,"dashboard-cache:v17:");
 html=change(html,`    if (view.period===60 || view.period===0) {
       const history = product.variants[0].row;
       product.unitsOrdered = view.period===60 ? history.orders60 : history.ordersAll;
@@ -189,8 +191,9 @@ html=change(html,`    const good = active.filter(v=>v.state===states.good).lengt
       (!totalDemand && flagged.length>0)) product.tone="orange";
     else product.tone="green";`);
 html=change(html,'Shopify stock by product and size. The card summarizes active sizes, and the dot beside each size shows its own stock risk.','Shopify stock by product and size. The card color reflects demand for at-risk sizes in the selected period. The dot beside each size shows its own stock risk.');
-html=change(html,'Green means most active sizes are well stocked. Red means most are out of stock or have 3 days or less left. Other mixes are orange. A size with over 3 and up to 7 days left gets an orange dot. Sorting changes the order of the cards.',`Cards rank by unique product orders through '+esc(data.orderHistoryThrough||'the stock snapshot')+'. Variant rows show demand for the selected period. <strong>Size dots:</strong> Red = out of stock or 3 days or less left. Orange = over 3 and up to 7 days left, or stock data needs review. Green = more than 7 days left or stocked with no recorded demand.</p><p class="hint"><strong>Product card colors follow the selected period for active sizes. Last 7 and 28 Days use Shopify variant units. Last 60 Days and All Time use product lines matched to a size in Order Tracking Details. If fewer than 95% of a product’s lines can be matched, its demand needs review.</strong> Red means all active sizes are out of stock or red sizes account for at least 50% of demand. Otherwise, orange means a best-selling size is flagged, red and orange sizes together account for at least 20% of demand, or a size is flagged and there is no reliable demand history. Green means neither alert applies. Inactive sizes are excluded. Size dots always show stock risk using the current stock estimate.`);
+html=change(html,'Green means most active sizes are well stocked. Red means most are out of stock or have 3 days or less left. Other mixes are orange. A size with over 3 and up to 7 days left gets an orange dot. Sorting changes the order of the cards.',`Cards rank by unique product orders through '+esc(data.orderHistoryThrough||'the stock snapshot')+'. Variant rows show demand for the selected period. <strong>Size dots:</strong> Red = out of stock or 3 days or less left. Orange = over 3 and up to 7 days left, or stock data needs review. Green = more than 7 days left or stocked with no recorded demand.</p><p class="hint"><strong>Product card colors follow the selected period for active sizes. Last 28 Days uses Shopify variant units. Last 7 Days, Last 60 Days and All Time use product lines matched to a size in Order Tracking Details. If fewer than 95% of a product’s lines can be matched, its demand needs review.</strong> Red means all active sizes are out of stock or red sizes account for at least 50% of demand. Otherwise, orange means a best-selling size is flagged, red and orange sizes together account for at least 20% of demand, or a size is flagged and there is no reliable demand history. Green means neither alert applies. Inactive sizes are excluded. Size dots always show stock risk using the current stock estimate.`);
 html=change(html,'units:view.period===7?row.units7:view.period===28?row.units28:null','units:view.period===7?row.units7:view.period===28?row.units28:view.period===60?row.demand60:row.demandAll');
 html=change(html,"'Variant units unavailable'","'Matched product lines'");
 for(const [i,script] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].entries())new vm.Script(script[1],{filename:"reporting-ui-"+i});
 fs.writeFileSync("worker.mjs",worker.replace(embedded[1],Buffer.from(html).toString("base64")));
+
