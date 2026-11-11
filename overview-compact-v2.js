@@ -13,7 +13,7 @@
     if(!content||!top)return;
     // Keep the original title for accessibility and one-page hierarchy.
     const title=$("#page-title");
-    if(title)title.textContent="Business Overview";
+    if(title&&title.textContent!=="Business Overview")title.textContent="Business Overview";
     const banner=content.querySelector(":scope > .banner");
     if(banner)banner.remove();
     const firstSection=content.querySelector(":scope > .section-head");
