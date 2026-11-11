@@ -115,7 +115,7 @@
     const scroller=el("div","shop-attr-scroll");
     const table=el("table","shop-attr-table");
     const thead=el("thead"),headrow=el("tr");
-    const columns=[["channel","Marketing Channel"],["traffic","Traffic Type"],["sessions","Sessions"],["orders","Attributed Orders"],["sales","Attributed Sales"],["checkouts","Converted Sessions (Last Click)"],["conversionRate","Shopify Native Conversion Rate"]];
+    const columns=[["channel","Marketing Channel"],["traffic","Traffic Type"],["sessions","Sessions"],["orders","Attributed Orders"],["sales","Attributed Sales"],["checkouts","Sessions That Completed Checkout"],["conversionRate","Shopify Native Conversion Rate"]];
     for(const [key,label] of columns){
       const th=el("th",key==="channel"?"shop-attr-primary-col":""),button=el("button","shop-attr-sort",label);button.type="button";
       button.onclick=()=>{state.descending=state.sort===key?!state.descending:true;state.sort=key;draw();};
@@ -123,7 +123,7 @@
     }
     thead.append(headrow);const tbody=el("tbody");table.append(thead,tbody);scroller.append(table);
     const more=el("button","btn shop-attr-more","Load more");more.type="button";more.onclick=()=>{state.limit+=12;draw();};
-    const note=el("p","shop-attr-note","Converted Sessions (Last Click) counts sessions where checkout was completed in that visit; it is not a last-click attributed order metric. Sessions and native conversion rate do not depend on the attribution model. Any click may credit an order to multiple channels; Linear may show fractional orders.");
+    const note=el("p","shop-attr-note","Sessions That Completed Checkout counts visits with a completed checkout; it is not a last-click attributed order metric. Sessions and native conversion rate do not depend on the attribution model. Any click may credit an order to multiple channels; Linear may show fractional orders.");
     panel.replaceChildren(header,message,scroller,more,note);
     let current=null;
     function draw(){
