@@ -1,0 +1,26 @@
+/* Shopify Attribution within the existing Channels tab. */
+.shop-attr-panel{display:block}
+.shop-attr-heading{display:flex;flex-direction:column;gap:16px;margin-bottom:18px}
+.shop-attr-heading h3{margin:0;font-size:1.2rem;font-weight:700}
+.shop-attr-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+.shop-attr-filter{display:flex;flex:1 1 230px;max-width:350px;flex-direction:column;gap:6px;font-size:.78rem;font-weight:600;color:var(--muted,#64748b)}
+.shop-attr-store{flex:0 1 230px}
+.shop-attr-select{width:100%;min-height:40px;padding:8px 11px;border:1px solid var(--border,#cbd5e1);border-radius:9px;background:var(--card,#fff);color:var(--text,#111827);font:inherit;font-size:.9rem}
+.shop-attr-help{font-size:.75rem;font-weight:400;line-height:1.45;color:var(--muted,#64748b);min-height:2.5em}
+.shop-attr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:8px 0 16px}
+.shop-attr-kpi{display:flex;flex-direction:column;gap:7px;padding:14px;border:1px solid var(--border,#e2e8f0);border-radius:12px;background:var(--card,#fff);min-width:0}
+.shop-attr-kpi span{font-size:.75rem;color:var(--muted,#64748b)}
+.shop-attr-kpi strong{font-size:1.35rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.shop-attr-message,.shop-attr-note{color:var(--muted,#64748b);font-size:.79rem;margin:8px 0}
+.shop-attr-scroll{width:100%;overflow:auto;border:1px solid var(--border,#e2e8f0);border-radius:12px}
+.shop-attr-table{width:100%;border-collapse:collapse;white-space:nowrap;text-align:left;font-size:.86rem}
+.shop-attr-table th,.shop-attr-table td{padding:12px;border-bottom:1px solid var(--border,#e2e8f0)}
+.shop-attr-table th{background:var(--surface,#f8fafc)}
+.shop-attr-table tr:last-child td{border-bottom:0}
+.shop-attr-sort{background:none;border:0;color:inherit;font:inherit;font-weight:700;cursor:pointer;text-align:left;white-space:nowrap}
+.shop-attr-sort:hover{text-decoration:underline}
+.shop-attr-numeric{text-align:right;font-variant-numeric:tabular-nums}
+.shop-attr-more{display:block;margin:12px auto 4px}
+.shop-attr-more[hidden]{display:none}
+@media(max-width:900px){.shop-attr-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.shop-attr-kpis{grid-template-columns:1fr 1fr}.shop-attr-kpi strong{font-size:1.1rem}.shop-attr-filter{flex-basis:100%;max-width:none}}
