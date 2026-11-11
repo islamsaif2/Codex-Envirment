@@ -22,7 +22,19 @@ worker = section(worker, "  const placementDays=new Set();", "  const metaDetail
 worker = edit(worker, 'readPublicSheet(business.spreadsheetId,"Cards Order","A1:D1000")',
   'readPublicSheet(business.spreadsheetId,"Website Layout","A1:L1000").catch(()=>readPublicSheet(business.spreadsheetId,"Cards Order","A1:L1000"))');
 worker = edit(worker, "    inventory,\n", "    inventory,\n    websiteLayout: shippingOrderRaw,\n");
-worker = edit(worker, '"dashboard-cache:v3:"', '"dashboard-cache:v4:"');
+worker = edit(worker, '"dashboard-cache:v3:"', '"dashboard-cache:v5:"');
+
+worker = edit(worker,
+  "const emptyMetaCounts=()=>({qualifyingMetaOrders:0,qualifyingDeliveredMetaOrders:0,qualifyingReturnedMetaOrders:0,paidFacebookOrders:0,paidInstagramOrders:0});",
+  "const emptyMetaCounts=()=>({qualifyingMetaOrders:0,qualifyingDeliveredMetaOrders:0,qualifyingReturnedMetaOrders:0,paidFacebookOrders:0,paidInstagramOrders:0,totalSales:0,deliveredSales:0});");
+worker = edit(worker,
+  '      bucket.qualifyingMetaOrders++;\n      const status=norm(order[idx.orderStatus]);\n      if(status===deliveryStatus)bucket.qualifyingDeliveredMetaOrders++;',
+  '      bucket.qualifyingMetaOrders++;\n      const sale = money(order[idx.total]);\n      bucket.totalSales += sale;\n      const status=norm(order[idx.orderStatus]);\n      if(status===deliveryStatus){\n        bucket.qualifyingDeliveredMetaOrders++;\n        bucket.deliveredSales += sale - orderDiscount(order);\n      }');
+worker = edit(worker, "    metrics: { avgLineItems, avgOrdersPerDay,",
+  "    metrics: { avgSalesPerDay: avgDuration > 0 ? totalSales / avgDuration : null,\n" +
+  "      metaTotalSales: periodMetaCounts.totalSales, metaDeliveredSales: periodMetaCounts.deliveredSales,\n" +
+  "      revenueAfterAdsAndDiscounts: revenue - spend,\n" +
+  "      avgLineItems, avgOrdersPerDay,");
 
 worker = section(worker, "  const isOldStoreHistoricalRange", "  const periodCustomers",
   '  const retentionIdentity = (row, order) => String(row[idx.customerId] ?? "").trim() || "guest:" + order;\n');
@@ -131,6 +143,13 @@ html = edit(html, "</style>", [
 ].join("\n"));
 
 const layoutScript = fs.readFileSync("website-layout.js", "utf8");
+const overviewScript = fs.readFileSync("business-overview.js", "utf8");
+const overviewStyle = fs.readFileSync("business-overview.css", "utf8");
+html = section(html, "function overviewMetrics(m){", "function funnelSequence(", "");
+html = section(html, "function renderDashboard(){", "function cairoToday(){", overviewScript + "\n");
+html = edit(html, "function refreshComparisonCards(){", "function refreshComparisonCards(){\n refreshOverviewComparison();");
+html = edit(html, " const sources=lookup(title,context);", " const sources=element.dataset.metricSources?.split(',') || lookup(title,context);");
+html = edit(html, "</style>", overviewStyle + "\n</style>");
 html = edit(html, "</body>", "<script>\n" + layoutScript + "\n</script>\n</body>");
 for (const [index, script] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].entries()) {
   if (script[1].trim()) new vm.Script(script[1], { filename: "dashboard-inline-" + index + ".js" });
