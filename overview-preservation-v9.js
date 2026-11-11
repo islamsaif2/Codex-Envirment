@@ -57,7 +57,7 @@
         heading?.append(slot);
       }
       if (typeof cardPercentBadge === "function") {
-        try { slot.innerHTML = cardPercentBadge(t); } catch (error) { console.debug("Metric comparison:", error); }
+        try { const next = cardPercentBadge(t); if(slot.innerHTML !== next) slot.innerHTML = next; } catch (error) { console.debug("Metric comparison:", error); }
       }
       let trend = el.querySelector(".period-details");
       if (!trend) {
@@ -65,9 +65,9 @@
         trend.className = "period-details";
         el.append(trend);
       }
-      trend.setAttribute("data-period-title", encodeURIComponent(t));
+      if(trend.dataset.periodTitle !== encodeURIComponent(t)) trend.dataset.periodTitle = encodeURIComponent(t);
       if (typeof cardPeriodInfo === "function") {
-        try { trend.innerHTML = cardPeriodInfo(t); } catch (error) { console.debug("Metric sparkline:", error); }
+        try { const next = cardPeriodInfo(t); if(trend.innerHTML !== next) trend.innerHTML = next; } catch (error) { console.debug("Metric sparkline:", error); }
       }
       // Existing metrics with native click handlers retain their own detail behavior.
       if (!el.hasAttribute("data-metric-detail") && !el.dataset.ultraDrilldown) {
