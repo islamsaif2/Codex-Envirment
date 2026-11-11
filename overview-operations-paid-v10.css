@@ -1,0 +1,35 @@
+/* V10 Overview layout only: section-based, maximum four per grid row, centered KPI content */
+#content .ultra-overview-v10{display:flex;flex-direction:column;gap:30px;margin:4px 0 26px}
+#content .ultra-overview-section{display:flex;flex-direction:column;gap:16px;min-width:0}
+#content .ultra-overview-heading{text-align:left;padding:0 1px 3px;border-bottom:1px solid var(--border,#e2e8f0)}
+#content .ultra-overview-heading h2{font-weight:850;font-size:19px;letter-spacing:-.025em;line-height:1.4;text-align:left;margin:0 0 3px}
+#content .ultra-overview-heading p{font-size:12px;line-height:1.55;color:#78899f;margin:0 0 12px;text-align:left}
+#content .ultra-overview-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:stretch}
+#content .ultra-overview-business .ultra-overview-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+#content .ultra-operation-row{grid-template-columns:repeat(4,minmax(0,1fr))}
+#content .ultra-operation-row:last-child{grid-template-columns:repeat(3,minmax(0,1fr))}
+#content .ultra-overview-row>.kpi{min-width:0;min-height:215px;width:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;margin:0!important;gap:4px;padding:17px 14px!important}
+#content .ultra-overview-row>.kpi .kt{width:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px 9px;text-align:center;font-size:12px;line-height:1.45;min-height:35px;position:relative;padding-right:0}
+#content .ultra-overview-row>.kpi .kv{width:100%;font-size:clamp(19px,1.7vw,28px);font-weight:800;letter-spacing:-.035em;line-height:1.3;text-align:center}
+#content .ultra-overview-row>.kpi small{display:block;max-width:100%;font-size:11px;line-height:1.55;text-align:center;overflow-wrap:anywhere}
+#content .ultra-overview-row>.kpi .period-details{width:100%;margin-top:auto;min-height:82px}
+#content .ultra-overview-row>.kpi .kpi-badge-slot{position:absolute;top:-9px;right:-5px;z-index:2;margin:0;padding:2px 4px;border-radius:4px;background:var(--pm-card-bg,white);font-size:11px}
+#content .ultra-overview-row>.kpi .period-details svg{max-height:89px}
+#content .ultra-source-collection{display:inline-flex;gap:3px;align-items:center;flex-shrink:0;margin-right:3px}
+#content .ultra-source-mark{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0}
+#content .ultra-source-mark svg{width:100%;height:100%;display:block}
+#content .ultra-paid-split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+#content .ultra-paid-half{min-width:0;padding:16px;border:1px solid var(--border,#e0e8f2);border-radius:14px;background:var(--pm-card-bg,#fbfdff)}
+#content .ultra-paid-subhead{display:flex;align-items:center;gap:9px;min-height:28px;margin-bottom:15px}
+#content .ultra-paid-subhead .ultra-source-mark{width:25px;height:25px}
+#content .ultra-paid-subhead h3{margin:0;font-weight:800;font-size:14px;line-height:1.4}
+#content .ultra-paid-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+#content .ultra-paid-cards>.kpi{padding:14px 10px!important;min-height:218px}
+#content .ultra-overview-row>.kpi .kpi-no-trend{font-size:11px;text-align:center;margin-top:9px}
+body.theme-dark #content .ultra-overview-heading{border-color:#34455f}
+body.theme-dark #content .ultra-overview-heading p{color:#a9bad0}
+body.theme-dark #content .ultra-paid-half{background:#142034;border-color:#34465e}
+body.theme-dark #content .ultra-overview-row>.kpi .kpi-badge-slot{background:#182437}
+@media(max-width:1200px){#content .ultra-operation-row,#content .ultra-operation-row:last-child{grid-template-columns:repeat(3,minmax(0,1fr))}#content .ultra-paid-split{grid-template-columns:1fr}}
+@media(max-width:860px){#content .ultra-overview-business .ultra-overview-row,#content .ultra-operation-row,#content .ultra-operation-row:last-child{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){#content .ultra-overview-business .ultra-overview-row,#content .ultra-operation-row,#content .ultra-operation-row:last-child,#content .ultra-paid-cards{grid-template-columns:1fr}#content .ultra-paid-half{padding:12px}#content .ultra-overview-v10{gap:24px}}
