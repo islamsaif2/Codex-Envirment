@@ -1,0 +1,22 @@
+/* V11: all source icons only on the right; readable left-aligned KPI copy */
+#content .ultra-overview-v10 .ultra-overview-row>.kpi{align-items:stretch!important;text-align:left!important;padding:20px 18px!important;gap:9px}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi .kt{font-size:14px!important;font-weight:800!important;line-height:1.38!important;display:flex!important;text-align:left!important;align-items:flex-start!important;justify-content:flex-start!important;flex-wrap:nowrap!important;position:relative!important;padding-right:48px!important;min-height:37px!important;letter-spacing:0}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi .kv{font-size:clamp(22px,2.1vw,32px)!important;line-height:1.2!important;text-align:left!important;width:100%!important;overflow-wrap:anywhere!important}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi small{font-size:11px!important;text-align:left!important;line-height:1.55!important}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi .period-details{text-align:left!important}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi .kpi-badge-slot{position:absolute!important;right:0!important;top:25px!important;z-index:4}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi .ultra-source-collection{position:absolute!important;right:0!important;top:0!important;display:flex!important;align-items:center!important;gap:3px!important;z-index:2;margin:0!important}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi .ultra-source-mark{width:18px!important;height:18px!important;display:inline-flex!important}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi .ultra-source-collection~.ultra-source-collection{display:none!important}
+#content .ultra-overview-v10 .ultra-overview-row>.kpi .kt>.source-brand-icon{display:none!important}
+#content .ultra-v11-paid-list{display:block;min-width:0}
+#content .ultra-v11-paid-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:18px!important}
+#content .ultra-paid .ultra-overview-heading{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px}
+#content .ultra-paid .ultra-overview-heading p{flex-basis:100%;margin-bottom:10px}
+#content .ultra-v11-select{max-width:100%;font-size:12px!important;min-height:36px;white-space:normal}
+#content .ultra-v11-paid-note{font-size:12px;color:#7b8ba0;line-height:1.55;margin:4px 0 2px}
+#content .channel-analysis-table .channel-number{font-variant-numeric:tabular-nums;white-space:nowrap}
+body.theme-dark #content .ultra-v11-paid-note{color:#afc0d7}
+@media(max-width:1250px){#content .ultra-v11-paid-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:900px){#content .ultra-v11-paid-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:570px){#content .ultra-v11-paid-grid{grid-template-columns:1fr!important}#content .ultra-overview-v10 .ultra-overview-row>.kpi .kt{font-size:14px!important}}
