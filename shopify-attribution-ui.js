@@ -185,10 +185,21 @@
     document.addEventListener("change",refreshDate,true);
     document.addEventListener("click",refreshDate,true);
   }
+  // The former Channels intro described the retired first-visit order report.
+  // Remove that stale copy without changing the Channels navigation label.
+  function removeLegacyChannelsIntro(){
+    const root=document.getElementById("content");
+    if(!root)return;
+    const legacy="First-visit order attribution from Order Tracking Details; sessions and conversion rates are not first-click attributed";
+    for(const node of root.querySelectorAll("p,small,.hint,.subtitle,.subheading")){
+      if(node.textContent.trim()===legacy)node.remove();
+    }
+  }
   let scheduled=false;
   function scan(){
     scheduled=false;
     if(typeof page!=="undefined"&&page!=="Channels")return;
+    removeLegacyChannelsIntro();
     const panel=findPanel();if(panel)mount(panel);
   }
   function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(scan);}
