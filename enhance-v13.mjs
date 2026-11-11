@@ -121,6 +121,23 @@ html=change(html,`    if (view.period===60 || view.period===0) {
     }`,`    const history = product.variants[0].row;
     product.unitsOrdered = view.period===0 ? history.ordersAll : history["orders"+view.period];`);
 html=change(html,`+(view.period===60||view.period===0?' · '+fmt(product.unitsOrdered)+' matched orders':'')`,`+' · '+fmt(product.unitsOrdered)+' unique product orders'`);
-html=change(html,'Green means most active sizes are well stocked. Red means most are out of stock or have 3 days or less left. Other mixes are orange. A size with over 3 and up to 7 days left gets an orange dot. Sorting changes the order of the cards.',`Cards rank by unique product orders through '+esc(data.orderHistoryThrough||'the stock snapshot')+'. Variant rows show Shopify units, which can differ from product orders. For each active size: red means out of stock or ≤3 days left; orange means >3 and ≤7 days, or missing tracking/coverage data; green means >7 days or stock with no recent demand. A product card uses the majority of its active sizes; mixed results are orange.`);
+html=change(html,`    const good = active.filter(v=>v.state===states.good).length;
+    const red = active.filter(v=>v.state.tone==="red").length;
+    product.tone = !active.length?"gray":red>active.length/2?"red":good>active.length/2?"green":"orange";`,`    const demandOf = variant => variant.row.units28;
+    const knownDemand = active.every(v=>Number.isFinite(demandOf(v))&&demandOf(v)>=0);
+    const totalDemand = knownDemand ? active.reduce((sum,v)=>sum+demandOf(v),0) : 0;
+    const flagged = active.filter(v=>v.state.tone==="red"||v.state.tone==="orange");
+    const allOut = active.length>0 && active.every(v=>v.state===states.out);
+    const redDemand = totalDemand ? flagged.reduce((sum,v)=>sum+(v.state.tone==="red"?demandOf(v):0),0) : 0;
+    const flaggedDemand = totalDemand ? flagged.reduce((sum,v)=>sum+demandOf(v),0) : 0;
+    const highestDemand = totalDemand ? Math.max(...active.map(demandOf)) : 0;
+    const topSizeFlagged = highestDemand>0 && flagged.some(v=>demandOf(v)===highestDemand);
+    if (!active.length) product.tone="gray";
+    else if (allOut || (totalDemand>0 && redDemand*2>=totalDemand)) product.tone="red";
+    else if (topSizeFlagged || (totalDemand>0 && flaggedDemand*5>=totalDemand) ||
+      (!totalDemand && flagged.length>0)) product.tone="orange";
+    else product.tone="green";`);
+html=change(html,'Shopify stock by product and size. The card summarizes active sizes, and the dot beside each size shows its own stock risk.','Shopify stock by product and size. The card color reflects recent demand for at-risk sizes. The dot beside each size shows its own stock risk.');
+html=change(html,'Green means most active sizes are well stocked. Red means most are out of stock or have 3 days or less left. Other mixes are orange. A size with over 3 and up to 7 days left gets an orange dot. Sorting changes the order of the cards.',`Cards rank by unique product orders through '+esc(data.orderHistoryThrough||'the stock snapshot')+'. Variant rows show Shopify units. <strong>Size dots:</strong> Red = out of stock or 3 days or less left. Orange = over 3 and up to 7 days left, or stock data needs review. Green = more than 7 days left or stocked with no recorded demand.</p><p class="hint"><strong>Product card colors use units ordered in the last 28 days for active sizes.</strong> Red means all active sizes are out of stock or red sizes account for at least 50% of those units. Otherwise, orange means a best-selling size is flagged, red and orange sizes together account for at least 20% of units, or a size is flagged and there is no reliable demand history. Green means neither alert applies. Inactive sizes are excluded, and changing the sort does not change these colors.`);
 for(const [i,script] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].entries())new vm.Script(script[1],{filename:"reporting-ui-"+i});
 fs.writeFileSync("worker.mjs",worker.replace(embedded[1],Buffer.from(html).toString("base64")));
