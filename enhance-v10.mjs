@@ -1,0 +1,26 @@
+import fs from "node:fs";
+import vm from "node:vm";
+let worker = fs.readFileSync("worker.mjs","utf8");
+const marker="\n  return {\n    business: { id: business.id,";
+if(!worker.includes(marker))throw Error("V10 backend report anchor missing");
+const backend="  // V10: reuse exactly the existing paid-Meta first-click qualification.\n  const ultraMetaPaidOrders = orders.filter(order => {\n    const source = norm(order[idx.sourceFirst]);\n    const content = norm(order[idx.first]);\n    return !!content && !excluded.includes(content) &&\n      sources.some(name => source.includes(name)) && isFirstClickPaid(order);\n  });\n  const ultraMetaDelivered = ultraMetaPaidOrders.filter(isDelivered);\n  const ultraMetaReturned = ultraMetaPaidOrders.filter(order =>\n    isReturnedStatus(norm(order[idx.orderStatus])));\n  const ultraMetaTotalSales = ultraMetaPaidOrders.reduce((s,order) =>\n    s + money(order[idx.total]), 0);\n  const ultraMetaDeliveredSales = ultraMetaDelivered.reduce((s,order) =>\n    s + money(order[idx.total]) - orderDiscount(order), 0);\n  const ultraMetaTotalOrders = ultraMetaPaidOrders.length;\n  const ultraMetaDeliveredOrders = ultraMetaDelivered.length;\n  const ultraMetaDeliveryRate = ultraMetaDeliveredOrders + ultraMetaReturned.length\n    ? ultraMetaDeliveredOrders / (ultraMetaDeliveredOrders + ultraMetaReturned.length) : null;\n  // Attach daily data for the existing comparison charts and metric detail pages.\n  // Do not touch aggregate calculations or other report sections.\n  const ultraByDay = new Map();\n  function ultraEntry(day) {\n    if (!ultraByDay.has(day)) ultraByDay.set(day,{\n      ultraShippingCost:0,ultraShippingDiscount:0,ultraOrderDiscount:0,\n      ultraMetaTotalSales:0,ultraMetaTotalOrders:0,\n      ultraMetaDeliveredSales:0,ultraMetaDeliveredOrders:0,ultraMetaReturnedOrders:0\n    });\n    return ultraByDay.get(day);\n  }\n  for (const order of orders) {\n    const day = dateCandidates(order[idx.date],startDate,endDate).find(x =>\n      (!startDate || x >= startDate) && (!endDate || x <= endDate));\n    if (!day) continue;\n    const d = ultraEntry(day);\n    if (!isCancelledOrder(order)) {\n      d.ultraShippingCost += Math.abs(money(order[idx.shippingCost]));\n      d.ultraShippingDiscount += Math.abs(money(order[idx.shippingDiscount]));\n      d.ultraOrderDiscount += orderDiscount(order);\n    }\n  }\n  for (const order of ultraMetaPaidOrders) {\n    const day = dateCandidates(order[idx.date],startDate,endDate).find(x =>\n      (!startDate || x >= startDate) && (!endDate || x <= endDate));\n    if (!day) continue;\n    const d = ultraEntry(day);\n    d.ultraMetaTotalSales += money(order[idx.total]);\n    d.ultraMetaTotalOrders++;\n    if (isDelivered(order)) {\n      d.ultraMetaDeliveredSales += money(order[idx.total]) - orderDiscount(order);\n      d.ultraMetaDeliveredOrders++;\n    } else if (isReturnedStatus(norm(order[idx.orderStatus]))) d.ultraMetaReturnedOrders++;\n  }\n  const ultraAdDayMap = new Map((adFunnel.daily||[]).map(day => [day.date,day]));\n  for (const entry of metricDaily) {\n    const x = ultraByDay.get(entry.date) || {};\n    Object.assign(entry,{\n      ultraShippingCost:x.ultraShippingCost??0,\n      ultraShippingDiscount:x.ultraShippingDiscount??0,\n      ultraOrderDiscount:x.ultraOrderDiscount??0,\n      ultraMetaTotalSales:x.ultraMetaTotalSales??0,\n      ultraMetaTotalOrders:x.ultraMetaTotalOrders??0,\n      ultraMetaDeliveredSales:x.ultraMetaDeliveredSales??0,\n      ultraMetaDeliveredOrders:x.ultraMetaDeliveredOrders??0,\n      ultraMetaDeliveryRate:(x.ultraMetaDeliveredOrders||0)+(x.ultraMetaReturnedOrders||0)\n        ?(x.ultraMetaDeliveredOrders||0)/((x.ultraMetaDeliveredOrders||0)+(x.ultraMetaReturnedOrders||0)):null,\n      ultraNetRevenue:entry.deliveredRevenue - (ultraAdDayMap.get(entry.date)?.spend||0) -\n        (x.ultraShippingCost||0)\n    });\n  }\n";
+worker=worker.replace(marker,"\n"+backend+marker);
+const fieldAnchor="metrics: { avgLineItems, avgOrdersPerDay,";
+if(!worker.includes(fieldAnchor))throw Error("V10 metrics anchor missing");
+worker=worker.replace(fieldAnchor,
+  "metrics: { ultraMetaTotalSales, ultraMetaDeliveredSales, ultraMetaTotalOrders, ultraMetaDeliveredOrders, ultraMetaDeliveryRate, avgLineItems, avgOrdersPerDay,");
+const embedded=worker.match(/const APP_HTML_B64 = "([^"]+)"/);
+if(!embedded)throw Error("V10 embedded dashboard missing");
+let html=Buffer.from(embedded[1],"base64").toString("utf8");
+const js=fs.readFileSync("overview-operations-paid-v10.js","utf8");
+const css=fs.readFileSync("overview-operations-paid-v10.css","utf8");
+new vm.Script(js,{filename:"overview-operations-paid-v10.js"});
+if(!html.includes("</style>")||!html.includes("</body>"))throw Error("V10 HTML insertion anchor missing");
+html=html.replace("</style>",css+"\n</style>");
+html=html.replace("</body>","<script>\n"+js+"\n</script>\n</body>");
+for(const [index,match] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].entries()) {
+  if(match[1].trim())new vm.Script(match[1],{filename:"dashboard-inline-"+index+".js"});
+}
+worker=worker.replace(embedded[1],Buffer.from(html,"utf8").toString("base64"));
+fs.writeFileSync("worker.mjs",worker);
+console.log("V10 Overview layout, Meta attribution totals, operation charts and source icons installed");
