@@ -51,11 +51,11 @@ function titleFix(){
 function aliases(){
  if(typeof sparkSpecs!=="undefined"){
   Object.assign(sparkSpecs,{
-   "Meta Total Orders":["metric","ultra11firstOrders"],
-   "Meta Total Sales":["metric","ultra11firstSales"],
-   "Meta Delivered Sales":["metric","ultra11firstDeliveredSales"],
-   "Meta Delivered Orders":["metric","ultra11firstDeliveredOrders"],
-   "Meta Delivery Rate":["metric","ultra11firstDeliveryRate"],
+   "Meta Total Orders":["metric",paidModel==="last"?"ultra11sheetOrders":"ultra11firstOrders"],
+   "Meta Total Sales":["metric",paidModel==="last"?"ultra11lastSales":"ultra11firstSales"],
+   "Meta Delivered Sales":["metric",paidModel==="last"?"ultra11lastDeliveredSales":"ultra11firstDeliveredSales"],
+   "Meta Delivered Orders":["metric",paidModel==="last"?"ultra11lastDeliveredOrders":"ultra11firstDeliveredOrders"],
+   "Meta Delivery Rate":["metric",paidModel==="last"?"ultra11lastDeliveryRate":"ultra11firstDeliveryRate"],
    "Meta Orders / Purchases":["ads","purchases"],
    "Meta Cost Per Order":["meta","costPerOrder"],
    "Meta Actual Cost Per Order":["meta","actualCostPerOrder"]
@@ -90,6 +90,7 @@ function paintPaid(){
  }
  let area=root.querySelector(".ultra-v11-paid-list");
  if(!area){root.querySelector(".ultra-paid-split")?.remove();area=document.createElement("div");area.className="ultra-v11-paid-list";root.append(area);}
+ aliases();
  const isMeta=paidModel==="meta";
  const raw=details[paidModel]||{};
  const sheetOrder=details.lastClickShopifyOrders;
