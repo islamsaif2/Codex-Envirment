@@ -8,22 +8,24 @@ const percent=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":(Num
 const esc11=v=>{const t=document.createElement("span");t.textContent=String(v??"");return t.innerHTML;};
 const iconSvg={shopify:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 15-2 2 16-18 1z" fill="#83b83b"/><text x="8" y="18" fill="white" font-size="10" font-weight="900">S</text></svg>',meta:'<svg viewBox="0 0 32 22" aria-hidden="true"><path d="M2 16C6 4 9 3 12 7c5 6 8 13 13 8 3-3 4-9 6-9" fill="none" stroke="#1877f2" stroke-width="3" stroke-linecap="round"/></svg>',bosta:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h13v12H2zM15 10h4l3 4v3h-7z" fill="none" stroke="#e17e38" stroke-width="2"/><circle cx="7" cy="18" r="2" fill="#e17e38"/><circle cx="19" cy="18" r="2" fill="#e17e38"/></svg>'};
 let paidModel="first",channelModel="shopify",renderLock=false;
-function kpi(title,value,hint,sources){
+function kpi(label,value,hint,sources){
  if(typeof card!=="function")return null;
- const t=document.createElement("template");
- t.innerHTML=card(title,value,hint);
- const el=t.content.querySelector(".kpi");if(!el)return null;
- el.dataset.ultraMetric=title;
+ const template=document.createElement("template");
+ template.innerHTML=card(label,value,hint);
+ const el=template.content.querySelector(".kpi");if(!el)return null;
+ el.dataset.ultraMetric=label;
  el.classList.add("ultra-overview-card","ultra-v11-card");
  const heading=el.querySelector(".kt");
- heading?.querySelectorAll(".ultra-source-collection,.ultra-source-mark,.source-brand-icon").forEach(i=>i.remove());
  if(heading){
-  const icons=document.createElement("span");icons.className="ultra-source-collection ultra-v11-icons";
-  for(const name of new Set(sources||["shopify"])){
-   const badge=document.createElement("span");badge.className="ultra-source-mark";badge.title="Source: "+name;
-   badge.innerHTML=iconSvg[name]||"";icons.append(badge);
-  }
-  heading.append(icons);
+   heading.querySelectorAll(".ultra-source-collection,.ultra-source-mark,.source-brand-icon").forEach(x=>x.remove());
+   [...heading.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.remove());
+   heading.prepend(document.createTextNode(label));
+   const icons=document.createElement("span");icons.className="ultra-source-collection ultra-v11-icons";
+   for(const source of new Set(sources||["shopify"])){
+     const badge=document.createElement("span");badge.className="ultra-source-mark";
+     badge.title="Source: "+source;badge.innerHTML=iconSvg[source]||"";icons.append(badge);
+   }
+   heading.append(icons);
  }
  return el;
 }
@@ -34,18 +36,19 @@ function slot(parent,items){
 function titleFix(){
  const wrap=$(".ultra-overview-v10");if(!wrap)return;
  for(const el of wrap.querySelectorAll(".kpi")){
-  const header=el.querySelector(".kt");
-  if(!header)continue;
-  // Keep a single right-hand group of source icons, never duplicate left-side icons.
-  const groups=[...header.querySelectorAll(".ultra-source-collection")];
-  groups.slice(1).forEach(x=>x.remove());
-  header.querySelectorAll(":scope > .ultra-source-mark,:scope > .source-brand-icon").forEach(x=>x.remove());
-  const source=groups[0];
-  if(source)source.classList.add("ultra-v11-icons");
-  const title=el.dataset.ultraMetric;
-  const existing=(header.childNodes[0]?.nodeType===Node.TEXT_NODE?header.childNodes[0].textContent:"").trim();
-  if(title && !existing)header.prepend(document.createTextNode(title));
-  if(title==="Total Sessions"&&!header.textContent.includes("Total Sessions"))header.prepend(document.createTextNode("Total Sessions"));
+   const heading=el.querySelector(".kt");if(!heading)continue;
+   const label=(el.dataset.ultraMetric||heading.childNodes[0]?.textContent||"").trim();
+   if(!label)continue;
+   const textNodes=[...heading.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE);
+   if(textNodes.length!==1||textNodes[0]!==heading.firstChild||textNodes[0].textContent!==label){
+     textNodes.forEach(n=>n.remove());
+     heading.prepend(document.createTextNode(label));
+   }
+   const icons=[...heading.querySelectorAll(".ultra-source-collection")];
+   icons.slice(1).forEach(x=>x.remove());
+   heading.querySelectorAll(":scope > .ultra-source-mark,:scope > .source-brand-icon").forEach(x=>x.remove());
+   if(icons[0]){icons[0].classList.add("ultra-v11-icons");heading.append(icons[0]);}
+   if(el.dataset.ultraMetric!==label)el.dataset.ultraMetric=label;
  }
 }
 function aliases(){
@@ -69,64 +72,70 @@ function attribution(){
 function paintPaid(){
  const root=$(".ultra-overview-v10 .ultra-paid");
  if(!root||typeof dashboard==="undefined")return;
- const m=dashboard.metrics||{},ad=dashboard.adFunnel||{},details=attribution();
- let row=root.querySelector(".ultra-v11-paid-grid");
- let controls=root.querySelector(".ultra-v11-select");
- if(!controls){
-  const heading=root.querySelector(".ultra-overview-heading");
-  if(!heading)return;
-  const select=document.createElement("select");
-  select.className="ultra-v11-select btn";
-  select.setAttribute("aria-label","Paid Ads attribution model");
-  [["first","Meta Attributed Orders by Shopify First Click"],["last","Meta Attributed Orders by Shopify Last Click"],["meta","Meta Attributed Orders by Meta records itself"]].forEach(([value,label])=>{
-   const option=document.createElement("option");option.value=value;option.textContent=label;select.append(option);
-  });
-  select.value=paidModel;
-  select.addEventListener("change",()=>{
-   paidModel=select.value;
-   paintPaid();
-  });
-  heading.append(select);controls=select;
+ const m=dashboard.metrics||{},ad=dashboard.adFunnel||{},detail=attribution();
+ let selector=root.querySelector(".ultra-v11-select");
+ if(!selector){
+   const heading=root.querySelector(".ultra-overview-heading");if(!heading)return;
+   selector=document.createElement("select");
+   selector.className="ultra-v11-select btn";
+   selector.setAttribute("aria-label","Paid Ads attribution model");
+   [["first","Meta Attributed Orders by Shopify First Click"],
+    ["last","Meta Attributed Orders by Shopify Last Click"],
+    ["meta","Meta Attributed Orders by Meta records itself"]].forEach(([value,label])=>{
+      const o=document.createElement("option");o.value=value;o.textContent=label;selector.append(o);
+   });
+   selector.addEventListener("change",()=>{
+     paidModel=selector.value;
+     paintPaid();
+   });
+   heading.append(selector);
  }
+ selector.value=paidModel;
  let area=root.querySelector(".ultra-v11-paid-list");
- if(!area){root.querySelector(".ultra-paid-split")?.remove();area=document.createElement("div");area.className="ultra-v11-paid-list";root.append(area);}
+ if(!area){
+   root.querySelector(".ultra-paid-split")?.remove();
+   area=document.createElement("div");area.className="ultra-v11-paid-list";root.append(area);
+ }
  aliases();
- const isMeta=paidModel==="meta";
- const raw=details[paidModel]||{};
- const sheetOrder=details.lastClickShopifyOrders;
- // ShopifyQL aggregate Orders are last-click only; first click comes from qualified order-level UTM history.
- const reportedOrders=isMeta?ad.metaPurchases:paidModel==="last"?(sheetOrder??raw.orders):raw.orders;
- const delivered=isMeta?null:raw.deliveredOrders;
- const cpa=isMeta?ad.metaCpa:Number(reportedOrders)>0?Number(m.advertisingSpend)/Number(reportedOrders):null;
- const actual=isMeta?null:Number(delivered)>0?Number(m.advertisingSpend)/Number(delivered):null;
- const stable=[
-  kpi("Meta Total Spend",cash(m.advertisingSpend),"Meta Ads spend from Meta reporting",["meta"]),
-  kpi("Delivery Rate",percent(m.deliveryRate),"All Shopify orders: delivered / (delivered + returned); unchanged by attribution selection",["shopify","bosta"])
- ];
- const change=isMeta?[
-   kpi("Meta Orders / Purchases",number(ad.metaPurchases),"Meta-reported purchase events",["meta"]),
-   kpi("Meta CPA",cash(ad.metaCpa),"Meta spend / Meta purchase events",["meta"])
- ]:[
-   kpi("Meta Total Sales",cash(raw.sales),"Sales from order-level "+paidModel+"-click paid Meta UTMs",["shopify"]),
-   kpi("Meta Total Orders",number(reportedOrders),paidModel==="last"?
-      "Shopify Sessions Data: Paid Facebook + Instagram orders (ShopifyQL last click)":"First-click qualified paid Meta orders from Shopify UTMs",["shopify"]),
-   kpi("Meta Delivered Sales",cash(raw.deliveredSales),"Delivered revenue from matched order-level Shopify UTMs",["shopify","bosta"]),
-   kpi("Meta Delivered Orders",number(delivered),"Delivered attributed Shopify orders",["shopify","bosta"]),
-   kpi("Meta Delivery Rate",percent(raw.deliveryRate),"Attributed delivered / (attributed delivered + returned)",["shopify","bosta"]),
-   kpi("Meta Cost Per Order",cash(cpa),"Meta spend / attributed Shopify orders",["meta","shopify"]),
-   kpi("Meta Actual Cost Per Order",cash(actual),"Meta spend / delivered attributed Shopify orders",["meta","shopify"])
- ];
+ const spend=Number(m.advertisingSpend);
+ const source=detail[paidModel]||{};
+ const shopifyOrders=paidModel==="last"?detail.lastClickShopifyOrders:source.orders;
+ const orders=shopifyOrders==null?null:Number(shopifyOrders);
+ const delivered=source.deliveredOrders==null?null:Number(source.deliveredOrders);
+ const cpa=orders>0&&Number.isFinite(spend)?spend/orders:null;
+ const actual=delivered>0&&Number.isFinite(spend)?spend/delivered:null;
+ let cards,notes;
+ if(paidModel==="meta"){
+   cards=[
+     kpi("Meta Total Spend",cash(m.advertisingSpend),"Meta Ads total spend from Meta records",["meta"]),
+     kpi("Meta Orders / Purchases",number(ad.metaPurchases),"Purchase events reported directly by Meta",["meta"]),
+     kpi("Meta Cost Per Order",cash(ad.metaCpa),"Meta spend divided by Meta-reported purchase events",["meta"]),
+     kpi("Meta Actual Cost Per Order","—","Meta records do not expose independently verified delivered Shopify orders; cannot calculate an actual delivered-order CPA from Meta alone",["meta"])
+   ];
+   notes="All four cards use Meta reporting. Actual delivered-order cost is unavailable from Meta-only data, so it is shown as unavailable rather than inventing a value.";
+ }else{
+   const model=paidModel==="first"?"first":"last";
+   cards=[
+     kpi("Meta Total Spend",cash(m.advertisingSpend),"Meta Ads total spend from Meta",["meta"]),
+     kpi("Meta Orders",number(orders),model==="last"?
+       "Paid Facebook + Instagram ShopifyQL last-click orders from Shopify Sessions Data":
+       "Qualified first-visit Facebook + Instagram paid Shopify orders",["shopify"]),
+     kpi("Meta Cost Per Order",cash(cpa),"Meta spend divided by "+model+"-click Shopify-attributed orders",["meta","shopify"]),
+     kpi("Meta Delivery Rate",percent(source.deliveryRate),"Attributed delivered orders divided by delivered plus returned",["shopify","bosta"]),
+     kpi("Meta Delivered Sales",cash(source.deliveredSales),"Delivered revenue for attributed Shopify orders after discounts",["shopify","bosta"]),
+     kpi("Meta Delivered Orders",number(delivered),"Delivered orders under "+model+"-click Shopify attribution",["shopify","bosta"]),
+     kpi("Meta Actual Cost Per Order",cash(actual),"Meta spend divided by delivered attributed Shopify orders",["meta","shopify"])
+   ];
+   notes=model==="last"?
+     "Last-click order count comes from Shopify Sessions Data. Delivered orders and sales use order-level last-visit UTMs, so attribution populations can differ.":
+     "First-click attribution uses qualified paid Shopify first-visit UTMs and original campaign-matching conditions.";
+ }
  area.replaceChildren();
- slot(area,stable.concat(change));
+ slot(area,cards);
  let note=root.querySelector(".ultra-v11-paid-note");
  if(!note){note=document.createElement("p");note.className="ultra-v11-paid-note";root.append(note);}
- note.textContent=isMeta?
-  "Meta reports purchase events, not individual Shopify orders. Delivered sales/orders are unavailable in Meta records; global Shopify delivery rate remains visible.":
-  paidModel==="last"?
-  "Shopify Sessions Data supplies aggregate last-click paid Meta orders. Revenue and delivery use order-level last-visit UTMs; their attribution bases may differ. The sheet does not expose individual last-click order IDs.":
-  "First click uses order-level Shopify first-visit UTMs with the existing campaign-matching rule. Shopify Sessions Data has no separate first-click orders field.";
- // Keep user choice while date filters or period comparisons rerender.
- aliases();
+ if(note.textContent!==notes)note.textContent=notes;
+ root.dataset.ultraV11Model=paidModel;
 }
 function channelRows(){
  const dashboardData=typeof dashboard!=="undefined"?dashboard:null;
