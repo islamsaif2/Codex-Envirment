@@ -23,3 +23,6 @@ body.theme-dark #content .ultra-v11-paid-note{color:#afc0d7}
 @media(max-width:570px){#content .ultra-v11-paid-grid > .kpi{flex-basis:100%}#content .ultra-overview-v10 .ultra-overview-row>.kpi .kt{font-size:14px!important}}
 
 .channel-sort-button{appearance:none;background:none;border:0;color:inherit;font:inherit;padding:0;cursor:pointer;text-align:inherit}
+
+.channel-row-label{display:grid;grid-template-columns:minmax(0,1fr) minmax(44px,40%);align-items:center;gap:12px}
+.channel-row-label .channel-meter{display:block;width:100%;margin:0}

@@ -166,6 +166,14 @@ function refreshChannelData(panel){
  const headings=table.tHead.rows[0].cells;
  let visible=8;
  const rows=channelRows();
+ const barMetric=channelModel==="first"?"sessions":"orders";
+ const barMax=rows.reduce((max,row)=>Math.max(max,row[barMetric]??0),0);
+ function channelLabel(row){
+  const value=row[barMetric];
+  const width=Number.isFinite(value)&&barMax>0?value/barMax*100:0;
+  const meter=value==null?"":'<span class="channel-meter" aria-hidden="true"><i style="width:'+width+'%"></i></span>';
+  return '<span class="channel-row-label"><strong>'+esc11(row.channel)+'</strong>'+meter+'</span>';
+ }
  function draw(){
   const {key,direction}=channelSort;
   rows.sort((a,b)=>{
@@ -174,7 +182,7 @@ function refreshChannelData(panel){
    const delta=typeof x==="string"?x.localeCompare(y):x-y;
    return direction*delta||a.channel.localeCompare(b.channel);
   });
-  tbody.innerHTML=rows.slice(0,visible).map(r=>'<tr><td><strong>'+esc11(r.channel)+'</strong></td><td class="channel-number">'+number(r.orders)+'</td><td class="channel-number">'+number(r.sessions)+'</td><td class="channel-number">'+percent(r.rate)+'</td></tr>').join("")||'<tr><td colspan="4">No Shopify Sessions Data for the selected dates.</td></tr>';
+  tbody.innerHTML=rows.slice(0,visible).map(r=>'<tr><td>'+channelLabel(r)+'</td><td class="channel-number">'+number(r.orders)+'</td><td class="channel-number">'+number(r.sessions)+'</td><td class="channel-number">'+percent(r.rate)+'</td></tr>').join("")||'<tr><td colspan="4">No Shopify Sessions Data for the selected dates.</td></tr>';
   channelColumns.forEach(([column,label],index)=>{
    const cell=headings[index];
    cell.setAttribute("aria-sort",column===key?(direction===-1?"descending":"ascending"):"none");
@@ -202,8 +210,8 @@ function refreshChannelData(panel){
  draw();
  const hint=panel.querySelector(".hint");
  if(hint)hint.textContent=channelModel==="first"
-  ?"Shopify Sessions Data does not provide first-click order counts. Sessions are shown as reported."
-  :"Shopify Sessions Data supplies sessions and last-click orders. Conversion rate is orders divided by sessions.";
+  ?"Shopify Sessions Data does not provide first-click order counts. Bars show sessions."
+  :"Shopify Sessions Data supplies sessions and last-click orders. Bars show orders. Conversion rate is orders divided by sessions.";
 }
 function apply(){
  if(typeof page==="undefined")return;
