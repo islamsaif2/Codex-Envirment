@@ -7,7 +7,7 @@ const cash=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":typeof 
 const percent=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":(Number(v)*100).toFixed(2)+"%";
 const esc11=v=>{const t=document.createElement("span");t.textContent=String(v??"");return t.innerHTML;};
 const iconSvg={shopify:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 15-2 2 16-18 1z" fill="#83b83b"/><text x="8" y="18" fill="white" font-size="10" font-weight="900">S</text></svg>',meta:'<svg viewBox="0 0 32 22" aria-hidden="true"><path d="M2 16C6 4 9 3 12 7c5 6 8 13 13 8 3-3 4-9 6-9" fill="none" stroke="#1877f2" stroke-width="3" stroke-linecap="round"/></svg>',bosta:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h13v12H2zM15 10h4l3 4v3h-7z" fill="none" stroke="#e17e38" stroke-width="2"/><circle cx="7" cy="18" r="2" fill="#e17e38"/><circle cx="19" cy="18" r="2" fill="#e17e38"/></svg>'};
-let paidModel="first",channelModel="shopify",renderLock=false;
+let paidModel="first",channelModel="last",renderLock=false;
 function kpi(label,value,hint,sources){
  if(typeof card!=="function")return null;
  const template=document.createElement("template");
@@ -139,49 +139,71 @@ function paintPaid(){
  if(note.textContent!==notes)note.textContent=notes;
  root.dataset.ultraV11Model=paidModel;
 }
+const channelSort = {key:"orders", direction:-1};
+const channelColumns = [["channel","Channel"],["orders","Orders"],["sessions","Sessions"],["rate","Conversion rate"]];
+
 function channelRows(){
- const dashboardData=typeof dashboard!=="undefined"?dashboard:null;
- const raw=dashboardData?.channelAnalysis||[];
- const visit=dashboardData?.orderVisitChannelAnalysis||[];
- const normalize=v=>String(v||"").toLowerCase().replace(/\s+/g," ").trim();
- const map=new Map(visit.map(x=>[normalize(x.name),x]));
- return raw.map(x=>{
-  const key=normalize(x.source+" · "+x.medium);
-  const linked=map.get(key)||{};
-  const sessions=Number(x.sessions)||0;
-  const orders=channelModel==="shopify"?(x.ordersAvailable?Number(x.shopifyOrders):null):
-   channelModel==="first"?Number(linked.firstOrders||0):Number(linked.lastOrders||0);
-  return {source:x.source,medium:x.medium,sessions,orders,rate:orders!==null&&sessions>0?orders/sessions:null};
+ const raw = dashboard?.channelAnalysis || [];
+ return raw.filter(row=>row.fromSessionsSheet).map(row=>{
+  const orders = channelModel==="last" && row.ordersAvailable ? Number(row.shopifyOrders) : null;
+  return {channel:row.source+" · "+row.medium, sessions:row.sessions, orders,
+    rate:orders!==null && row.sessions>0 ? orders/row.sessions : null};
  });
 }
 function renderChannelPanel(){
- if(typeof page==="undefined"||page!=="Channels")return;
- const root=$("#content");if(!root||typeof dashboard==="undefined")return;
- const heading=[...root.querySelectorAll("section.panel h3")].find(h=>h.textContent.includes("Channel Analysis"));
- if(!heading)return;
- const panel=heading.closest("section.panel");if(!panel)return;
- const selector=panel.querySelector("#source-attribution");
- if(selector){
-  selector.replaceChildren();
-  [["shopify","ShopifyQL Last Click (Sessions Data)"],["first","First Click (Order UTMs)"],["last","Last Click (Order UTMs)"]].forEach(([value,label])=>{
-   const o=document.createElement("option");o.value=value;o.textContent=label;selector.append(o);
-  });
-  selector.value=channelModel;
-  selector.onchange=()=>{channelModel=selector.value;refreshChannelData(panel);};
- }
+ const selector = $("#source-attribution");
+ const panel = selector?.closest("section.panel");
+ if (!panel) return;
+ selector.replaceChildren(new Option("First Click (Order UTMs)","first"),new Option("Last Click (Order UTMs)","last"));
+ selector.value=channelModel;
+ selector.onchange=()=>{channelModel=selector.value;refreshChannelData(panel);};
  refreshChannelData(panel);
 }
 function refreshChannelData(panel){
- const rows=channelRows().sort((a,b)=>b.sessions-a.sessions||String(a.source).localeCompare(String(b.source)));
- const tbody=panel.querySelector(".channel-analysis-table tbody");if(!tbody)return;
+ const table=panel.querySelector(".channel-analysis-table");
+ const tbody=table?.tBodies[0];
+ if(!tbody)return;
+ const headings=table.tHead.rows[0].cells;
  let visible=8;
+ const rows=channelRows();
  function draw(){
-  tbody.innerHTML=rows.slice(0,visible).map(r=>'<tr><td><strong>'+esc11(r.source)+'</strong> <small>'+esc11(r.medium)+'</small></td><td class="channel-number">'+number(r.orders)+'</td><td class="channel-number">'+number(r.sessions)+'</td><td class="channel-number">'+percent(r.rate)+'</td></tr>').join("")||'<tr><td colspan="4">No Shopify Sessions Data for the selected period.</td></tr>';
-  const old=panel.querySelector("#more-channel-orders");old?.remove();
-  if(visible<rows.length){const button=document.createElement("button");button.id="more-channel-orders";button.className="btn analysis-more";button.textContent="Load more";button.onclick=()=>{visible+=8;draw()};panel.append(button);}
+  const {key,direction}=channelSort;
+  rows.sort((a,b)=>{
+   const x=a[key],y=b[key];
+   if (x==null || y==null) return (x==null)-(y==null)||a.channel.localeCompare(b.channel);
+   const delta=typeof x==="string"?x.localeCompare(y):x-y;
+   return direction*delta||a.channel.localeCompare(b.channel);
+  });
+  tbody.innerHTML=rows.slice(0,visible).map(r=>'<tr><td><strong>'+esc11(r.channel)+'</strong></td><td class="channel-number">'+number(r.orders)+'</td><td class="channel-number">'+number(r.sessions)+'</td><td class="channel-number">'+percent(r.rate)+'</td></tr>').join("")||'<tr><td colspan="4">No Shopify Sessions Data for the selected dates.</td></tr>';
+  channelColumns.forEach(([column,label],index)=>{
+   const cell=headings[index];
+   cell.setAttribute("aria-sort",column===key?(direction===-1?"descending":"ascending"):"none");
+   const button=cell.firstElementChild;
+   button.textContent=label+(column===key?(direction===-1?" ↓":" ↑"):"");
+  });
+  panel.querySelector("#more-channel-orders")?.remove();
+  if(visible<rows.length){
+   const button=document.createElement("button");button.id="more-channel-orders";
+   button.className="btn analysis-more";button.textContent="Load more";
+   button.onclick=()=>{visible+=8;draw()};panel.append(button);
+  }
  }
+ channelColumns.forEach(([key],index)=>{
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="channel-sort-button";
+  button.onclick=()=>{
+   channelSort.direction=channelSort.key===key?-channelSort.direction:-1;
+   channelSort.key=key;
+   draw();
+  };
+  headings[index].replaceChildren(button);
+ });
  draw();
- const h=panel.querySelector(".hint");if(h)h.textContent="Sessions: Shopify Sessions Data (Source + Medium). "+(channelModel==="shopify"?"Orders: ShopifyQL aggregate last click.":"Orders: Order Tracking Details "+channelModel+"-visit attribution; these orders are not from Shopify Sessions Data.")+" Conversion = orders ÷ sessions.";
+ const hint=panel.querySelector(".hint");
+ if(hint)hint.textContent=channelModel==="first"
+  ?"Shopify Sessions Data does not provide first-click order counts. Sessions are shown as reported."
+  :"Shopify Sessions Data supplies sessions and last-click orders. Conversion rate is orders divided by sessions.";
 }
 function apply(){
  if(typeof page==="undefined")return;
