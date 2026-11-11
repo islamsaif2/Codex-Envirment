@@ -31,7 +31,7 @@
   function metricTitle(el) {
     const t = el && el.querySelector(".kt");
     if (!t) return "";
-    return (t.childNodes[0]?.textContent || t.textContent || "").trim();
+    return (el.dataset.ultraMetric || t.querySelector(".metric-source-name")?.textContent || [...t.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).map(node=>node.textContent).join("")).trim();
   }
   function currency(v) {
     return typeof money === "function" ? money(v) : Number(v || 0).toLocaleString();
@@ -111,14 +111,14 @@
     const sessions = lookup.get("google sessions");
     if (sessions) {
       lookup.delete("google sessions");
-      const title = sessions.querySelector(".kt")?.firstChild;
+      const title = sessions.querySelector(".kt .metric-source-name") || sessions.querySelector(".kt")?.firstChild;
       if (title) title.textContent = "Total Sessions";
       sessions.setAttribute("data-period-title", encodeURIComponent("Total Sessions"));
       lookup.set("total sessions", sessions);
     }
     const orders = lookup.get("avg orders per day");
     if (orders) {
-      const title = orders.querySelector(".kt")?.firstChild;
+      const title = orders.querySelector(".kt .metric-source-name") || orders.querySelector(".kt")?.firstChild;
       if (title) title.textContent = "Avg Orders per Day";
     }
     const metrics = typeof dashboard !== "undefined" ? dashboard?.metrics : null;

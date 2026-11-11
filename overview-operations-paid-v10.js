@@ -36,8 +36,8 @@ function aliases(){
  "Meta Delivery Rate":"metrics.ultraMetaDeliveryRate",
  "Meta Cost Per Order":"metrics.costPerOrderAds","Meta Actual Cost Per Order":"metrics.actualCostPerOrderAds"});
 }
-function title(el){const t=el?.querySelector(".kt");return (t?.childNodes?.[0]?.textContent||"").trim();}
-function rename(el,name){if(!el)return;const t=el.querySelector(".kt");if(!t)return;if(t.firstChild)t.firstChild.textContent=name;else t.prepend(document.createTextNode(name));}
+function title(el){const t=el?.querySelector(".kt");return (el?.dataset.ultraMetric||t?.querySelector(".metric-source-name")?.textContent||t?.childNodes?.[0]?.textContent||"").trim();}
+function rename(el,name){if(!el)return;const t=el.querySelector(".kt");if(!t)return;const label=t.querySelector(".metric-source-name")||[...t.childNodes].find(node=>node.nodeType===Node.TEXT_NODE);if(label)label.textContent=name;else t.prepend(document.createTextNode(name));}
 function cardElement(label,value,hint,source){
  if(typeof card!=="function")return null;
  const temp=document.createElement("template");

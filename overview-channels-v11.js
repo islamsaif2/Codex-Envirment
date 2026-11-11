@@ -17,6 +17,7 @@ function kpi(label,value,hint,sources){
  el.classList.add("ultra-overview-card","ultra-v11-card");
  const heading=el.querySelector(".kt");
  if(heading){
+   heading.dataset.metricSourcesDecorated="yes";
    heading.querySelectorAll(".ultra-source-collection,.ultra-source-mark,.source-brand-icon").forEach(x=>x.remove());
    [...heading.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.remove());
    heading.prepend(document.createTextNode(label));
@@ -35,20 +36,20 @@ function slot(parent,items){
 }
 function titleFix(){
  const wrap=$(".ultra-overview-v10");if(!wrap)return;
- for(const el of wrap.querySelectorAll(".kpi")){
+ for(const el of wrap.querySelectorAll(".kpi[data-ultra-metric]")){
    const heading=el.querySelector(".kt");if(!heading)continue;
-   const label=(el.dataset.ultraMetric||heading.childNodes[0]?.textContent||"").trim();
-   if(!label)continue;
-   const textNodes=[...heading.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE);
-   if(textNodes.length!==1||textNodes[0]!==heading.firstChild||textNodes[0].textContent!==label){
-     textNodes.forEach(n=>n.remove());
+   const label=el.dataset.ultraMetric;
+   heading.dataset.metricSourcesDecorated="yes";
+   heading.querySelectorAll(".metric-source-heading,.metric-source-icons,.source-brand-icon").forEach(node=>node.remove());
+   const textNodes=[...heading.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE);
+   if(textNodes.length!==1||textNodes[0].textContent!==label){
+     textNodes.forEach(node=>node.remove());
      heading.prepend(document.createTextNode(label));
    }
-   const icons=[...heading.querySelectorAll(".ultra-source-collection")];
-   icons.slice(1).forEach(x=>x.remove());
-   heading.querySelectorAll(":scope > .ultra-source-mark,:scope > .source-brand-icon").forEach(x=>x.remove());
-   if(icons[0]){icons[0].classList.add("ultra-v11-icons");heading.append(icons[0]);}
-   if(el.dataset.ultraMetric!==label)el.dataset.ultraMetric=label;
+   const [icons,...duplicates]=heading.querySelectorAll(".ultra-source-collection");
+   duplicates.forEach(node=>node.remove());
+   heading.querySelectorAll(":scope > .ultra-source-mark").forEach(node=>node.remove());
+   icons?.classList.add("ultra-v11-icons");
  }
 }
 function aliases(){
@@ -99,7 +100,7 @@ function paintPaid(){
  }
  aliases();
  const spend=Number(m.advertisingSpend);
- const source=detail[paidModel]||{};
+ const source=detail[paidModel === "last" ? "lastClick" : "firstClick"] || {};
  const shopifyOrders=paidModel==="last"?detail.lastClickShopifyOrders:source.orders;
  const orders=shopifyOrders==null?null:Number(shopifyOrders);
  const delivered=source.deliveredOrders==null?null:Number(source.deliveredOrders);
