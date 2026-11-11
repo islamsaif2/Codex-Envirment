@@ -24,3 +24,23 @@
 .shop-attr-more[hidden]{display:none}
 @media(max-width:900px){.shop-attr-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.shop-attr-kpis{grid-template-columns:1fr 1fr}.shop-attr-kpi strong{font-size:1.1rem}.shop-attr-filter{flex-basis:100%;max-width:none}}
+
+
+/* Make Marketing Channel the visual row identifier and separate it from the measures. */
+.shop-attr-table th.shop-attr-primary-col,
+.shop-attr-table td.shop-attr-primary-col{
+  position:sticky;left:0;z-index:1;
+  min-width:190px;padding-right:24px;
+  border-right:2px solid var(--border,#cbd5e1);
+  background:var(--card,#fff);
+  box-shadow:5px 0 10px -10px rgba(0,0,0,.25);
+}
+.shop-attr-table th.shop-attr-primary-col{
+  z-index:2;background:var(--surface,#f8fafc);
+}
+.shop-attr-table td.shop-attr-primary-col{
+  font-weight:700;color:var(--text,#111827);
+}
+.shop-attr-table tbody tr:hover td.shop-attr-primary-col{
+  background:var(--surface,#f8fafc);
+}
