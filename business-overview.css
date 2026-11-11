@@ -1,0 +1,24 @@
+.business-overview { display: grid; gap: 28px; }
+.main:has(.business-overview) > .top #page-title,
+.main:has(.business-overview) > .top #page-sub { display: none; }
+.overview-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; text-align: left; }
+.overview-header h2, .overview-paid-group h3 { margin: 0; }
+.overview-header h2 { font-size: 21px; }
+.overview-header h2 span { font-size: 14px; font-weight: 500; color: var(--muted, #52617a); }
+.overview-grid { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.overview-operations-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.overview-paid-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.overview-paid-group { min-width: 0; border: 1px solid var(--border, #dbe4ef); border-radius: 14px; padding: 12px; }
+.overview-paid-group h3 { margin-bottom: 10px; font-size: 15px; }
+.overview-paid-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.business-overview .overview-kpi { min-width: 0; min-height: 126px; padding: 12px 9px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; text-align: center; }
+.business-overview .overview-kpi .kt { display: flex; justify-content: center; color: inherit !important; font-size: 12px !important; line-height: 1.35 !important; text-transform: none; letter-spacing: 0; }
+.business-overview .overview-kpi .metric-source-heading { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; }
+.business-overview .overview-kpi .kv { margin: 0; line-height: 1.2; font-size: clamp(16px, 1.45vw, 24px) !important; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.business-overview .overview-kpi small { line-height: 1.35; }
+.overview-business-grid > :nth-child(-n+2) { box-shadow: inset 0 3px 0 var(--accent, #6682ee); }
+.overview-comparison:empty { display: none; }
+@media (max-width: 1320px) { .overview-operations-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 980px) { .overview-paid-split { grid-template-columns: 1fr; } }
+@media (max-width: 750px) { .overview-business-grid, .overview-operations-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 460px) { .overview-paid-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -4,7 +4,7 @@ import path from "node:path";
 const directory = path.join(process.cwd(), "source-parts");
 const names = fs.readdirSync(directory).filter(name => /^part-\d{3}\.txt$/.test(name)).sort();
 if (names.length !== 25) throw new Error("Incomplete Ultramedix source transfer: " + names.length + " of 25 parts");
-let source = names.map(name => fs.readFileSync(path.join(directory, name), "utf8")).join("");
+let source = names.map(name => fs.readFileSync(path.join(directory, name), "utf8")).join("").replace(/\r\n/g, "\n");
 if (source.length !== 382097 || !source.includes("export default {")) {
   throw new Error("Invalid original Cloudflare source size: " + source.length);
 }
@@ -30,3 +30,4 @@ await import("./enhance-v5.mjs");
 await import("./enhance-v6.mjs");
 await import("./enhance-v7.mjs");
 await import("./enhance-v8.mjs");
+await import("./enhance-dashboard.mjs");
