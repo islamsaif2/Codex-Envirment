@@ -143,17 +143,14 @@ const channelSort = {key:"orders", direction:-1};
 const channelColumns = [["channel","Channel"],["orders","Orders"],["sessions","Sessions"],["rate","Conversion rate"]];
 
 function channelRows(){
- const raw = dashboard?.channelAnalysis || [];
- return raw.filter(row=>row.fromSessionsSheet).map(row=>{
-  const first = channelModel==="first";
-  const orders = first ? row.reportedFirstOrders ?? null : row.ordersAvailable ? Number(row.shopifyOrders) : null;
-  const sources = row[first?"firstUtmSources":"lastUtmSources"] || [];
-  const mediums = row[first?"firstUtmMediums":"lastUtmMediums"] || [];
-  const utms = [sources.length?"UTM source: "+sources.join(", "):"",
-    mediums.length?"UTM medium: "+mediums.join(", "):""].filter(Boolean).join(" · ");
-  return {channel:row.source+" · "+row.medium, sessions:row.sessions, orders, utms,
-    firstOrdersMissing:row.firstOrdersMissing,
-    rate:orders!==null && row.sessions>0 && !(first && row.firstOrdersMissing) ? orders/row.sessions : null};
+ return (dashboard?.channelAttribution?.[channelModel] || []).map(row=>{
+  const utms = [
+    row.sources.length?"UTM source: "+row.sources.join(", "):"",
+    row.mediums.length?"UTM medium: "+row.mediums.join(", "):"",
+    row.traffic.length?"Shopify traffic type: "+row.traffic.join(", "):""
+  ].filter(Boolean).join(" · ");
+  return {channel:row.source+" · "+row.medium, sessions:row.sessions, orders:row.orders, utms,
+    rate:row.sessions>0 ? row.orders/row.sessions : null};
  });
 }
 function renderChannelPanel(){
@@ -172,7 +169,7 @@ function refreshChannelData(panel){
  const headings=table.tHead.rows[0].cells;
  let visible=8;
  const rows=channelRows();
- const barMetric=channelModel==="first"&&!rows.some(row=>row.orders!=null)?"sessions":"orders";
+ const barMetric="orders";
  const barMax=rows.reduce((max,row)=>Math.max(max,row[barMetric]??0),0);
  function channelLabel(row){
   const value=row[barMetric];
@@ -189,7 +186,7 @@ function refreshChannelData(panel){
    const delta=typeof x==="string"?x.localeCompare(y):x-y;
    return direction*delta||a.channel.localeCompare(b.channel);
   });
-  tbody.innerHTML=rows.slice(0,visible).map(r=>'<tr><td>'+channelLabel(r)+'</td><td class="channel-number">'+number(r.orders)+'</td><td class="channel-number">'+number(r.sessions)+'</td><td class="channel-number">'+percent(r.rate)+'</td></tr>').join("")||'<tr><td colspan="4">No Shopify Sessions Data for the selected dates.</td></tr>';
+  tbody.innerHTML=rows.slice(0,visible).map(r=>'<tr><td>'+channelLabel(r)+'</td><td class="channel-number">'+number(r.orders)+'</td><td class="channel-number">'+number(r.sessions)+'</td><td class="channel-number">'+percent(r.rate)+'</td></tr>').join("")||'<tr><td colspan="4">No attribution data for these dates. Run the V6 Shopify Attribution sync for this range.</td></tr>';
   channelColumns.forEach(([column,label],index)=>{
    const cell=headings[index];
    cell.setAttribute("aria-sort",column===key?(direction===-1?"descending":"ascending"):"none");
@@ -216,13 +213,7 @@ function refreshChannelData(panel){
  });
  draw();
  const hint=panel.querySelector(".hint");
- if(hint)hint.textContent=channelModel==="first"
-  ? barMetric==="sessions"
-    ? "First-click order data has not been synced for these dates. Bars show sessions."
-    : rows.some(row=>row.firstOrdersMissing)
-      ? "First-click order counts are partial for these dates. Backfill the full range to complete them."
-      : "Bars show first-click orders. Conversion rate divides attributed orders by reported sessions."
-  : "Bars show last-click orders. Conversion rate divides attributed orders by reported sessions.";
+ if(hint)hint.textContent="Bars show "+(channelModel==="first"?"first-click":"last-click")+" orders. Both models use the same Shopify sessions by channel." ;
 }
 function apply(){
  if(typeof page==="undefined")return;

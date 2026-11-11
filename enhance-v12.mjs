@@ -85,20 +85,36 @@ worker = replace(worker, "  const detailDaily=[...drillDays.values()]", `  for (
     drillDays.set(date,row);
   }
   const detailDaily=[...drillDays.values()]`);
-worker = replace(worker, 'readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A1:M")', 'readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A1:R")');
-worker = replace(worker, "    item.completed+=Math.max(0,money(r[ci.completed]));", `    const firstOrders = r[channelIndex("First Click Orders (Shopify)",13)];
-    if (String(firstOrders ?? "").trim() !== "") {
-      item.reportedFirstOrders = (item.reportedFirstOrders ?? 0) + Math.max(0,money(firstOrders));
-    } else {
-      item.firstOrdersMissing = true;
+worker = replace(worker, "  const shopifyChannelSummary=new Map();", `  const channelAttribution = {first:[],last:[]};
+  if (detailMode === "channels") {
+    const rows = await readPublicSheet(business.spreadsheetId,"Shopify Sessions Attribution","A1:S").catch(()=>[]);
+    for (const [mode,sourceCol,mediumCol,ordersCol,utmCol,trafficCol] of [
+      ["first",1,2,6,12,16],["last",3,4,7,14,17]
+    ]) {
+      const channels = new Map();
+      for (const row of rows) {
+        const store = String(row[18] ?? "").trim();
+        if (!/\\.myshopify\\.com$/i.test(store) || !dateMatches(row[0],startDate,endDate)) continue;
+        const source = String(row[sourceCol] ?? "").trim();
+        const medium = String(row[mediumCol] ?? "").trim();
+        if (!source || !medium || String(row[ordersCol] ?? "").trim()==="") continue;
+        const key = JSON.stringify([source,medium]);
+        const item = channels.get(key) || {source,medium,sessions:0,orders:0,sources:new Set(),mediums:new Set(),traffic:new Set()};
+        item.sessions += money(row[5]);
+        item.orders += money(row[ordersCol]);
+        for (const [set,column] of [[item.sources,utmCol],[item.mediums,utmCol+1],[item.traffic,trafficCol]]) {
+          for (const value of String(row[column] ?? "").split(" | ")) if (value.trim()) set.add(value.trim());
+        }
+        channels.set(key,item);
+      }
+      channelAttribution[mode] = [...channels.values()].map(({sources,mediums,traffic,...metrics})=>({
+        ...metrics, sources:[...sources].sort(), mediums:[...mediums].sort(), traffic:[...traffic].sort()
+      }));
     }
-    for (const [index,key] of [[14,"firstUtmSources"],[15,"firstUtmMediums"],[16,"lastUtmSources"],[17,"lastUtmMediums"]]) {
-      const values = String(r[index] ?? "").split(" | ").map(v=>v.trim()).filter(Boolean);
-      if (values.length) item[key] = [...new Set([...(item[key] ?? []),...values])].sort();
-    }
-    item.completed+=Math.max(0,money(r[ci.completed]));`);
-worker = replace(worker, "firstConversionRate:x.ordersAvailable", "fromSessionsSheet:true,firstConversionRate:x.ordersAvailable");
-worker = worker.replace(/dashboard-cache:v\d+:/g, "dashboard-cache:v13:");
+  }
+  const shopifyChannelSummary=new Map();`);
+worker = replace(worker, "    channelAnalysis,", "    channelAnalysis,channelAttribution,");
+worker = worker.replace(/dashboard-cache:v\d+:/g, "dashboard-cache:v14:");
 
 html = replace(html, "const outcomeSeries=[['delivered','Delivered','#0f9d78'],['returned','Returned','#c24b45'],['open','Open','#536ff0'],['missing','Missing status','#8993a5']];", "const outcomeSeries=[['delivered','Delivered','#0f9d78'],['returned','Returned','#c24b45']];");
 html = replace(html, "Current Bosta outcomes for orders in the selected dates, grouped by shipping region. Canceled orders are excluded.", "Delivered and returned orders by shipping region, using Order Status from Order Tracking Details.");
