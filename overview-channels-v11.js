@@ -59,9 +59,10 @@ function aliases(){
    "Meta Delivered Sales":["metric",paidModel==="last"?"ultra11lastDeliveredSales":"ultra11firstDeliveredSales"],
    "Meta Delivered Orders":["metric",paidModel==="last"?"ultra11lastDeliveredOrders":"ultra11firstDeliveredOrders"],
    "Meta Delivery Rate":["metric",paidModel==="last"?"ultra11lastDeliveryRate":"ultra11firstDeliveryRate"],
+   "Meta Orders":["metric",paidModel==="last"?"ultra11sheetOrders":"ultra11firstOrders"],
    "Meta Orders / Purchases":["ads","purchases"],
-   "Meta Cost Per Order":["meta","costPerOrder"],
-   "Meta Actual Cost Per Order":["meta","actualCostPerOrder"]
+   "Meta Cost Per Order":paidModel==="meta"?["special","metaCPA"]:["metric",paidModel==="last"?"ultra11lastCPA":"ultra11firstCPA"],
+   "Meta Actual Cost Per Order":paidModel==="meta"?["metric","ultra11unavailableActualCPA"]:["metric",paidModel==="last"?"ultra11lastActualCPA":"ultra11firstActualCPA"]
   });
  }
 }
