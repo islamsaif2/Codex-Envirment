@@ -97,18 +97,24 @@ worker = replace(worker, "  const shopifyChannelSummary=new Map();", `  const ch
         if (!/\\.myshopify\\.com$/i.test(store) || !dateMatches(row[0],startDate,endDate)) continue;
         const source = String(row[sourceCol] ?? "").trim();
         const medium = String(row[mediumCol] ?? "").trim();
-        if (!source || !medium || String(row[ordersCol] ?? "").trim()==="") continue;
+        if (!source || !medium) continue;
         const key = JSON.stringify([source,medium]);
-        const item = channels.get(key) || {source,medium,sessions:0,orders:0,sources:new Set(),mediums:new Set(),traffic:new Set()};
+        const item = channels.get(key) || {source,medium,sessions:0,orders:0,ordersAvailable:false,sources:new Set(),mediums:new Set(),traffic:new Set()};
+        // Column F holds Shopify sessions for both attribution views.
         item.sessions += money(row[5]);
-        item.orders += money(row[ordersCol]);
+        // Blank G/H means no order-count data, not zero orders.
+        if (String(row[ordersCol] ?? "").trim() !== "") {
+          item.orders += money(row[ordersCol]);
+          item.ordersAvailable = true;
+        }
         for (const [set,column] of [[item.sources,utmCol],[item.mediums,utmCol+1],[item.traffic,trafficCol]]) {
           for (const value of String(row[column] ?? "").split(" | ")) if (value.trim()) set.add(value.trim());
         }
         channels.set(key,item);
       }
       channelAttribution[mode] = [...channels.values()].map(({sources,mediums,traffic,...metrics})=>({
-        ...metrics, sources:[...sources].sort(), mediums:[...mediums].sort(), traffic:[...traffic].sort()
+        ...metrics, orders:metrics.ordersAvailable ? metrics.orders : null,
+        sources:[...sources].sort(), mediums:[...mediums].sort(), traffic:[...traffic].sort()
       }));
     }
   }
