@@ -1,0 +1,28 @@
+import fs from "node:fs";
+import vm from "node:vm";
+let worker=fs.readFileSync("worker.mjs","utf8");
+// V10 has already injected its backend. Preserve it and add the V11 source report.
+const previous='detailMode==="channels"?readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A2:M").catch(()=>[]):Promise.resolve([])';
+if(!worker.includes(previous))throw Error("V11: Shopify Sessions Data fetch anchor missing");
+worker=worker.replace(previous,'(detailMode==="channels"||detailMode==="")?readPublicSheet(business.spreadsheetId,"Shopify Sessions Data","A2:M").catch(()=>[]):Promise.resolve([])');
+const reportAnchor="\n  return {\n    business: { id: business.id,";
+if(!worker.includes(reportAnchor))throw Error("V11: report anchor missing");
+const injected="  // V11: Shopify Sessions Data totals, grouped by Source and Medium.\n  // ShopifyQL Orders (column E) is last-click reporting; the sheet does not\n  // contain a per-order first-click / last-click split.\n  const ultra11PaidRows = [...shopifyChannelSummary.values()].filter(item =>\n    /^(facebook|instagram)$/i.test(item.source.trim()) && /^paid$/i.test(item.medium.trim()));\n  const ultra11ShopifySessions = ultra11PaidRows.reduce((sum,item)=>sum+item.sessions,0);\n  const ultra11SheetOrdersAvailable = ultra11PaidRows.every(item=>item.ordersAvailable);\n  const ultra11LastShopifyOrders = ultra11SheetOrdersAvailable\n    ? ultra11PaidRows.reduce((sum,item)=>sum+item.shopifyOrders,0) : null;\n  const ultra11FirstPaid = ultraMetaPaidOrders; // Retain the existing strict campaign-matched first-click definition.\n  const ultra11LastPaid = orders.filter(order =>\n    [\"Facebook\",\"Instagram\"].includes(sourceChannel(order[idx.sourceLast])) &&\n    cleanedTrafficType(order[idx.channelTrafficLast]) === \"Paid\");\n  function ultra11Aggregate(items){\n    const delivered = items.filter(isDelivered);\n    const returned = items.filter(order=>isReturnedStatus(norm(order[idx.orderStatus])));\n    return {\n      orders:items.length,\n      sales:items.reduce((sum,order)=>sum+money(order[idx.total]),0),\n      deliveredOrders:delivered.length,\n      deliveredSales:delivered.reduce((sum,order)=>sum+money(order[idx.total])-orderDiscount(order),0),\n      deliveryRate:delivered.length+returned.length\n        ?delivered.length/(delivered.length+returned.length):null\n    };\n  }\n  const ultra11First = ultra11Aggregate(ultra11FirstPaid);\n  const ultra11Last = ultra11Aggregate(ultra11LastPaid);\n  const ultra11SessionReport = {\n    paidMetaSessions:ultra11ShopifySessions,\n    lastClickShopifyOrders:ultra11LastShopifyOrders,\n    lastClickOrdersAvailable:ultra11SheetOrdersAvailable,\n    sheetAttribution:\"ShopifyQL last click (aggregate; no first-click split)\",\n    firstClick:ultra11First,\n    lastClick:ultra11Last\n  };\n  const ultra11DailyByDate = new Map();\n  function ultra11Row(day){\n    if(!ultra11DailyByDate.has(day))ultra11DailyByDate.set(day,{firstOrders:0,firstSales:0,\n      firstDeliveredOrders:0,firstDeliveredSales:0,firstReturned:0,\n      lastOrders:0,lastSales:0,lastDeliveredOrders:0,lastDeliveredSales:0,lastReturned:0});\n    return ultra11DailyByDate.get(day);\n  }\n  for(const [source,mode] of [[ultra11FirstPaid,\"first\"],[ultra11LastPaid,\"last\"]]){\n    for(const order of source){\n      const day=dateCandidates(order[idx.date],startDate,endDate).find(x=>\n        (!startDate||x>=startDate)&&(!endDate||x<=endDate));\n      if(!day)continue;\n      const entry=ultra11Row(day);\n      entry[mode+\"Orders\"]++;\n      entry[mode+\"Sales\"]+=money(order[idx.total]);\n      if(isDelivered(order)){\n        entry[mode+\"DeliveredOrders\"]++;\n        entry[mode+\"DeliveredSales\"]+=money(order[idx.total])-orderDiscount(order);\n      }else if(isReturnedStatus(norm(order[idx.orderStatus])))entry[mode+\"Returned\"]++;\n    }\n  }\n  for(const entry of metricDaily){\n    const x=ultra11DailyByDate.get(entry.date)||{};\n    for(const mode of [\"first\",\"last\"]){\n      entry[\"ultra11\"+mode+\"Orders\"]=x[mode+\"Orders\"]||0;\n      entry[\"ultra11\"+mode+\"Sales\"]=x[mode+\"Sales\"]||0;\n      entry[\"ultra11\"+mode+\"DeliveredOrders\"]=x[mode+\"DeliveredOrders\"]||0;\n      entry[\"ultra11\"+mode+\"DeliveredSales\"]=x[mode+\"DeliveredSales\"]||0;\n      const den=(x[mode+\"DeliveredOrders\"]||0)+(x[mode+\"Returned\"]||0);\n      entry[\"ultra11\"+mode+\"DeliveryRate\"]=den?(x[mode+\"DeliveredOrders\"]||0)/den:null;\n    }\n  }\n";
+worker=worker.replace(reportAnchor,"\n"+injected+reportAnchor);
+const resultAnchor="    websiteFunnel,\n    adFunnel,";
+if(!worker.includes(resultAnchor))throw Error("V11: API return anchor missing");
+worker=worker.replace(resultAnchor,"    websiteFunnel,\n    ultra11SessionReport,\n    adFunnel,");
+const embedded=worker.match(/const APP_HTML_B64 = "([^"]+)"/);
+if(!embedded)throw Error("V11: HTML missing");
+let html=Buffer.from(embedded[1],"base64").toString("utf8");
+const js=fs.readFileSync("overview-channels-v11.js","utf8");
+const css=fs.readFileSync("overview-channels-v11.css","utf8");
+new vm.Script(js,{filename:"overview-channels-v11.js"});
+if(!html.includes("</style>")||!html.includes("</body>"))throw Error("V11: HTML anchors missing");
+html=html.replace("</style>",css+"\n</style>");
+html=html.replace("</body>","<script>\n"+js+"\n</script>\n</body>");
+for(const [i,m] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].entries())
+ if(m[1].trim())new vm.Script(m[1],{filename:"inline-"+i+".js"});
+worker=worker.replace(embedded[1],Buffer.from(html,"utf8").toString("base64"));
+fs.writeFileSync("worker.mjs",worker);
+console.log("V11: Shopify sessions, channel conversions, paid attribution selector, and card polish installed");
