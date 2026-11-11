@@ -53,4 +53,32 @@ body .tablewrap th,body .tablewrap td{padding:8px 9px}
 @media(max-width:900px){body .layout{grid-template-columns:160px minmax(0,1fr)}body .main{padding:16px}body #content .ultra-v11-paid-grid>.kpi{flex-basis:calc((100% - 12px)/2)}}
 @media(max-width:720px){body .layout{grid-template-columns:1fr}body .side{padding:12px;gap:12px}body .main{padding:14px}body .nav{grid-template-columns:repeat(2,minmax(0,1fr))}body .nav button{min-height:40px}body .date-range{margin-top:4px}body .section-head{align-items:flex-start}body .btn{min-height:36px}}
 @media(max-width:570px){body #content .ultra-v11-paid-grid>.kpi{flex-basis:100%}body #content .ultra-overview-v10 .ultra-overview-row>.kpi{min-height:160px}body .top{flex-wrap:wrap}}
+/* Keep comparison graphics compact even when older chart rules use !important. */
+body #content .kpi svg.kpi-dual-chart{height:40px!important;max-height:40px!important;min-height:0!important;margin-top:4px!important}
+body #content .kpi .period-details{min-height:0!important;margin-top:4px!important}
+body #content .kpi .kpi-chart-legend{margin-top:2px;font-size:9px;gap:9px}
+body #content .kpi .kpi-period-bars{margin-top:4px;padding-top:4px;gap:3px}
+body #content .kpi .kpi-period-track{height:5px}
+body #content .kpi .kpi-chart-note{font-size:8px;line-height:1.25;margin-top:3px}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi{padding:10px!important;gap:2px;min-height:0}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .kt{font-size:11px!important;min-height:26px!important}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .kv{font-size:20px!important;margin:3px 0!important}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi small{font-size:10px!important;line-height:1.25!important}
+body .top{margin-bottom:8px}
+body .top h1{font-size:18px}
+body .crumb{margin-bottom:2px;font-size:9px}
+body .banner{padding:5px 9px;margin-bottom:7px}
+body #content .banner+.section-head{margin:6px 0 8px;align-items:center;gap:7px;flex-wrap:nowrap}
+body #content .banner+.section-head>div:first-child{flex:1;min-width:120px}
+body #content .banner+.section-head>div:last-child{gap:3px!important;min-width:0}
+body #content .banner+.section-head h2{font-size:12px}
+body #content .banner+.section-head p{font-size:9px;max-width:250px}
+body #content .banner+.section-head .tag{font-size:8px;padding:3px 6px}
+body #content .date-range{gap:5px}
+body #content .date-range .btn,body #content .date-range input{font-size:10px;padding:5px 7px;min-height:26px}
+body #content .ultra-overview-heading h2{font-size:14px}
+body #content .ultra-overview-heading p{font-size:10px;margin-bottom:5px}
+body #content .ultra-overview-section{gap:8px}
+body #content .ultra-overview-row{gap:10px}
+@media(max-width:720px){body #content .banner+.section-head{flex-wrap:wrap}body #content .banner+.section-head>div:last-child{width:100%;justify-items:start!important}body #content .date-range .btn,body #content .date-range input{min-height:36px}}
 
