@@ -116,7 +116,7 @@ function customer(){
   const customerPanel=findHeading(root,"New vs returning customers")?.closest(".panel");
   if(orderSection&&customerPanel){
     const existing=orderSection.querySelectorAll(".kpi");
-    const move=[...existing].filter(c=>/^(New customer orders|Returning customer orders|Orders without customer ID)\\b/i.test(c.querySelector(".kt")?.textContent.trim()||""));
+    const move=[...existing].filter(c=>/^(New customer orders|Returning customer orders|Orders without customer ID)\b/i.test(c.querySelector(".kt")?.textContent.trim()||""));
     if(move.length){
       const group=node("div","ultra-customer-order-cards");
       move.forEach(c=>group.append(c));
