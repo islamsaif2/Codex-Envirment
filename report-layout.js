@@ -193,6 +193,8 @@ function chartMappings(){
     "Avg Orders per Day":["metric","orders"],
     "Delivered":["metric","deliveredOrders"],
     "Returned to business":["metric","returnedOrders"],
+    "Canceled Orders (Before Pickup)":["metric","cancelledBeforePickupOrders"],
+    "New customers":["metric","newOrders"],
     "Average engagement time":["ga","avgEngagementTime"],
     "Landing page views (Meta)":["meta","landingPageViews"],
     "Conversion rate (Meta)":["ads","purchases/landing"],
