@@ -7,37 +7,13 @@ on:
 jobs:
   runtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 18
     steps:
-      - name: Check live app health
-        run: |
-          curl --fail --silent --show-error --location --max-time 60 \
-            https://ultramedix-dashboard-ogy5.onrender.com/api/health -o /tmp/health.json
-          python -m json.tool /tmp/health.json >/dev/null
-          echo "Render health returned valid JSON."
-      - name: Fetch actual Shipping/Operations dashboard data
-        run: |
-          curl --fail --silent --show-error --location --max-time 240 \
-            --write-out "Dashboard HTTP %{http_code}; duration %{time_total}s; bytes %{size_download}\n" \
-            'https://ultramedix-dashboard-ogy5.onrender.com/api/dashboard?businessId=ultramedix&startDate=2026-11-05&endDate=2026-11-11' \
-            -o /tmp/dashboard.json
-          python - <<'PY'
-          import json
-          data=json.load(open('/tmp/dashboard.json'))
-          for key in ['metrics','regionsAnalysis','regionPerformance','shippingStatusCounts']:
-              assert key in data, f"Dashboard missing {key}"
-          print("Dashboard data parsed with all required Shipping/Operations sections.")
-          PY
-      - name: Fetch actual Creative Analysis reporting data
-        run: |
-          curl --fail --silent --show-error --location --max-time 240 \
-            --write-out "Creative HTTP %{http_code}; duration %{time_total}s; bytes %{size_download}\n" \
-            'https://ultramedix-dashboard-ogy5.onrender.com/api/creative-analysis?businessId=ultramedix&start=2026-11-05&end=2026-11-11' \
-            -o /tmp/creative.json
-          python - <<'PY'
-          import json
-          data=json.load(open('/tmp/creative.json'))
-          for key in ['records','start','end','prevStart','prevEnd']:
-              assert key in data, f"Creative report missing {key}"
-          print(f"Creative report parsed; {len(data['records'])} selected rows.")
-          PY
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch real Operations/dashboard data with async polling
+        run: node test/live-report-smoke.mjs dashboard
+      - name: Fetch real Creative Analysis data with async polling
+        run: node test/live-report-smoke.mjs creative
