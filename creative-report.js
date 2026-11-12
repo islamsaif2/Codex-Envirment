@@ -19,14 +19,14 @@ async function readCreativeSnapshot(business) {
         const range=mapRange(mapping,'creativeAnalysis.range');
         const raw=await readPublicSheet(business.spreadsheetId,range.sheet,range.value);
         if(raw.some(r=>r.some(v=>/^#(REF!|VALUE!|ERROR!|N\/A)/.test(String(v)))))throw Error('The creative reporting formula needs attention. Check Meta & GA4 Reporting CL8.');
-        const headers=raw[0]||[];
-        // Google Visualization may coerce the literal Date header to null because
-        // nearly all remaining cells contain actual date values.
-        const hasHeader=['Ad Name','Ad Id','Amount spent'].every((name,i)=>
-          String(headers[i+1]??'').trim()===name);
-        if(!hasHeader)throw Error('Creative reporting columns do not match the mapping.');
+        // Google GViz may omit or coerce the first header row. The sheet's
+        // column mapping is fixed (CL:DM); identify whether row zero is data
+        // by its actual order-date and Ad ID instead of guessing header text.
+        const first=raw[0]||[];
+        const beginsWithData=Boolean(dateCandidates(first[0])[0]&&String(first[2]??"").trim());
+        const dataStart=beginsWithData?0:1;
         const optional=v=>{if(v==null||String(v).trim()==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null;};
-        const records=raw.slice(1).map(r=>({date:dateCandidates(r[0])[0],name:String(r[1]||''),id:String(r[2]||''),spend:optional(r[3]),cpm:optional(r[4]),ctr:optional(r[5]),purchases:optional(r[6]),thumbnail:String(r[7]||''),frequency:optional(r[8]),messages:optional(r[9]),plays3:optional(r[10]),video25:optional(r[11]),video50:optional(r[12]),video75:optional(r[13]),video100:optional(r[14]),avgTime:optional(r[15]),videoPlays:optional(r[16]),ranking:String(r[17]||''),creativeUrl:String(r[19]||''),engagements:optional(r[18]),campaign:String(r[20]||''),adset:String(r[21]||''),clicks:optional(r[22]),impressions:optional(r[23]),linkClicks:optional(r[24]),frequencyWeight:optional(r[25]),timeWeight:optional(r[26]),ctrWeight:optional(r[27])})).filter(r=>r.date&&r.id);
+        const records=raw.slice(dataStart).map(r=>({date:dateCandidates(r[0])[0],name:String(r[1]||''),id:String(r[2]||''),spend:optional(r[3]),cpm:optional(r[4]),ctr:optional(r[5]),purchases:optional(r[6]),thumbnail:String(r[7]||''),frequency:optional(r[8]),messages:optional(r[9]),plays3:optional(r[10]),video25:optional(r[11]),video50:optional(r[12]),video75:optional(r[13]),video100:optional(r[14]),avgTime:optional(r[15]),videoPlays:optional(r[16]),ranking:String(r[17]||''),creativeUrl:String(r[19]||''),engagements:optional(r[18]),campaign:String(r[20]||''),adset:String(r[21]||''),clicks:optional(r[22]),impressions:optional(r[23]),linkClicks:optional(r[24]),frequencyWeight:optional(r[25]),timeWeight:optional(r[26]),ctrWeight:optional(r[27])})).filter(r=>r.date&&r.id);
       
       const availableFrom=records.reduce((a,r)=>!a||r.date<a?r.date:a,'');
       const availableThrough=records.reduce((a,r)=>r.date>a?r.date:a,'');
