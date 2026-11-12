@@ -3,6 +3,9 @@ const variants=[
  ["direct",post],
  ["embed","https://www.facebook.com/plugins/post.php?href="+encodeURIComponent(post)+"&show_text=false&width=500"],
  ["video","https://www.facebook.com/plugins/video.php?href="+encodeURIComponent(post)+"&show_text=false&width=500"],
+ ["canonical","https://www.facebook.com/333267216547084/posts/122208944276467209"],
+ ["canonical-embed","https://www.facebook.com/plugins/post.php?href="+encodeURIComponent("https://www.facebook.com/333267216547084/posts/122208944276467209")+"&width=500"],
+ ["oembed","https://graph.facebook.com/v25.0/oembed_post?url="+encodeURIComponent(post)],
  ["mobile","https://m.facebook.com/333267216547084_122208944276467209"]
 ];
 for(const [name,url] of variants){
