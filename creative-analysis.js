@@ -19,20 +19,42 @@ function groups(){
  return [...map.values()].filter(g=>g.now.length).map(g=>{g.current=summarize(g.now);g.previous=summarize(g.prev);g.current.share=nowTotal>0?g.current.spend/nowTotal:null;g.previous.share=prevTotal>0&&g.previous.spend!=null?g.previous.spend/prevTotal:null;return g;}).filter(g=>!CA.search||[g.name,g.key,...[...g.ads.values()].map(r=>r.campaign)].join(' ').toLowerCase().includes(CA.search.toLowerCase())).sort((a,b)=>{const x=a.current[CA.sort],y=b.current[CA.sort];if(x==null)return y==null?a.name.localeCompare(b.name):1;if(y==null)return -1;return (CA.direction==='desc'?y-x:x-y)||a.name.localeCompare(b.name);});
 }
 function delta(key,now,prev){if(prev==null||prev===0||now==null)return '<span class="ca-change neutral">'+(now!=null&&prev===0&&now>0?'New':'—')+'</span>';const d=(now-prev)/Math.abs(prev)*100;const neutral=key==='spend'||key==='share'||key==='frequency';return '<span class="ca-change '+(neutral?'neutral':((d>=0)===defs[key][2]?'good':'bad'))+'" title="Compared with the previous equal-length period">'+(d>0?'+':'')+d.toFixed(0)+'%</span>';}
+function facebookPostUrl(url){
+ const normalized=safe(url);
+ if(!normalized)return '';
+ try{
+   const u=new URL(normalized),host=u.hostname.toLowerCase();
+   if(!['facebook.com','www.facebook.com','m.facebook.com','web.facebook.com'].includes(host))return '';
+   if(u.username||u.password)return '';
+   u.protocol='https:';u.hostname='www.facebook.com';u.hash='';
+   return u.href;
+ }catch{return '';}
+}
+function facebookPostEmbed(record,interactive=false){
+ const original=facebookPostUrl(record?.creativeUrl);
+ if(!original)return '';
+ // The Facebook Plugins player can render public photos or videos in-place.
+ // A login-gated/private post may not render; retain an original-post link.
+ const video=(Number(record.videoPlays)>0||Number(record.plays3)>0||Number(record.video25)>0);
+ const kind=video?'video':'post';
+ const frame='https://www.facebook.com/plugins/'+kind+'.php?href='+encodeURIComponent(original)+'&show_text=false&width=500';
+ const type=video?'video':'post';
+ return '<div class="ca-facebook-preview'+(interactive?' ca-facebook-interactive':'')+'" data-ca-facebook-kind="'+type+'">'+
+   '<iframe loading="lazy" title="Facebook '+type+' preview" src="'+escCA(frame)+'" scrolling="no" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>'+
+   (interactive?'':'<span class="ca-facebook-caption">Facebook '+type+' preview · Open card for original</span>')+
+   '</div>';
+}
 function media(g){
- // Use only genuine URLs from the sheet. Empty/expired thumbnails should not
- // be confused with missing Facebook creative post links.
  const list=[...g.ads.values()];
  const ads=list.filter(r=>safe(r.thumbnail)).slice(0,4);
- const fb=list.some(r=>safe(r.creativeUrl));
- const empty=fb?"Preview unavailable · Open card for Facebook link":"No thumbnail stored for these ads";
+ const post=list.find(r=>facebookPostUrl(r.creativeUrl));
+ const empty=post?facebookPostEmbed(post):'<span class="ca-no-image">No thumbnail or public Facebook post URL</span>';
  return '<div class="ca-media '+(ads.length>1?'collage':'')+'">'+
-   (ads.length?ads.map(r=>'<img loading="lazy" referrerpolicy="no-referrer" src="'+escCA(safe(r.thumbnail))+'" alt="'+escCA(r.name)+'">').join(''):
-    '<span class="ca-no-image">'+escCA(empty)+'</span>')+
+   (ads.length?ads.map(r=>'<img loading="lazy" referrerpolicy="no-referrer" data-ca-post="'+escCA(facebookPostUrl(r.creativeUrl))+'" data-ca-video="'+(Number(r.videoPlays)>0||Number(r.plays3)>0||Number(r.video25)>0?'yes':'no')+'" src="'+escCA(safe(r.thumbnail))+'" alt="'+escCA(r.name)+'">').join(''):empty)+
    '<span class="ca-count">'+g.ads.size+' '+(g.ads.size===1?'ad':'ads')+'</span></div>';
 }
 function openDetails(g){
- const d=document.createElement('dialog');d.className='ca-dialog';d.innerHTML='<header><div><h2>'+escCA(g.name)+'</h2><small>'+escCA(CA.data.start)+' – '+escCA(CA.data.end)+'</small></div><button class="btn" aria-label="Close creative details">✕</button></header><div class="ca-detail-grid">'+Object.keys(defs).map(k=>'<div><span>'+escCA(defs[k][0])+'</span><strong>'+display(k,g.current[k])+'</strong>'+delta(k,g.current[k],g.previous[k])+'</div>').join('')+'</div><h3>Ads in this card</h3>'+[...g.ads.values()].map(r=>'<div class="ca-ad-detail">'+(safe(r.thumbnail)?'<img src="'+escCA(safe(r.thumbnail))+'" alt="Creative thumbnail">':'')+'<div><b>'+escCA(r.name)+'</b><small>Ad ID: '+escCA(r.id)+'</small><small>Engagement rate ranking: '+escCA(r.ranking||'Not provided')+'</small>'+(safe(r.creativeUrl)?'<a target="_blank" rel="noopener noreferrer" href="'+escCA(safe(r.creativeUrl))+'">View original on Facebook ↗</a>':/^\\d{8,}$/.test(String(r.id))?'<a target="_blank" rel="noopener noreferrer" href="https://www.facebook.com/ads/library/?id='+encodeURIComponent(r.id)+'">Find ad in Meta Ad Library ↗</a>':'')+'</div></div>').join('')+'<p class="ca-note">CPM and link CTR use impressions estimated from source spend / CPM. Frequency is impression-weighted across daily records, not unique reach for the full period. Video play time is weighted by plays. — means no reported value. Comparisons use '+escCA(CA.data.prevStart)+' to '+escCA(CA.data.prevEnd)+'.</p>';
+ const d=document.createElement('dialog');d.className='ca-dialog';d.innerHTML='<header><div><h2>'+escCA(g.name)+'</h2><small>'+escCA(CA.data.start)+' – '+escCA(CA.data.end)+'</small></div><button class="btn" aria-label="Close creative details">✕</button></header><div class="ca-detail-grid">'+Object.keys(defs).map(k=>'<div><span>'+escCA(defs[k][0])+'</span><strong>'+display(k,g.current[k])+'</strong>'+delta(k,g.current[k],g.previous[k])+'</div>').join('')+'</div><h3>Ads in this card</h3>'+[...g.ads.values()].map(r=>'<div class="ca-ad-detail">'+(safe(r.thumbnail)?'<img data-ca-post="'+escCA(facebookPostUrl(r.creativeUrl))+'" data-ca-video="'+(Number(r.videoPlays)>0||Number(r.plays3)>0||Number(r.video25)>0?'yes':'no')+'" src="'+escCA(safe(r.thumbnail))+'" alt="Creative thumbnail">':facebookPostEmbed(r,true))+'<div><b>'+escCA(r.name)+'</b><small>Ad ID: '+escCA(r.id)+'</small><small>Engagement rate ranking: '+escCA(r.ranking||'Not provided')+'</small>'+(safe(r.creativeUrl)?'<a target="_blank" rel="noopener noreferrer" href="'+escCA(safe(r.creativeUrl))+'">View original on Facebook ↗</a>':/^\\d{8,}$/.test(String(r.id))?'<a target="_blank" rel="noopener noreferrer" href="https://www.facebook.com/ads/library/?id='+encodeURIComponent(r.id)+'">Find ad in Meta Ad Library ↗</a>':'')+'</div></div>').join('')+'<p class="ca-note">CPM and link CTR use impressions estimated from source spend / CPM. Frequency is impression-weighted across daily records, not unique reach for the full period. Video play time is weighted by plays. — means no reported value. Comparisons use '+escCA(CA.data.prevStart)+' to '+escCA(CA.data.prevEnd)+'.</p>';
  document.body.append(d);d.querySelector('button').onclick=()=>d.close();d.addEventListener('close',()=>d.remove());d.showModal();handleImages(d);
 }
 function handleImages(root){
@@ -50,12 +72,21 @@ function handleImages(root){
          return;
        }
      }
-     img.style.display='none';
      const parent=img.parentElement;
+     const fb=facebookPostUrl(img.dataset.caPost);
+     if(fb&&parent){
+       // After the original CDN URL and our same-origin fallback both fail,
+       // try the public Facebook post/video embed instead of a blank card.
+       const virtual={creativeUrl:fb,videoPlays:img.dataset.caVideo==='yes'?1:0};
+       const template=document.createElement('template');
+       template.innerHTML=facebookPostEmbed(virtual,!!img.closest('.ca-dialog'));
+       if(template.content.firstElementChild){img.replaceWith(template.content.firstElementChild);return;}
+     }
+     img.style.display='none';
      if(parent&&!parent.querySelector('.ca-image-error')){
        const msg=document.createElement('span');
        msg.className='ca-image-error';
-       msg.textContent='Preview unavailable · Open card for the original Facebook link';
+       msg.textContent='Facebook did not provide a public preview; open the original post';
        parent.append(msg);
      }
    };
