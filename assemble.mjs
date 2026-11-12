@@ -41,3 +41,5 @@ await import("./enhance-inventory-labels.mjs");
 await import("./enhance-compact-layout.mjs");
 await import("./enhance-overview-compact-v2.mjs");
 
+
+await import("./enhance-creative-analysis.mjs");
