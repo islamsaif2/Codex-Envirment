@@ -7,12 +7,19 @@ const asNumber=v=>Number.isFinite(Number(v))?Number(v):null;
 const fmtNum=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":Number(v).toLocaleString("en-US",{maximumFractionDigits:2});
 const moneyNum=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":typeof money==="function"?money(Number(v)):fmtNum(v)+" EGP";
 const percent=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":(Number(v)*100).toFixed(1)+"%";
-const regionKey=v=>String(v??"").toLowerCase().trim().replace(/\s+/g," ");
+const regionKey=v=>{const key=String(v??"").toLowerCase().trim().replace(/\s+/g," ");return /^(6th of october|6 october|6th october|6 october city|6th of october city)$/.test(key)?"giza":key;};
 let regionLimit=25;
 function regionPanel(){
   const data=typeof dashboard==="undefined"?null:dashboard;
   const source=data?.regionsAnalysis||[];
-  const sales=new Map((data?.regionPerformance||[]).map(r=>[regionKey(r.region),r]));
+  const sales=new Map();
+  for(const r of data?.regionPerformance||[]){
+    const key=regionKey(r.region),old=sales.get(key)||{revenue:0,deliveredOrders:0};
+    old.revenue+=Number(r.revenue)||0;
+    old.deliveredOrders+=Number(r.deliveredOrders)||0;
+    old.averageOrderValue=old.deliveredOrders?old.revenue/old.deliveredOrders:null;
+    sales.set(key,old);
+  }
   const duration=new Map();
   for(const r of data?.demographics?.deliveryDurations||[]){
     const key=regionKey(r.region),v=duration.get(key)||{minutes:0,count:0};
