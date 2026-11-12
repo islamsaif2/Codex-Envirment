@@ -30,11 +30,19 @@ async function readCreativeSnapshot(business) {
       
       const availableFrom=records.reduce((a,r)=>!a||r.date<a?r.date:a,'');
       const availableThrough=records.reduce((a,r)=>r.date>a?r.date:a,'');
+      // Resolve media using the newest reporting DATE for each Ad ID.
+      // Image and Facebook links are independent: each uses its own latest
+      // dated nonempty source value. A tie uses the last row for that day.
       const latest=new Map(),latestLinks=new Map();
       for(const r of records) {
-        const x=latest.get(r.id),link=latestLinks.get(r.id);
-        if(r.thumbnail && (!x || r.date>x.date)) latest.set(r.id,r);
-        if(r.creativeUrl && (!link || r.date>link.date)) latestLinks.set(r.id,r);
+        const thumbnail=String(r.thumbnail||"").trim();
+        const creativeUrl=String(r.creativeUrl||"").trim();
+        const currentThumbnail=latest.get(r.id);
+        const currentLink=latestLinks.get(r.id);
+        if(thumbnail&&(!currentThumbnail||r.date>=currentThumbnail.date))
+          latest.set(r.id,{date:r.date,url:thumbnail});
+        if(creativeUrl&&(!currentLink||r.date>=currentLink.date))
+          latestLinks.set(r.id,{date:r.date,url:creativeUrl});
       }
       return {records, range:range.sheet, cachedAt:Date.now(), availableFrom,availableThrough,latest,latestLinks};
     })();
@@ -68,9 +76,14 @@ async function buildCreativeReport(business,start,end){
   if(!Number.isFinite(span)||span<1)throw Error('Choose a valid date range.');
   const prevEnd=new Date(Date.parse(start)-864e5).toISOString().slice(0,10);
   const prevStart=new Date(Date.parse(start)-span*864e5).toISOString().slice(0,10);
-  const selected=records.filter(r=>r.date>=prevStart&&r.date<=end).map(r=>({
-    ...r,thumbnail:latest.get(r.id)?.thumbnail||r.thumbnail,
-    creativeUrl:latestLinks.get(r.id)?.creativeUrl||r.creativeUrl
-  }));
+  const selected=records.filter(r=>r.date>=prevStart&&r.date<=end).map(r=>{
+    const image=latest.get(r.id),link=latestLinks.get(r.id);
+    return {...r,
+      thumbnail:image?.url||"",
+      thumbnailDate:image?.date||"",
+      creativeUrl:link?.url||"",
+      creativeUrlDate:link?.date||""
+    };
+  });
   return {records:selected,start,end,prevStart,prevEnd,source:range,availableFrom,availableThrough};
 }
