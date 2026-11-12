@@ -7,7 +7,7 @@ const cash=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":typeof 
 const percent=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":(Number(v)*100).toFixed(2)+"%";
 const esc11=v=>{const t=document.createElement("span");t.textContent=String(v??"");return t.innerHTML;};
 const iconSvg={shopify:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 15-2 2 16-18 1z" fill="#83b83b"/><text x="8" y="18" fill="white" font-size="10" font-weight="900">S</text></svg>',meta:'<svg viewBox="0 0 32 22" aria-hidden="true"><path d="M2 16C6 4 9 3 12 7c5 6 8 13 13 8 3-3 4-9 6-9" fill="none" stroke="#1877f2" stroke-width="3" stroke-linecap="round"/></svg>',bosta:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h13v12H2zM15 10h4l3 4v3h-7z" fill="none" stroke="#e17e38" stroke-width="2"/><circle cx="7" cy="18" r="2" fill="#e17e38"/><circle cx="19" cy="18" r="2" fill="#e17e38"/></svg>'};
-let paidModel="first",channelModel="last",renderLock=false;
+let paidModel="meta",channelModel="last",renderLock=false;
 function kpi(label,value,hint,sources){
  if(typeof card!=="function")return null;
  const template=document.createElement("template");
@@ -75,24 +75,15 @@ function paintPaid(){
  const root=$(".ultra-overview-v10 .ultra-paid");
  if(!root||typeof dashboard==="undefined")return;
  const m=dashboard.metrics||{},ad=dashboard.adFunnel||{},detail=attribution();
- let selector=root.querySelector(".ultra-v11-select");
- if(!selector){
-   const heading=root.querySelector(".ultra-overview-heading");if(!heading)return;
-   selector=document.createElement("select");
-   selector.className="ultra-v11-select btn";
-   selector.setAttribute("aria-label","Paid Ads attribution model");
-   [["first","Meta Attributed Orders by Shopify First Click"],
-    ["last","Meta Attributed Orders by Shopify Last Click"],
-    ["meta","Meta Attributed Orders by Meta records itself"]].forEach(([value,label])=>{
-      const o=document.createElement("option");o.value=value;o.textContent=label;selector.append(o);
-   });
-   selector.addEventListener("change",()=>{
-     paidModel=selector.value;
-     paintPaid();
-   });
-   heading.append(selector);
+ // Meta-only attribution view. No Shopify first/last options.
+ root.querySelector(".ultra-v11-select")?.remove();
+ let label=root.querySelector(".ultra-meta-model-label");
+ if(!label){
+   label=document.createElement("span");
+   label.className="ultra-meta-model-label";
+   label.textContent="Meta Attributed Orders by Meta records itself (7 day click)";
+   root.querySelector(".ultra-overview-heading")?.append(label);
  }
- selector.value=paidModel;
  let area=root.querySelector(".ultra-v11-paid-list");
  if(!area){
    root.querySelector(".ultra-paid-split")?.remove();
