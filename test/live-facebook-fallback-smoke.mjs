@@ -7,7 +7,7 @@ const errors=[];
 page.on("pageerror",err=>errors.push(err.message));
 try{
  await page.goto("https://ultramedix-dashboard-ogy5.onrender.com",{waitUntil:"domcontentloaded",timeout:60000});
- await page.waitForFunction(()=>typeof dashboard!=="undefined"&&!!dashboard?.metrics,{timeout:160000});
+ await page.waitForFunction(()=>typeof dashboard!=="undefined"&&!!dashboard?.metrics,null,{timeout:160000});
  await page.evaluate(()=>setPage("Creative Analysis"));
  await page.waitForSelector(".ca-card img[data-ca-post]",{timeout:120000});
  const target=page.locator(".ca-card img[data-ca-post]").first();
