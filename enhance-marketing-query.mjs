@@ -55,15 +55,15 @@ const detailHelper=`async function readPeriodMetaDetail(spreadsheetId,startDate,
   const clauses=[];
   if(valid(startDate))clauses.push("A >= date '"+startDate+"'");
   if(valid(endDate))clauses.push("A <= date '"+endDate+"'");
-  if(!clauses.length)return readPublicSheet(spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:W");
+  if(!clauses.length)return readPublicSheet(spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:Y");
   // Select only R:W but filter using the same column A dates as A3:Q.
-  return readPublicSheetOriginal(spreadsheetId,"Raw Ga4 & Meta Ads Data","A3:W",false,
-    "select R,S,T,U,V,W where "+clauses.join(" and "));
+  return readPublicSheetOriginal(spreadsheetId,"Raw Ga4 & Meta Ads Data","A3:Y",false,
+    "select R,S,T,U,V,W,X,Y where "+clauses.join(" and "));
 }
 `;
 worker=worker.replace(anchor,helper+detailHelper+anchor);
 worker=worker.replace(legacy,'readPeriodMarketingData(business.spreadsheetId,mr.sheet,startDate,endDate)');
-const oldDetail='detailMode==="ads"?readPublicSheet(business.spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:W").catch(()=>[]):Promise.resolve([])';
+const oldDetail='detailMode==="ads"?readPublicSheet(business.spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:Y").catch(()=>[]):Promise.resolve([])';
 const newDetail='detailMode==="ads"?readPeriodMetaDetail(business.spreadsheetId,startDate,endDate).catch(()=>[]):Promise.resolve([])';
 if(!worker.includes(oldDetail))throw Error("Marketing query optimization: Meta detail read anchor missing");
 worker=worker.replace(oldDetail,newDetail);
