@@ -247,62 +247,10 @@ async function attributionResponse(url){
 }
 
 
-// Same-origin fallback for Meta's CDN thumbnail links. Some browsers or privacy
-// extensions block third-party image requests even when the sheet URL exists.
-// Restrict requests to approved image CDN hosts (never an arbitrary proxy URL).
-const creativeImageCache=new Map();
-const CREATIVE_IMAGE_MAX_BYTES=8*1024*1024;
-let creativeImageCacheBytes=0;
-async function creativeThumbnailResponse(source){
-  let target;
-  try{
-    target=new URL(source);
-    const host=target.hostname.toLowerCase();
-    if(target.protocol!=="https:"||
-       !(host==="fbcdn.net"||host.endsWith(".fbcdn.net")||
-         host==="cdninstagram.com"||host.endsWith(".cdninstagram.com"))||
-       target.href.length>4096||target.username||target.password)return Response.json({error:"Unsupported thumbnail host"},{status:400});
-  }catch{return Response.json({error:"Invalid thumbnail URL"},{status:400});}
-  const key=target.href,existing=creativeImageCache.get(key);
-  if(existing&&existing.expires>Date.now())
-    return new Response(existing.body,{status:200,headers:{"Content-Type":existing.type,"Cache-Control":"public,max-age=3600","X-Ultramedix-Image-Cache":"HIT"}});
-  const upstream=await fetch(target.href,{signal:AbortSignal.timeout(12_000),headers:{"Accept":"image/avif,image/webp,image/jpeg,image/png,image/*;q=0.8","User-Agent":"Mozilla/5.0 (compatible; UltramedixAnalytics/1.0)"}});
-  if(!upstream.ok)return Response.json({error:"Thumbnail expired or blocked at source",status:upstream.status},{status:upstream.status===404?404:502});
-  const type=(upstream.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
-  if(!/^image\/(jpeg|png|webp|avif|gif)$/.test(type))return Response.json({error:"CDN response was not an image"},{status:415});
-  const byteLimit=2*1024*1024;
-  const statedSize=Number(upstream.headers.get("content-length")||0);
-  if(statedSize>byteLimit)return Response.json({error:"Thumbnail too large"},{status:413});
-  const chunks=[];let size=0;
-  if(upstream.body){
-    for await(const part of upstream.body){
-      size+=part.byteLength;
-      if(size>byteLimit){await upstream.body.cancel().catch(()=>{});return Response.json({error:"Thumbnail too large"},{status:413});}
-      chunks.push(Buffer.from(part));
-    }
-  }
-  const body=Buffer.concat(chunks);
-  if(body.length===0)return Response.json({error:"Empty thumbnail"},{status:502});
-  while(creativeImageCacheBytes+body.length>CREATIVE_IMAGE_MAX_BYTES&&creativeImageCache.size){
-    const first=creativeImageCache.keys().next().value;
-    creativeImageCacheBytes-=creativeImageCache.get(first).body.length;
-    creativeImageCache.delete(first);
-  }
-  creativeImageCache.set(key,{body,type,expires:Date.now()+3600_000});
-  creativeImageCacheBytes+=body.length;
-  return new Response(body,{status:200,headers:{"Content-Type":type,"Cache-Control":"public,max-age=3600","X-Ultramedix-Image-Cache":"MISS"}});
-}
-
 const server = http.createServer(async (req, res) => {
   const started = Date.now();
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost:" + PORT}`);
-    if(req.method==="GET"&&url.pathname==="/api/creative-thumbnail"){
-      const response=await creativeThumbnailResponse(url.searchParams.get("url")||"");
-      res.writeHead(response.status,Object.fromEntries(response.headers.entries()));
-      res.end(Buffer.from(await response.arrayBuffer()));
-      return;
-    }
     if(req.method==="GET"&&url.pathname==="/api/shopify-attribution"){
       const response=await attributionResponse(url);
       res.writeHead(response.status,Object.fromEntries(response.headers.entries()));
