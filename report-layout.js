@@ -183,6 +183,7 @@ function chartMappings(){
     "AVG orders per day":["metric","orders"],
     "Avg Orders per Day":["metric","orders"],
     "Delivered":["metric","deliveredOrders"],
+    "Returned to business":["metric","returnedOrders"],
     "Average engagement time":["ga","avgEngagementTime"],
     "Landing page views (Meta)":["meta","landingPageViews"],
     "Conversion rate (Meta)":["ads","purchases/landing"],
