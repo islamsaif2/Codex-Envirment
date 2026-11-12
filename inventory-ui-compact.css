@@ -1,0 +1,35 @@
+/* More compact Inventory header and full-width product grid */
+body #content:has(.inv-grid)>.banner{margin:5px 0 7px!important;padding:6px 10px!important;min-height:0;font-size:10px!important;border-radius:6px}
+body #content:has(.inv-grid)>.inv-legend{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;margin:7px 0 11px!important}
+body #content:has(.inv-grid)>.inv-legend>div{padding:8px 11px!important;min-height:0!important;border-radius:8px!important;display:flex;flex-direction:column;justify-content:center}
+body #content:has(.inv-grid)>.inv-legend strong{font-size:13px!important;line-height:1.15!important;gap:5px!important}
+body #content:has(.inv-grid)>.inv-legend small{font-size:10px!important;margin-top:3px!important}
+body #content .ultra-inventory-compact>.inv-heading{margin:5px 0 3px!important}
+body #content .ultra-inventory-compact>.inv-heading h3{font-size:16px!important}
+body #content .ultra-inventory-compact>.ultra-inventory-count{font-size:11px!important;line-height:1.4!important;margin:4px 0 7px!important}
+body #content .ultra-inventory-explain{margin:0 0 9px;font-size:11px;color:var(--muted,#64748b);max-width:100%}
+body #content .ultra-inventory-explain summary{cursor:pointer;width:fit-content;font-weight:650;text-decoration:underline;text-underline-offset:2px}
+body #content .ultra-inventory-explain p{margin:5px 0!important;font-size:11px!important;line-height:1.45!important}
+body #content .ultra-inventory-full-grid{display:grid!important;width:100%!important;max-width:none!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;justify-content:stretch!important;align-items:stretch!important;gap:12px!important;margin-top:5px!important}
+body #content .ultra-inventory-full-grid>.inv-product{width:100%!important;max-width:none!important;min-width:0!important;height:100%!important;margin:0!important;box-sizing:border-box!important;border-radius:9px!important}
+body #content .ultra-inventory-full-grid>.inv-product .inv-product-head{width:100%;box-sizing:border-box;padding:9px 8px!important;min-height:69px}
+body #content .ultra-inventory-full-grid>.inv-product .inv-table-wrap{width:100%}
+body #content .ultra-inventory-full-grid>.inv-product .inv-table{width:100%!important}
+body #content .ultra-inventory-full-grid>.inv-product h4{font-size:12px!important}
+@media(max-width:1470px){body #content .ultra-inventory-full-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+@media(max-width:1100px){body #content .ultra-inventory-full-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:750px){body #content .ultra-inventory-full-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}body #content:has(.inv-grid)>.inv-legend{grid-template-columns:1fr!important}}
+@media(max-width:440px){body #content .ultra-inventory-full-grid{grid-template-columns:1fr!important}}
+/* Move provenance marks before the metric title, not on the badge side. */
+body #content .kpi .kt.ultra-source-title-left{display:flex!important;align-items:center!important;flex-wrap:nowrap!important;gap:5px!important;padding-right:44px!important;min-width:0;position:relative}
+body #content .kpi .kt.ultra-source-title-left .ultra-source-collection,
+body #content .kpi .kt.ultra-source-title-left .metric-source-icons,
+body #content .kpi .kt.ultra-source-title-left .metric-source-heading,
+body #content .kpi .kt.ultra-source-title-left>.source-brand-icon{position:static!important;display:inline-flex!important;order:-2!important;align-items:center!important;flex:0 0 auto!important;width:auto!important;height:auto!important;margin:0 2px 0 0!important;gap:2px!important}
+body #content .kpi .kt.ultra-source-title-left .ultra-source-mark{width:13px!important;height:13px!important;display:inline-flex!important;flex:none!important}
+body #content .kpi .kt.ultra-source-title-left .ultra-source-mark svg{width:13px!important;height:13px!important}
+body #content .kpi .kt.ultra-source-title-left .kpi-badge-slot{position:absolute!important;right:0!important;top:0!important;margin:0!important;order:10!important}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .kt.ultra-source-title-left .kpi-badge-slot{top:0!important;right:0!important}
+body #content .ultra-overview-v10 .ultra-overview-row>.kpi .ultra-source-collection{position:static!important;right:auto!important;top:auto!important;z-index:auto!important}
+body #content th>.ultra-source-icons{margin:0 6px 0 0!important;display:inline-flex;vertical-align:middle}
+body #content th .ultra-source-icons{white-space:nowrap}
