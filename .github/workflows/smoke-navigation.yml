@@ -15,4 +15,5 @@ jobs:
           node-version: '22'
       - run: npm install --no-save playwright
       - run: npx playwright install --with-deps chromium
-      - run: node test/live-navigation-smoke.mjs
+      - name: Check tabs after dashboard data finishes loading
+        run: node test/live-navigation-smoke.mjs
