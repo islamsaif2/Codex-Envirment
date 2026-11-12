@@ -1,0 +1,16 @@
+name: Inspect generated Inventory UI anchors
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/inspect-inventory.yml'
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node assemble.mjs
+      - run: node test/inventory-layout-inspect.mjs
