@@ -1,0 +1,16 @@
+name: Test Creative CDN image fallback
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/smoke-creative-image.yml'
+jobs:
+  thumbnail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node test/live-creative-image-smoke.mjs
