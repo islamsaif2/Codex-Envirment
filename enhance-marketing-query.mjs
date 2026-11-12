@@ -65,7 +65,7 @@ worker=worker.replace(anchor,helper+detailHelper+anchor);
 worker=worker.replace(legacy,'readPeriodMarketingData(business.spreadsheetId,mr.sheet,startDate,endDate)');
 const oldDetail='detailMode==="ads"?readPublicSheet(business.spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:Y").catch(()=>[]):Promise.resolve([])';
 const newDetail='detailMode==="ads"?readPeriodMetaDetail(business.spreadsheetId,startDate,endDate).catch(()=>[]):Promise.resolve([])';
-if(!worker.includes(oldDetail))throw Error("Marketing query optimization: Meta detail read anchor missing");
+if(!worker.includes(oldDetail)){const p=worker.indexOf("metaDetailExtra");console.log("DETAIL SOURCE",worker.slice(p-360,p+400));throw Error("Marketing query optimization: Meta detail read anchor missing");}
 worker=worker.replace(oldDetail,newDetail);
 
 new vm.Script(worker.replace(/^export default \{/m,"const __workerDefault = {"),{filename:"optimized-worker.mjs"});
