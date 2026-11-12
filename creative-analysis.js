@@ -19,13 +19,16 @@ function groups(){
  return [...map.values()].filter(g=>g.now.length).map(g=>{g.current=summarize(g.now);g.previous=summarize(g.prev);g.current.share=nowTotal>0?g.current.spend/nowTotal:null;g.previous.share=prevTotal>0&&g.previous.spend!=null?g.previous.spend/prevTotal:null;return g;}).filter(g=>!CA.search||[g.name,g.key,...[...g.ads.values()].map(r=>r.campaign)].join(' ').toLowerCase().includes(CA.search.toLowerCase())).sort((a,b)=>{const x=a.current[CA.sort],y=b.current[CA.sort];if(x==null)return y==null?a.name.localeCompare(b.name):1;if(y==null)return -1;return (CA.direction==='desc'?y-x:x-y)||a.name.localeCompare(b.name);});
 }
 function delta(key,now,prev){if(prev==null||prev===0||now==null)return '<span class="ca-change neutral">'+(now!=null&&prev===0&&now>0?'New':'—')+'</span>';const d=(now-prev)/Math.abs(prev)*100;const neutral=key==='spend'||key==='share'||key==='frequency';return '<span class="ca-change '+(neutral?'neutral':((d>=0)===defs[key][2]?'good':'bad'))+'" title="Compared with the previous equal-length period">'+(d>0?'+':'')+d.toFixed(0)+'%</span>';}
-// Display the most recent dated thumbnail supplied for this Ad ID by
-// Creative Analysis API. No Facebook embed, CDN proxy, or alternate URL fallback.
 function media(g){
- const ads=[...g.ads.values()].filter(r=>safe(r.thumbnail)).slice(0,4);
+ // Use only genuine URLs from the sheet. Empty/expired thumbnails should not
+ // be confused with missing Facebook creative post links.
+ const list=[...g.ads.values()];
+ const ads=list.filter(r=>safe(r.thumbnail)).slice(0,4);
+ const fb=list.some(r=>safe(r.creativeUrl));
+ const empty=fb?"Preview unavailable · Open card for Facebook link":"No thumbnail stored for these ads";
  return '<div class="ca-media '+(ads.length>1?'collage':'')+'">'+
    (ads.length?ads.map(r=>'<img loading="lazy" referrerpolicy="no-referrer" src="'+escCA(safe(r.thumbnail))+'" alt="'+escCA(r.name)+'">').join(''):
-   '<span class="ca-no-image">No dated thumbnail URL in reporting data</span>')+
+    '<span class="ca-no-image">'+escCA(empty)+'</span>')+
    '<span class="ca-count">'+g.ads.size+' '+(g.ads.size===1?'ad':'ads')+'</span></div>';
 }
 function openDetails(g){
@@ -33,19 +36,31 @@ function openDetails(g){
  document.body.append(d);d.querySelector('button').onclick=()=>d.close();d.addEventListener('close',()=>d.remove());d.showModal();handleImages(d);
 }
 function handleImages(root){
- root.querySelectorAll("img").forEach(img=>{
-   const broken=()=>{
-     img.style.display="none";
+ root.querySelectorAll('img').forEach(img=>{
+   const fallback=()=>{
+     if(!img.dataset.caProxyTried){
+       const original=img.dataset.caOriginal||img.currentSrc||img.src;
+       img.dataset.caOriginal=original;
+       const host=(()=>{try{return new URL(original).hostname.toLowerCase()}catch{return ''}})();
+       // Proxy only Meta image CDN URLs; no arbitrary remote hosts.
+       if(host==='fbcdn.net'||host.endsWith('.fbcdn.net')||
+          host==='cdninstagram.com'||host.endsWith('.cdninstagram.com')){
+         img.dataset.caProxyTried='yes';
+         img.src='/api/creative-thumbnail?url='+encodeURIComponent(original);
+         return;
+       }
+     }
+     img.style.display='none';
      const parent=img.parentElement;
-     if(parent&&!parent.querySelector(".ca-image-error")){
-       const msg=document.createElement("span");
-       msg.className="ca-image-error";
-       msg.textContent="Latest dated thumbnail URL is unavailable";
+     if(parent&&!parent.querySelector('.ca-image-error')){
+       const msg=document.createElement('span');
+       msg.className='ca-image-error';
+       msg.textContent='Preview unavailable · Open card for the original Facebook link';
        parent.append(msg);
      }
    };
-   img.addEventListener("error",broken,{once:true});
-   if(img.complete&&img.naturalWidth===0)broken();
+   img.addEventListener('error',fallback);
+   if(img.complete&&img.naturalWidth===0)fallback();
  });
 }
 function draw(){if(page!=='Creative Analysis')return;
