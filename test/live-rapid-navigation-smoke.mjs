@@ -34,6 +34,12 @@ try{
     assert.equal(state.creative,tab==="Creative Analysis","Creative filters incorrectly displayed on "+tab);
     assert.equal(state.title,tab==="Overview"?"Business Overview":tab,"Incorrect heading on "+tab);
   }
+  await page.waitForFunction(()=>{
+    const content=document.querySelector("#content");
+    return !!content && !(content.textContent||"").includes("Loading live business data...") &&
+      /(Meta Ads Performance Explorer|Daily Meta Ads performance|Paid Ads)/i.test(content.textContent||"");
+  },null,{timeout:160000});
+  console.log("ADS_DATA_RENDER_COMPLETE");
   assert.deepEqual(errors,[],"Browser JavaScript errors: "+errors.slice(0,4).join(", "));
   console.log("RAPID_NAVIGATION_AND_STARTUP_PASS");
 }finally{await browser.close();}
