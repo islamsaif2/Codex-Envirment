@@ -68,6 +68,7 @@ globalThis.caches = {
 // while refreshing. This prevents each navigation/date comparison from causing
 // another full-sheet read. The first uncached request still awaits real data.
 const dashboardInFlight = new Map();
+const dashboardFailures = new Map();
 const dashboardResults = new Map();
 let dashboardQueue = Promise.resolve();
 let dashboardResultBytes = 0;
@@ -107,7 +108,17 @@ function refreshDashboard(request, ctx) {
     const started=Date.now();
     const result=await worker.fetch(request, env, ctx);
     const raw=Buffer.from(await result.arrayBuffer());
-    if (result.ok) keepDashboard(key, result.status, result.headers, raw);
+    if (result.ok) {
+      keepDashboard(key, result.status, result.headers, raw);
+      dashboardFailures.delete(key);
+    } else {
+      let message="The upstream analytics calculation did not complete";
+      try {
+        const parsed=JSON.parse(raw.toString("utf8"));
+        if(parsed?.error)message=String(parsed.error);
+      } catch {}
+      dashboardFailures.set(key,{message,expires:Date.now()+60_000});
+    }
     console.log(JSON.stringify({event:"dashboard-computation",status:result.status,durationMs:Date.now()-started,responseBytes:raw.length,cacheStored:result.ok}));
     const headers=new Headers(result.headers);
     headers.set("X-Ultramedix-Cache", "MISS");
@@ -116,10 +127,18 @@ function refreshDashboard(request, ctx) {
   // Protect the free Render instance from simultaneous 100k-row calculations.
   // Repeated requests for the exact same report share a single promise.
   const pending=dashboardQueue.then(run,run);
-  dashboardQueue=pending.then(()=>{},()=>{});
-  dashboardInFlight.set(key,pending);
-  pending.finally(()=>{if(dashboardInFlight.get(key)===pending)dashboardInFlight.delete(key);}).catch(()=>{});
-  return pending;
+  const tracked=pending.catch(error=>{
+    console.error("[report-worker]",new URL(key).pathname,error?.message||String(error));
+    dashboardFailures.set(key,{
+      message:"Unable to load live report: "+(error?.message||String(error)),
+      expires:Date.now()+60_000
+    });
+    throw error;
+  });
+  dashboardQueue=tracked.then(()=>{},()=>{});
+  dashboardInFlight.set(key,tracked);
+  tracked.finally(()=>{if(dashboardInFlight.get(key)===tracked)dashboardInFlight.delete(key);}).catch(()=>{});
+  return tracked;
 }
 async function dashboardResponse(request, ctx) {
   const key=request.url,entry=dashboardResults.get(key);
@@ -129,18 +148,30 @@ async function dashboardResponse(request, ctx) {
     return cachedDashboard(entry,"HIT");
   }
   if (entry && age < DASHBOARD_MAX_STALE_MS) {
-    // Return the last valid snapshot immediately; refresh only once per key.
-    refreshDashboard(request,ctx).catch(e=>console.error("[dashboard-refresh]",e.message));
+    // Always respond promptly with last-good data. Recalculation is deferred.
+    if (!dashboardInFlight.has(key)) refreshDashboard(request,ctx)
+      .catch(e=>console.error("[report-refresh]",e.message));
     return cachedDashboard(entry,"STALE-REFRESHING");
   }
-  try {
-    return (await refreshDashboard(request,ctx)).clone();
-  } catch(error) {
-    // Last known good is better than an empty page during a Sheets outage.
-    if(entry)return cachedDashboard(entry,"STALE-ERROR");
-    throw error;
+  const failed=dashboardFailures.get(key);
+  if(failed && failed.expires>Date.now()) {
+    return Response.json({error:failed.message}, {
+      status:503,headers:{"Cache-Control":"no-store","Retry-After":"15"}
+    });
   }
+  if(failed)dashboardFailures.delete(key);
+  // The Render proxy has a shorter request deadline than a cold Sheets read.
+  // Queue the calculation and return 202 immediately; the browser polls this
+  // same URL until a compressed snapshot is ready. No open HTTP connection waits
+  // for Google Sheets. This covers dashboard AND Creative Analysis.
+  if (!dashboardInFlight.has(key)) refreshDashboard(request,ctx)
+    .catch(e=>console.error("[report-job]",e.message));
+  return Response.json({status:"processing",retryAfterMs:2000}, {
+    status:202,
+    headers:{"Cache-Control":"no-store","Retry-After":"2"}
+  });
 }
+
 const env = { SPREADSHEET_ID: process.env.SPREADSHEET_ID || DEFAULT_SHEET, BUSINESS_STORE: kv };
 
 // Read Shopify's exported attribution table directly from the existing workbook.
@@ -232,7 +263,7 @@ const server = http.createServer(async (req, res) => {
     if (body.length && req.method !== "GET" && req.method !== "HEAD") init.body = body;
     const request = new Request(url.href, init);
     const ctx = { waitUntil(promise) { Promise.resolve(promise).catch(error => console.warn("[cache]", error?.message || error)); } };
-    const response = req.method === "GET" && url.pathname === "/api/dashboard" ? await dashboardResponse(request, ctx) : await worker.fetch(request, env, ctx);
+    const response = req.method === "GET" && (url.pathname === "/api/dashboard" || url.pathname === "/api/creative-analysis") ? await dashboardResponse(request, ctx) : await worker.fetch(request, env, ctx);
     const bytes = Buffer.from(await response.arrayBuffer());
     res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
     res.end(bytes);
