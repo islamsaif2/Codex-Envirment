@@ -43,3 +43,4 @@ await import("./enhance-overview-compact-v2.mjs");
 
 
 await import("./enhance-creative-analysis.mjs");
+await import("./enhance-report-layout.mjs");
