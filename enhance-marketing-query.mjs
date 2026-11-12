@@ -11,7 +11,7 @@ worker=worker.replace(original,"async function readPublicSheetOriginal(spreadshe
 const urlAnchor="if(range)url.searchParams.set('range',range);let response;";
 if(!worker.includes(urlAnchor))throw Error("Marketing query optimization: Google Visualization query URL anchor missing");
 worker=worker.replace(urlAnchor,"if(range)url.searchParams.set('range',range);if(queryText)url.searchParams.set('tq',queryText);let response;");
-const legacy='Promise.all([readPublicSheet(business.spreadsheetId,mr.sheet,"A2:Q"),readPublicSheet(business.spreadsheetId,mr.sheet,"AE2:AP")]).then(([meta,ga])=>Array.from({length:Math.max(meta.length,ga.length)},(_,i)=>{const row=Array(42).fill("");const m=meta[i]||[],g=ga[i]||[];for(let j=0;j<17;j++)row[j]=m[j]??"";const offset=g.length>=42?30:0;for(let j=0;j<12;j++)row[30+j]=g[offset+j]??"";return row;}))';
+const legacy='Promise.all([readPublicSheet(business.spreadsheetId,mr.sheet,"A2:Q"),readPublicSheet(business.spreadsheetId,mr.sheet,"AR2:BC")]).then(([meta,ga])=>Array.from({length:Math.max(meta.length,ga.length)},(_,i)=>{const row=Array(55).fill("");const m=meta[i]||[],g=ga[i]||[];for(let j=0;j<17;j++)row[j]=m[j]??"";const offset=g.length>=55?43:0;for(let j=0;j<12;j++)row[43+j]=g[offset+j]??"";return row;}))';
 if(!worker.includes(legacy))throw Error("Marketing query optimization: obsolete full-sheet merge anchor missing");
 const helper=`// Date-limited Meta and GA4 reporting, keeping the mapped physical column positions.
 // Meta occupies A:Q; GA4 occupies AR:BC after the November sheet migration.
@@ -49,8 +49,25 @@ async function readPeriodMarketingData(spreadsheetId,sheet,startDate,endDate){
   return result;
 }
 `;
-worker=worker.replace(anchor,helper+anchor);
+
+const detailHelper=`async function readPeriodMetaDetail(spreadsheetId,startDate,endDate){
+  const valid=s=>/^\\d{4}-\\d{2}-\\d{2}$/.test(String(s||""));
+  const clauses=[];
+  if(valid(startDate))clauses.push("A >= date '"+startDate+"'");
+  if(valid(endDate))clauses.push("A <= date '"+endDate+"'");
+  if(!clauses.length)return readPublicSheet(spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:W");
+  // Select only R:W but filter using the same column A dates as A3:Q.
+  return readPublicSheetOriginal(spreadsheetId,"Raw Ga4 & Meta Ads Data","A3:W",false,
+    "select R,S,T,U,V,W where "+clauses.join(" and "));
+}
+`;
+worker=worker.replace(anchor,helper+detailHelper+anchor);
 worker=worker.replace(legacy,'readPeriodMarketingData(business.spreadsheetId,mr.sheet,startDate,endDate)');
+const oldDetail='detailMode==="ads"?readPublicSheet(business.spreadsheetId,"Raw Ga4 & Meta Ads Data","R3:W").catch(()=>[]):Promise.resolve([])';
+const newDetail='detailMode==="ads"?readPeriodMetaDetail(business.spreadsheetId,startDate,endDate).catch(()=>[]):Promise.resolve([])';
+if(!worker.includes(oldDetail))throw Error("Marketing query optimization: Meta detail read anchor missing");
+worker=worker.replace(oldDetail,newDetail);
+
 new vm.Script(worker.replace(/^export default \{/m,"const __workerDefault = {"),{filename:"optimized-worker.mjs"});
 fs.writeFileSync("worker.mjs",worker);
 console.log("Meta / GA4 daily data now filters in Google Sheets before transfer to Render.");
