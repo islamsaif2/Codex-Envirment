@@ -8,6 +8,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "start": "node server.mjs"
+    "build": "node assemble.mjs",
+    "start": "node server.mjs",
+    "dev": "npm run build && npm start"
   }
 }
