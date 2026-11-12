@@ -30,12 +30,13 @@ async function readCreativeSnapshot(business) {
       
       const availableFrom=records.reduce((a,r)=>!a||r.date<a?r.date:a,'');
       const availableThrough=records.reduce((a,r)=>r.date>a?r.date:a,'');
-      const latest=new Map();
+      const latest=new Map(),latestLinks=new Map();
       for(const r of records) {
-        const x=latest.get(r.id);
+        const x=latest.get(r.id),link=latestLinks.get(r.id);
         if(r.thumbnail && (!x || r.date>x.date)) latest.set(r.id,r);
+        if(r.creativeUrl && (!link || r.date>link.date)) latestLinks.set(r.id,r);
       }
-      return {records, range:range.sheet, cachedAt:Date.now(), availableFrom,availableThrough,latest};
+      return {records, range:range.sheet, cachedAt:Date.now(), availableFrom,availableThrough,latest,latestLinks};
     })();
     ultraCreativeSnapshots.set(key,{data:cached?.data||null,pending});
     pending.then(data=>{
@@ -60,7 +61,7 @@ async function readCreativeSnapshot(business) {
 }
 
 async function buildCreativeReport(business,start,end){
-  const {records,range,latest,availableFrom,availableThrough}=await readCreativeSnapshot(business);
+  const {records,range,latest,latestLinks,availableFrom,availableThrough}=await readCreativeSnapshot(business);
   if(!start)start=availableFrom;
   if(!end)end=availableThrough;
   const span=Math.round((Date.parse(end)-Date.parse(start))/864e5)+1;
@@ -68,7 +69,8 @@ async function buildCreativeReport(business,start,end){
   const prevEnd=new Date(Date.parse(start)-864e5).toISOString().slice(0,10);
   const prevStart=new Date(Date.parse(start)-span*864e5).toISOString().slice(0,10);
   const selected=records.filter(r=>r.date>=prevStart&&r.date<=end).map(r=>({
-    ...r,thumbnail:latest.get(r.id)?.thumbnail||r.thumbnail
+    ...r,thumbnail:latest.get(r.id)?.thumbnail||r.thumbnail,
+    creativeUrl:latestLinks.get(r.id)?.creativeUrl||r.creativeUrl
   }));
   return {records:selected,start,end,prevStart,prevEnd,source:range,availableFrom,availableThrough};
 }
