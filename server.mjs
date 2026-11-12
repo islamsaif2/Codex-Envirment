@@ -1,5 +1,8 @@
 import http from "node:http";
 import worker from "./worker.mjs";
+import {gzipSync, gunzipSync} from "node:zlib";
+import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
+installGoogleSheetResponseCache();
 
 const PORT = Number(process.env.PORT || 10000);
 const HOST = "0.0.0.0";
@@ -60,48 +63,83 @@ globalThis.caches = {
     }
   }
 };
-// Limit concurrent expensive dashboard computations; concurrent full-sheet
-// reads were causing 512MiB OOM kills. Duplicate requests share one promise.
+// Expensive Google Sheets data is shared across tabs. Cache the assembled
+// dashboard JSON as a small gzip-compressed snapshot; keep last-good results
+// while refreshing. This prevents each navigation/date comparison from causing
+// another full-sheet read. The first uncached request still awaits real data.
 const dashboardInFlight = new Map();
 const dashboardResults = new Map();
 let dashboardQueue = Promise.resolve();
 let dashboardResultBytes = 0;
-const MAX_DASHBOARD_RESULTS = 9 * 1024 * 1024;
-const DASHBOARD_TTL_MS = 90_000;
-async function dashboardResponse(request, ctx) {
-  const key = request.url;
-  const cached = dashboardResults.get(key);
-  if (cached && cached.expires > Date.now()) return cached.response.clone();
-  if (cached) { dashboardResults.delete(key); dashboardResultBytes -= cached.size; }
-  let active = dashboardInFlight.get(key);
-  if (!active) {
-    const work = async () => {
-      const nextCached = dashboardResults.get(key);
-      if (nextCached && nextCached.expires > Date.now()) return nextCached.response;
-      const response = await worker.fetch(request, env, ctx);
-      if (response.ok) {
-        const bytes = await response.clone().arrayBuffer();
-        if (bytes.byteLength <= 2 * 1024 * 1024) {
-          const old = dashboardResults.get(key);
-          if (old) dashboardResultBytes -= old.size;
-          dashboardResults.delete(key);
-          dashboardResults.set(key, { response: response.clone(), size: bytes.byteLength, expires: Date.now() + DASHBOARD_TTL_MS });
-          dashboardResultBytes += bytes.byteLength;
-          while (dashboardResultBytes > MAX_DASHBOARD_RESULTS) {
-            const first = dashboardResults.keys().next().value;
-            dashboardResultBytes -= dashboardResults.get(first).size;
-            dashboardResults.delete(first);
-          }
-        }
-      }
-      return response;
-    };
-    active = dashboardQueue.then(work, work);
-    dashboardQueue = active.then(() => {}, () => {});
-    dashboardInFlight.set(key, active);
-    active.finally(() => { if (dashboardInFlight.get(key) === active) dashboardInFlight.delete(key); }).catch(() => {});
+const MAX_DASHBOARD_RESULTS = 24 * 1024 * 1024;  // compressed
+const MAX_DASHBOARD_ITEM = 10 * 1024 * 1024;
+const DASHBOARD_TTL_MS = 5 * 60_000;
+const DASHBOARD_MAX_STALE_MS = 12 * 60 * 60_000;
+
+function cachedDashboard(record, flag) {
+  const headers = new Headers(record.headers);
+  headers.set("X-Ultramedix-Cache", flag);
+  headers.set("X-Ultramedix-Cache-Age", String(Math.floor((Date.now() - record.generatedAt) / 1000)));
+  headers.set("Cache-Control", "no-store");
+  return new Response(gunzipSync(record.gz), {status:record.status, headers});
+}
+function keepDashboard(key, status, headers, raw) {
+  let gz;
+  try { gz = gzipSync(raw, {level:1}); } catch { return; }
+  if (gz.byteLength > MAX_DASHBOARD_ITEM) return;
+  const old = dashboardResults.get(key);
+  if (old) { dashboardResultBytes -= old.gz.length; dashboardResults.delete(key); }
+  dashboardResults.set(key, {
+    gz, status, generatedAt:Date.now(),
+    headers:[...headers.entries()].filter(([name]) => !/^(content-length|content-encoding|transfer-encoding)$/i.test(name))
+  });
+  dashboardResultBytes += gz.length;
+  while (dashboardResultBytes > MAX_DASHBOARD_RESULTS && dashboardResults.size) {
+    const oldestKey=dashboardResults.keys().next().value;
+    dashboardResultBytes -= dashboardResults.get(oldestKey).gz.length;
+    dashboardResults.delete(oldestKey);
   }
-  return (await active).clone();
+}
+function refreshDashboard(request, ctx) {
+  const key=request.url;
+  if (dashboardInFlight.has(key)) return dashboardInFlight.get(key);
+  const run=async()=>{
+    const started=Date.now();
+    const result=await worker.fetch(request, env, ctx);
+    const raw=Buffer.from(await result.arrayBuffer());
+    if (result.ok) keepDashboard(key, result.status, result.headers, raw);
+    console.log(JSON.stringify({event:"dashboard-computation",status:result.status,durationMs:Date.now()-started,responseBytes:raw.length,cacheStored:result.ok}));
+    const headers=new Headers(result.headers);
+    headers.set("X-Ultramedix-Cache", "MISS");
+    return new Response(raw, {status:result.status,headers});
+  };
+  // Protect the free Render instance from simultaneous 100k-row calculations.
+  // Repeated requests for the exact same report share a single promise.
+  const pending=dashboardQueue.then(run,run);
+  dashboardQueue=pending.then(()=>{},()=>{});
+  dashboardInFlight.set(key,pending);
+  pending.finally(()=>{if(dashboardInFlight.get(key)===pending)dashboardInFlight.delete(key);}).catch(()=>{});
+  return pending;
+}
+async function dashboardResponse(request, ctx) {
+  const key=request.url,entry=dashboardResults.get(key);
+  const age=entry?Date.now()-entry.generatedAt:Infinity;
+  if (entry && age < DASHBOARD_TTL_MS) {
+    dashboardResults.delete(key);dashboardResults.set(key,entry);
+    return cachedDashboard(entry,"HIT");
+  }
+  if (entry && age < DASHBOARD_MAX_STALE_MS) {
+    // Return the last valid snapshot immediately; refresh only once per key.
+    refreshDashboard(request,ctx).catch(e=>console.error("[dashboard-refresh]",e.message));
+    return cachedDashboard(entry,"STALE-REFRESHING");
+  }
+  try {
+    return (await refreshDashboard(request,ctx)).clone();
+  } catch(error) {
+    // Last known good is better than an empty page during a Sheets outage.
+    if(entry)return cachedDashboard(entry,"STALE-ERROR");
+    throw error;
+  }
 }
 const env = { SPREADSHEET_ID: process.env.SPREADSHEET_ID || DEFAULT_SHEET, BUSINESS_STORE: kv };
 
