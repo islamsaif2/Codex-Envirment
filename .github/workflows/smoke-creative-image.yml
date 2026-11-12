@@ -13,4 +13,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node test/live-creative-image-smoke.mjs
+      - name: Test live thumbnails after async report readiness
+        run: node test/live-creative-image-smoke.mjs
