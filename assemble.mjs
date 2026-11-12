@@ -46,4 +46,4 @@ await import("./enhance-creative-analysis.mjs");
 await import("./enhance-report-layout.mjs");
 await import("./enhance-analytics-timeouts.mjs");
 await import("./enhance-marketing-query.mjs");
-await import("./enhance-inventory-source-ui.mjs");
+// Disabled unstable Inventory/source-icon post-render patch after navigation regression.
