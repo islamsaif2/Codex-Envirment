@@ -130,7 +130,9 @@ function customer(){
     const extra=node("div","ultra-gender-rate");
     extra.append(node("h4","","Female vs Male by Delivery Rate"));
     [...ratePanel.children].filter(x=>!/^H3$/i.test(x.tagName)).forEach(x=>extra.append(x));
+    const genderRow=revenuePanel.parentElement;
     revenuePanel.append(extra);ratePanel.remove();
+    if(genderRow)genderRow.classList.add("ultra-gender-combined");
   }
   // The region table now lives in Shipping and Operations.
   findHeading(root,"Regions Analysis")?.closest("section.panel")?.remove();
