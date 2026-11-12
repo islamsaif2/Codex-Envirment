@@ -1,0 +1,16 @@
+name: Verify latest dated creative links
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/verify-creative-dated-links.yml'
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node test/live-creative-latest-links.mjs
