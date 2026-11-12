@@ -5,6 +5,8 @@ const failures=[];
 page.on("pageerror",e=>failures.push(e.message));
 await page.goto("https://ultramedix-dashboard-ogy5.onrender.com",{waitUntil:"domcontentloaded",timeout:60000});
 await page.waitForFunction(()=>typeof window.setPage==="function",{timeout:15000});
+await page.waitForFunction(()=>typeof dashboard!=="undefined" && !!dashboard?.metrics,{timeout:150000});
+console.log("Initial dashboard metrics ready; starting navigation checks.");
 async function check(tab,expectCreative){
   await page.evaluate(p=>window.setPage(p),tab);
   await page.waitForTimeout(250);
