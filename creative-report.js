@@ -31,12 +31,25 @@ async function readCreativeSnapshot(business) {
       const availableFrom=records.reduce((a,r)=>!a||r.date<a?r.date:a,'');
       const availableThrough=records.reduce((a,r)=>r.date>a?r.date:a,'');
       const latest=new Map(),latestLinks=new Map();
+      const latestStatus=new Map();
+      try {
+        const statusRows=await readPublicSheetOriginal(business.spreadsheetId,'Raw Ga4 & Meta Ads Data','A3:V',false,
+          "select A,G,V where G is not null and V is not null order by A desc");
+        for(const [day,id,delivery] of statusRows){
+          const status=String(delivery??'').trim().toLowerCase();
+          const key=String(id??'').trim();
+          if(key&&dateCandidates(day)[0]&&status&&!latestStatus.has(key))
+            latestStatus.set(key,/^(active|delivering)$/.test(status)?'active':/^(inactive|paused|archived|deleted|completed|not delivering|off|campaign paused|ad set paused)$/.test(status)?'inactive':'unknown');
+        }
+      } catch(error) {
+        console.warn('[creative-status]',error.message);
+      }
       for(const r of records) {
         const x=latest.get(r.id),link=latestLinks.get(r.id);
         if(r.thumbnail && (!x || r.date>x.date)) latest.set(r.id,r);
         if(r.creativeUrl && (!link || r.date>link.date)) latestLinks.set(r.id,r);
       }
-      return {records, range:range.sheet, cachedAt:Date.now(), availableFrom,availableThrough,latest,latestLinks};
+      return {records, range:range.sheet, cachedAt:Date.now(), availableFrom,availableThrough,latest,latestLinks,latestStatus};
     })();
     ultraCreativeSnapshots.set(key,{data:cached?.data||null,pending});
     pending.then(data=>{
@@ -61,7 +74,7 @@ async function readCreativeSnapshot(business) {
 }
 
 async function buildCreativeReport(business,start,end){
-  const {records,range,latest,latestLinks,availableFrom,availableThrough}=await readCreativeSnapshot(business);
+  const {records,range,latest,latestLinks,latestStatus,availableFrom,availableThrough}=await readCreativeSnapshot(business);
   if(!start)start=availableFrom;
   if(!end)end=availableThrough;
   const span=Math.round((Date.parse(end)-Date.parse(start))/864e5)+1;
@@ -69,7 +82,7 @@ async function buildCreativeReport(business,start,end){
   const prevEnd=new Date(Date.parse(start)-864e5).toISOString().slice(0,10);
   const prevStart=new Date(Date.parse(start)-span*864e5).toISOString().slice(0,10);
   const selected=records.filter(r=>r.date>=prevStart&&r.date<=end).map(r=>({
-    ...r,thumbnail:latest.get(r.id)?.thumbnail||r.thumbnail,
+    ...r,status:latestStatus?.get(r.id)||'unknown',thumbnail:latest.get(r.id)?.thumbnail||r.thumbnail,
     creativeUrl:latestLinks.get(r.id)?.creativeUrl||r.creativeUrl
   }));
   return {records:selected,start,end,prevStart,prevEnd,source:range,availableFrom,availableThrough};
