@@ -37,18 +37,11 @@ async function readCreativeSnapshot(business) {
       
       const availableFrom=records.reduce((a,r)=>!a||r.date<a?r.date:a,'');
       const availableThrough=records.reduce((a,r)=>r.date>a?r.date:a,'');
-      // Use the most recent dated, nonempty media links per Ad ID.
-      // Preserve the last available row on the same day; data may arrive
-      // in a different order from the Google Sheets range.
       const latest=new Map(),latestLinks=new Map();
       for(const r of records) {
-        const thumbnail=String(r.thumbnail||'').trim();
-        const creativeUrl=String(r.creativeUrl||'').trim();
-        const image=latest.get(r.id),link=latestLinks.get(r.id);
-        if(thumbnail&&(!image||r.date>=image.date))
-          latest.set(r.id,{date:r.date,url:thumbnail});
-        if(creativeUrl&&(!link||r.date>=link.date))
-          latestLinks.set(r.id,{date:r.date,url:creativeUrl});
+        const x=latest.get(r.id),link=latestLinks.get(r.id);
+        if(r.thumbnail && (!x || r.date>x.date)) latest.set(r.id,r);
+        if(r.creativeUrl && (!link || r.date>link.date)) latestLinks.set(r.id,r);
       }
       return {records, range:range.sheet, cachedAt:Date.now(), availableFrom,availableThrough,latest,latestLinks};
     })();
@@ -83,11 +76,8 @@ async function buildCreativeReport(business,start,end){
   const prevEnd=new Date(Date.parse(start)-864e5).toISOString().slice(0,10);
   const prevStart=new Date(Date.parse(start)-span*864e5).toISOString().slice(0,10);
   const selected=records.filter(r=>r.date>=prevStart&&r.date<=end).map(r=>({
-    ...r,
-    thumbnail:latest.get(r.id)?.url||'',
-    thumbnailDate:latest.get(r.id)?.date||'',
-    creativeUrl:latestLinks.get(r.id)?.url||'',
-    creativeUrlDate:latestLinks.get(r.id)?.date||''
+    ...r,thumbnail:latest.get(r.id)?.thumbnail||r.thumbnail,
+    creativeUrl:latestLinks.get(r.id)?.creativeUrl||r.creativeUrl
   }));
   return {records:selected,start,end,prevStart,prevEnd,source:range,availableFrom,availableThrough};
 }
