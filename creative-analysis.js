@@ -1,6 +1,6 @@
 (()=>{
-const CA={data:null,loading:false,error:'',group:'ad',sort:'spend',direction:'desc',search:'',metrics:['spend','purchases','cpa','ctr','messages'],limit:24,request:0};
-const defs={share:['% spend','percent',false],spend:['Amount spent','money',false],purchases:['Purchases','number',true],cpa:['Cost per purchase','money',false],ctr:['Link CTR (est.)','percent',true],cpm:['CPM (est.)','money',false],clicks:['Outbound clicks','number',true],cpc:['Cost / outbound click','money',false],messages:['Messaging conversations','number',true],plays3:['3-second video plays','number',true],video25:['Video plays at 25%','number',true],video50:['Video plays at 50%','number',true],video75:['Video plays at 75%','number',true],video100:['Video plays at 100%','number',true],avgTime:['Average video play time','seconds',true],videoPlays:['Video plays','number',true],engagements:['Post engagements','number',true]};
+const CA={data:null,loading:false,error:'',group:'ad',sort:'spend',direction:'desc',search:'',metrics:['spend','purchaseShare','purchases','cpa','ctr','messages'],limit:24,request:0};
+const defs={share:['% spend','percent',false],spend:['Amount spent','money',false],purchaseShare:['Contribution % to Purchases','percent',true],purchases:['Purchases','number',true],cpa:['Cost per purchase','money',false],ctr:['Link CTR (est.)','percent',true],cpm:['CPM (est.)','money',false],clicks:['Outbound clicks','number',true],cpc:['Cost / outbound click','money',false],messages:['Messaging conversations','number',true],plays3:['3-second video plays','number',true],video25:['Video plays at 25%','number',true],video50:['Video plays at 50%','number',true],video75:['Video plays at 75%','number',true],video100:['Video plays at 100%','number',true],avgTime:['Average video play time','seconds',true],videoPlays:['Video plays','number',true],engagements:['Post engagements','number',true]};
 const safe=u=>{try{const x=new URL(u);return x.protocol==='https:'?x.href:'';}catch{return '';}};
 const escCA=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const display=(key,v)=>{if(v==null||!Number.isFinite(v))return '—';const type=defs[key]?.[1];return type==='percent'?(100*v).toFixed(2)+'%':type==='money'?'EGP '+v.toLocaleString('en',{maximumFractionDigits:2}):type==='seconds'?v.toFixed(2)+' s':v.toLocaleString('en',{maximumFractionDigits:type==='decimal'?2:0});};
@@ -15,10 +15,18 @@ function groups(){
  const data=CA.data;if(!data)return [];
  const map=new Map();const key=r=>CA.group==='name'?r.name:CA.group==='campaign'?r.campaign:CA.group==='adset'?r.campaign+' / '+r.adset:r.id;
  for(const r of data.records){const k=key(r)||'(Unnamed)';if(!map.has(k))map.set(k,{key:k,name:CA.group==='ad'?r.name:k,now:[],prev:[],ads:new Map()});const g=map.get(k);(r.date>=data.start?g.now:g.prev).push(r);const old=g.ads.get(r.id);if(!old||r.date>old.date)g.ads.set(r.id,r);}
- const nowTotal=summarize(data.records.filter(r=>r.date>=data.start)).spend,prevTotal=summarize(data.records.filter(r=>r.date<data.start)).spend;
- return [...map.values()].filter(g=>g.now.length).map(g=>{g.current=summarize(g.now);g.previous=summarize(g.prev);g.current.share=nowTotal>0?g.current.spend/nowTotal:null;g.previous.share=prevTotal>0&&g.previous.spend!=null?g.previous.spend/prevTotal:null;return g;}).filter(g=>!CA.search||[g.name,g.key,...[...g.ads.values()].map(r=>r.campaign)].join(' ').toLowerCase().includes(CA.search.toLowerCase())).sort((a,b)=>{const x=a.current[CA.sort],y=b.current[CA.sort];if(x==null)return y==null?a.name.localeCompare(b.name):1;if(y==null)return -1;return (CA.direction==='desc'?y-x:x-y)||a.name.localeCompare(b.name);});
+ const nowTotal=summarize(data.records.filter(r=>r.date>=data.start)),prevTotal=summarize(data.records.filter(r=>r.date<data.start));
+ return [...map.values()].filter(g=>g.now.length).map(g=>{g.current=summarize(g.now);g.previous=summarize(g.prev);for(const [stats,totals,rows] of [[g.current,nowTotal,g.now],[g.previous,prevTotal,g.prev]]){
+   if(!rows.length){for(const key of ['spend','purchases','messages','clicks','plays3','video25','video50','video75','video100','videoPlays','engagements'])if(totals[key]!=null)stats[key]=0;}
+   stats.share=totals.spend>0&&stats.spend!=null?stats.spend/totals.spend:null;
+   stats.purchaseShare=totals.purchases>0&&stats.purchases!=null?stats.purchases/totals.purchases:null;
+ }return g;}).filter(g=>!CA.search||[g.name,g.key,...[...g.ads.values()].map(r=>r.campaign)].join(' ').toLowerCase().includes(CA.search.toLowerCase())).sort((a,b)=>{const x=a.current[CA.sort],y=b.current[CA.sort];if(x==null)return y==null?a.name.localeCompare(b.name):1;if(y==null)return -1;return (CA.direction==='desc'?y-x:x-y)||a.name.localeCompare(b.name);});
 }
-function delta(key,now,prev){if(prev==null||prev===0||now==null)return '<span class="ca-change neutral">'+(now!=null&&prev===0&&now>0?'New':'—')+'</span>';const d=(now-prev)/Math.abs(prev)*100;const neutral=key==='spend'||key==='share';return '<span class="ca-change '+(neutral?'neutral':((d>=0)===defs[key][2]?'good':'bad'))+'" title="Compared with the previous equal-length period">'+(d>0?'+':'')+d.toFixed(0)+'%</span>';}
+function delta(key,now,prev){if(now==null||prev==null||prev===0){
+ const label=now==null?'—':prev==null?'No baseline':now===0?'0%':'New';
+ const reason=now==null?'Current value unavailable':prev==null?'Previous value unavailable or undefined':'Previous value was zero';
+ return '<span class="ca-change neutral" title="'+reason+'">'+label+'</span>';
+ }const d=(now-prev)/Math.abs(prev)*100;const neutral=key==='spend'||key==='share';return '<span class="ca-change '+(neutral?'neutral':((d>=0)===defs[key][2]?'good':'bad'))+'" title="Compared with the previous equal-length period">'+(d>0?'+':'')+d.toFixed(0)+'%</span>';}
 function media(g){
  // Use only genuine URLs from the sheet. Empty/expired thumbnails should not
  // be confused with missing Facebook creative post links.
@@ -82,4 +90,5 @@ const nav=document.createElement('button');nav.id='nav-creative';nav.textContent
 // Expose only pure aggregators for focused fixture verification.
 window.ultraCreativeMath={summarize};
 })();
+
 

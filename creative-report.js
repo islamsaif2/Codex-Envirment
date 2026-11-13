@@ -18,9 +18,9 @@ async function readCreativeSnapshot(business) {
         if(!mapping.has('creativeAnalysis.range'))throw Error('Creative Analysis mapping is missing.');
         const range=mapRange(mapping,'creativeAnalysis.range');
         const raw=await readPublicSheet(business.spreadsheetId,range.sheet,range.value);
-        if(raw.some(r=>r.some(v=>/^#(REF!|VALUE!|ERROR!|N\/A)/.test(String(v)))))throw Error('The creative reporting formula needs attention. Check Meta & GA4 Reporting CL8.');
+        if(raw.some(r=>r.some(v=>/^#(REF!|VALUE!|ERROR!|N\/A)/.test(String(v)))))throw Error('The creative reporting formula needs attention. Check the mapped table in Meta & GA4 Reporting.');
         // Google GViz may omit or coerce the first header row. The sheet's
-        // column mapping is fixed (CL:DM); identify whether row zero is data
+        // table layout is fixed within the mapped range; identify whether row zero is data
         // by its actual order-date and Ad ID instead of guessing header text.
         const first=raw[0]||[];
         const beginsWithData=Boolean(dateCandidates(first[0])[0]&&String(first[2]??"").trim());
@@ -74,3 +74,4 @@ async function buildCreativeReport(business,start,end){
   }));
   return {records:selected,start,end,prevStart,prevEnd,source:range,availableFrom,availableThrough};
 }
+
