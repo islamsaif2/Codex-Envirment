@@ -1,3 +1,10 @@
+function creativeDeliveryStatus(value){
+  const status=String(value??'').trim().toLowerCase().replace(/_/g,' ');
+  if(/^(active|delivering)$/.test(status))return 'active';
+  if(/^(inactive|paused|archived|deleted|completed|not delivering|off|campaign paused|ad set paused|adset paused)$/.test(status))return 'inactive';
+  return 'unknown';
+}
+
 // Formula-backed daily creative data. Normalization occurs once per five
 // minutes per workbook, not on every date range or navigation.
 const ultraCreativeSnapshots = new Map();
@@ -26,31 +33,17 @@ async function readCreativeSnapshot(business) {
         const beginsWithData=Boolean(dateCandidates(first[0])[0]&&String(first[2]??"").trim());
         const dataStart=beginsWithData?0:1;
         const optional=v=>{if(v==null||String(v).trim()==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null;};
-        const records=raw.slice(dataStart).map(r=>({date:dateCandidates(r[0])[0],name:String(r[1]||''),id:String(r[2]||''),spend:optional(r[3]),cpm:optional(r[4]),ctr:optional(r[5]),purchases:optional(r[6]),thumbnail:String(r[7]||''),messages:optional(r[9]),plays3:optional(r[10]),video25:optional(r[11]),video50:optional(r[12]),video75:optional(r[13]),video100:optional(r[14]),avgTime:optional(r[15]),videoPlays:optional(r[16]),creativeUrl:String(r[19]||''),engagements:optional(r[18]),campaign:String(r[20]||''),adset:String(r[21]||''),clicks:optional(r[22]),impressions:optional(r[23]),linkClicks:optional(r[24]),timeWeight:optional(r[26]),ctrWeight:optional(r[27]),objective:String(r[29]||'').trim()})).filter(r=>r.date&&r.id);
+        const records=raw.slice(dataStart).map(r=>({date:dateCandidates(r[0])[0],name:String(r[1]||''),id:String(r[2]||''),spend:optional(r[3]),cpm:optional(r[4]),ctr:optional(r[5]),purchases:optional(r[6]),thumbnail:String(r[7]||''),messages:optional(r[9]),plays3:optional(r[10]),video25:optional(r[11]),video50:optional(r[12]),video75:optional(r[13]),video100:optional(r[14]),avgTime:optional(r[15]),videoPlays:optional(r[16]),creativeUrl:String(r[19]||''),engagements:optional(r[18]),campaign:String(r[20]||''),adset:String(r[21]||''),clicks:optional(r[22]),impressions:optional(r[23]),linkClicks:optional(r[24]),timeWeight:optional(r[26]),ctrWeight:optional(r[27]),objective:String(r[29]||'').trim(),status:creativeDeliveryStatus(r[30])})).filter(r=>r.date&&r.id);
       
       const availableFrom=records.reduce((a,r)=>!a||r.date<a?r.date:a,'');
       const availableThrough=records.reduce((a,r)=>r.date>a?r.date:a,'');
       const latest=new Map(),latestLinks=new Map();
-      const latestStatus=new Map(),latestObjectives=new Map();
-      try {
-        const statusRows=await readPublicSheetOriginal(business.spreadsheetId,'Raw Ga4 & Meta Ads Data','A3:V',false,
-          "select A,G,V,Q where G is not null and (V is not null or Q is not null) order by A desc");
-        for(const [day,id,delivery,objective] of statusRows){
-          const status=String(delivery??'').trim().toLowerCase();
-          const key=String(id??'').trim();
-          if(key&&dateCandidates(day)[0]&&objective&&!latestObjectives.has(key))latestObjectives.set(key,String(objective).trim());
-          if(key&&dateCandidates(day)[0]&&status&&!latestStatus.has(key))
-            latestStatus.set(key,/^(active|delivering)$/.test(status)?'active':/^(inactive|paused|archived|deleted|completed|not delivering|off|campaign paused|ad set paused)$/.test(status)?'inactive':'unknown');
-        }
-      } catch(error) {
-        console.warn('[creative-status]',error.message);
-      }
       for(const r of records) {
         const x=latest.get(r.id),link=latestLinks.get(r.id);
         if(r.thumbnail && (!x || r.date>x.date)) latest.set(r.id,r);
         if(r.creativeUrl && (!link || r.date>link.date)) latestLinks.set(r.id,r);
       }
-      return {records, range:range.sheet, cachedAt:Date.now(), availableFrom,availableThrough,latest,latestLinks,latestStatus,latestObjectives};
+      return {records, range:range.sheet, cachedAt:Date.now(), availableFrom,availableThrough,latest,latestLinks};
     })();
     ultraCreativeSnapshots.set(key,{data:cached?.data||null,pending});
     pending.then(data=>{
@@ -75,7 +68,7 @@ async function readCreativeSnapshot(business) {
 }
 
 async function buildCreativeReport(business,start,end){
-  const {records,range,latest,latestLinks,latestStatus,latestObjectives,availableFrom,availableThrough}=await readCreativeSnapshot(business);
+  const {records,range,latest,latestLinks,availableFrom,availableThrough}=await readCreativeSnapshot(business);
   if(!start)start=availableFrom;
   if(!end)end=availableThrough;
   const span=Math.round((Date.parse(end)-Date.parse(start))/864e5)+1;
@@ -83,7 +76,7 @@ async function buildCreativeReport(business,start,end){
   const prevEnd=new Date(Date.parse(start)-864e5).toISOString().slice(0,10);
   const prevStart=new Date(Date.parse(start)-span*864e5).toISOString().slice(0,10);
   const selected=records.filter(r=>r.date>=prevStart&&r.date<=end).map(r=>({
-    ...r,objective:r.objective||latestObjectives?.get(r.id)||'',status:latestStatus?.get(r.id)||'unknown',thumbnail:latest.get(r.id)?.thumbnail||r.thumbnail,
+    ...r,thumbnail:latest.get(r.id)?.thumbnail||r.thumbnail,
     creativeUrl:latestLinks.get(r.id)?.creativeUrl||r.creativeUrl
   }));
   return {records:selected,start,end,prevStart,prevEnd,source:range,availableFrom,availableThrough};
