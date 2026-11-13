@@ -80,7 +80,10 @@ function cardHeading(group){
  const label={active:'Active',inactive:'Inactive',unknown:'Unknown',mixed:'Mixed'}[status];
  const list=key=>[...new Set(ads.map(ad=>ad[key]).filter(Boolean))];
  const line=(label,values)=>values.length?'<div title="'+escCA(values.join(', '))+'">'+label+': '+escCA(values.length===1?values[0]:values.length+' '+label.toLowerCase()+'s')+'</div>':'';
- return '<div class="ca-heading"><span class="ca-status ca-status-'+status+'">'+label+'</span><h3 title="'+escCA(group.name)+'">'+escCA(group.name)+'</h3></div><div class="ca-hierarchy">'+line('Ad set',list('adset'))+line('Campaign',list('campaign'))+'</div>';
+ const objectives=list('objective');
+ const objective=objectives.length===1?objectives[0].replace(/^OUTCOME_/i,'').replace(/_/g,' ').toLowerCase():objectives.length?'Mixed objectives':'';
+ const objectiveBadge=objective?'<span class="ca-objective" title="'+escCA(objective)+'">'+escCA(objective)+'</span>':'';
+ return '<div class="ca-heading"><h3 title="'+escCA(group.name)+'">'+escCA(group.name)+'</h3><div class="ca-heading-badges">'+objectiveBadge+'<span class="ca-status ca-status-'+status+'">'+label+'</span></div></div><div class="ca-hierarchy">'+line('Ad set',list('adset'))+line('Campaign',list('campaign'))+'</div>';
 }
 function draw(){if(page!=='Creative Analysis')return;
  const all=groups();const choices=Object.entries(defs).map(([k,v])=>'<option value="'+k+'">'+escCA(v[0])+'</option>').join('');
