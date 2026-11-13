@@ -4,7 +4,7 @@ let source=fs.readFileSync("worker.mjs","utf8");
 function replaceSource(a,b){if(!source.includes(a))throw Error("Source anchor missing: "+a.slice(0,100));source=source.replace(a,b);}
 replaceSource('"Raw Ga4 & Meta Ads Data","R3:W"','"Raw Ga4 & Meta Ads Data","R3:Y"');
 replaceSource('...(metaDetailExtra[i]||Array(6).fill(""))','...(metaDetailExtra[i]||Array(8).fill(""))');
-replaceSource('placement:String(r[22]||"")','placement:String(r[22]||""),frequency:String(r[23]??"").trim()!==""?money(r[23]):null,messages:String(r[24]??"").trim()!==""?money(r[24]):null');
+replaceSource('placement:String(r[22]||"")','placement:String(r[22]||""),messages:String(r[23]??"").trim()!==""?money(r[23]):null');
 replaceSource('readPublicSheet(business.spreadsheetId,mr.sheet,"AE2:AP")','readPublicSheet(business.spreadsheetId,mr.sheet,"AR2:BC")');
 replaceSource('const row=Array(42).fill("")','const row=Array(55).fill("")');
 replaceSource('const offset=g.length>=42?30:0','const offset=g.length>=55?43:0');
@@ -25,10 +25,10 @@ source=source.replace('    channelAnalysis,','    channelAnalysis,\n    channelF
 const b64=source.match(/const APP_HTML_B64 = "([^"]+)"/);if(!b64)throw Error("HTML missing");
 let html=Buffer.from(b64[1],"base64").toString("utf8");
 function replaceHtml(a,b){if(!html.includes(a))throw Error("HTML anchor missing: "+a.slice(0,100));html=html.replace(a,b);}
-replaceHtml('purchases:0,ctrWeighted:0,status:"Unavailable"', 'purchases:0,messages:0,hasMessages:false,frequencyWeighted:0,frequencyImpressions:0,ctrWeighted:0,status:"Unavailable"');
+replaceHtml('purchases:0,ctrWeighted:0,status:"Unavailable"', 'purchases:0,messages:0,hasMessages:false,ctrWeighted:0,status:"Unavailable"');
 replaceHtml('g.purchases+=r.purchases||0;const imp=', 'g.purchases+=r.purchases||0;if(r.messages!=null){g.messages+=Number(r.messages)||0;g.hasMessages=true;}const imp=');
-replaceHtml('g.ctrWeighted+=imp*Number(r.ctr||0);', 'g.ctrWeighted+=imp*Number(r.ctr||0);if(r.frequency!=null&&Number.isFinite(Number(r.frequency))&&imp>0){g.frequencyWeighted+=imp*Number(r.frequency);g.frequencyImpressions+=imp;}');
-replaceHtml('ctr:g.impressions?g.ctrWeighted/g.impressions:null,cpa:g.purchases?', 'ctr:g.impressions?g.ctrWeighted/g.impressions:null,frequency:g.frequencyImpressions?g.frequencyWeighted/g.frequencyImpressions:null,messages:g.hasMessages?g.messages:null,cpa:g.purchases?');
+replaceHtml('g.ctrWeighted+=imp*Number(r.ctr||0);', 'g.ctrWeighted+=imp*Number(r.ctr||0);');
+replaceHtml('ctr:g.impressions?g.ctrWeighted/g.impressions:null,cpa:g.purchases?', 'ctr:g.impressions?g.ctrWeighted/g.impressions:null,messages:g.hasMessages?g.messages:null,cpa:g.purchases?');
 replaceHtml('function explorerBind(){const root=document.getElementById("meta-explorer");if(!root)return;',"function explorerBind(){const root=document.getElementById(\"meta-explorer\");if(!root)return;\nroot.querySelectorAll(\"[data-explorer-level]\").forEach(el=>el.onclick=()=>{\n  const next=Number(el.dataset.explorerLevel);\n  if(![0,1,2].includes(next))return;\n  explorerState.level=next;explorerState.campaign=\"\";explorerState.adset=\"\";explorerState.status=\"\";explorerState.limit=30;renderAdFunnel();\n});");
 replaceHtml("$('content').insertAdjacentHTML('afterbegin','<button class=\"btn journey-shortcut\" id=\"ads-journey\">View conversion journey</button>');$('ads-journey').onclick=()=>openJourney(0);", "");
 replaceHtml('function setPage(p){\n page=p;', 'function setPage(p){\n document.body.classList.toggle("ads-clean",p==="Ads");\n page=p;');

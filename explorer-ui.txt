@@ -45,7 +45,7 @@ function renderMetaExplorer(){
   const platformOptions=[...new Set([...catalog,...raw].map(r=>r.platform).filter(Boolean))].sort();
   const statusOptions=[...new Set([...catalogFiltered.map(x=>statuses[tagLevel]?.[level===0?(x.campaignId||x.campaign):level===1?(x.adsetId||x.adset):(x.adId||x.ad)]?.status||"Unavailable"),...rows.map(x=>x.status)])].sort((a,b)=>statusRank(a)-statusRank(b));
   const option=(arr,value,placeholder)=>'<option value="">'+placeholder+'</option>'+arr.map(x=>'<option value="'+esc(x)+'" '+(x===value?'selected':'')+'>'+esc(x)+'</option>').join('');
-  const keys=["spend","purchases","cpa","messages","frequency","cpm","ctr","clicks","landing","carts","checkouts","rateClickLanding","rateLandingCart","rateCartCheckout","rateCheckoutPurchase"];
+  const keys=["spend","purchases","cpa","messages","cpm","ctr","clicks","landing","carts","checkouts","rateClickLanding","rateLandingCart","rateCartCheckout","rateCheckoutPurchase"];
   const labels=["Spend","Purchases","CPA","Messages","Frequency","CPM","CTR","Outbound clicks","Landing views","Adds to cart","Checkouts","Clicks → landing","Landing → cart","Cart → checkout","Checkout → purchase"];
   const comparedKeys=new Set(["purchases","cpa","cpm","ctr","rateClickLanding","rateLandingCart","rateCartCheckout","rateCheckoutPurchase"]);
   const metric=(r,key)=>{if(!r)return null;if(key==="rateClickLanding")return r.clicks>0?r.landing/r.clicks:null;if(key==="rateLandingCart")return r.landing>0?r.carts/r.landing:null;if(key==="rateCartCheckout")return r.carts>0?r.checkouts/r.carts:null;if(key==="rateCheckoutPurchase")return r.checkouts>0?r.purchases/r.checkouts:null;return r[key];};
@@ -55,7 +55,6 @@ function renderMetaExplorer(){
     if(value==null||!Number.isFinite(Number(value)))return "—";
     const n=Number(value);
     if(isRate(key))return (n*100).toFixed(1)+"%";
-    if(key==="frequency")return n.toFixed(2)+"×";
     if(["spend","cpm","cpa"].includes(key))return "EGP "+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2});
     return n.toLocaleString("en-US",{maximumFractionDigits:0});
   };
@@ -108,7 +107,6 @@ function renderMetaExplorer(){
   const totalImpressions=grouped.reduce((n,r)=>n+Number(r.impressions||0),0);
   subtotal.cpm=totalImpressions?subtotal.spend*1000/totalImpressions:null;
   subtotal.ctr=totalImpressions?grouped.reduce((n,r)=>n+Number(r.ctr||0)*Number(r.impressions||0),0)/totalImpressions:null;
-  subtotal.frequency=null;
   const totalRow='<tr><td>Totals</td>'+keys.map(key=>'<td>'+fmt(metric(subtotal,key),key)+'</td>').join('')+'</tr>';
   const filter=(title,id,options,value,placeholder)=>'<div class="mx-filter"><label for="'+id+'">'+title+'</label><select id="'+id+'">'+option(options,value,placeholder)+'</select></div>';
   const dateInput=(title,id,value)=>'<div class="mx-filter"><label for="'+id+'">'+title+'</label><input type="date" id="'+id+'" value="'+esc(value||"")+'"></div>';
