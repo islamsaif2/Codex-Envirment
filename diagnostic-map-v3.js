@@ -100,12 +100,28 @@
    return '<div class="ud3-funnel">'+counts.map((r,i)=>'<div class="ud3-frow"><span>'+E(r.label)+'</span><div class="ud3-fbar"><i style="width:'+(Number.isFinite(r.value)?(r.value/biggest*100).toFixed(1):0)+'%"></i></div><b>'+E(N(r.value))+'</b></div>').join('')+'</div>'+
     '<div class="ud3-step-rates">'+spec.rates.map((title,i)=>{const value=funnelRate(...funnelRateValues(dashboard,kind,i+1));return custom(title,value===null?'—':P(value));}).join('')+'</div>';
  }
+
+ function creativeSummary(){
+   if(typeof loadDiagnosticCreative==='function')loadDiagnosticCreative();
+   const data=diagnosticCreative?.data;
+   if(!data)return '<p class="ud3-note">Creative metrics '+(diagnosticCreative?.error?'unavailable.':'loading from the existing Creative Analysis report…')+'</p>';
+   const rows=(data.records||[]).filter(r=>r.date>=data.start&&r.date<=data.end);
+   const sum=(records,key)=>records.reduce((v,r)=>v+(Number.isFinite(r[key])?r[key]:0),0);
+   const plays=sum(rows,'videoPlays');
+   const weight=sum(rows,'timeWeight');
+   const avgTime=weight?rows.reduce((v,r)=>v+(Number.isFinite(r.avgTime)&&Number.isFinite(r.timeWeight)?r.avgTime*r.timeWeight:0),0)/weight:null;
+   const fields=[['3-second View Rate','plays3'],['25% Watched','video25'],['50% Watched','video50'],['75% Watched','video75'],['100% Watched','video100']];
+   return minis(custom('Average Play Time',Number.isFinite(avgTime)?avgTime.toFixed(2)+' s':'—'),
+     ...fields.map(([title,key])=>custom(title,plays?P(sum(rows,key)/plays):'—')))+
+     '<p class="ud3-note">Milestones are ratios of video plays, using the existing Creative Analysis definitions.</p>';
+ }
  function promotion(){
    const meta=section('paid','Paid → Meta Ads',
      minis(small('Total Ad Spend','Amount Spent'),small('Meta purchase events','Purchases (Meta)'),small('Meta Ads CPA','CPA'))+
      '<div class="ud3-branch-label">CPA → before outbound / after outbound</div>'+
      section('before','Before Outbound Click',
        minis(small('CPM (Meta Sales)','CPM'),small('CTR (Meta Sales)','CTR (Meta Sales)'),small('Meta impressions','Impressions'),small('Cost per outbound click','Cost / Outbound Click'))+
+       section('creative','Creative Viewing Funnel',open.has('creative')?creativeSummary():'<p class="ud3-note">Open to inspect creative viewing milestones.</p>','CREATIVE')+
        '<p class="ud3-note">Meta CTR is not automatically Outbound CTR. Missing metrics stay unavailable.</p>'+
        terminal(['Is the change concentrated in particular creatives or audiences?','Did CPM, placement mix or frequency change?'],'Creative Analysis','Open Ads & Creative Analysis'),'META')+
      section('after','After Outbound Click',
