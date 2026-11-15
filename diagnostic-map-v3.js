@@ -188,9 +188,11 @@
    const boardRect=board.getBoundingClientRect();
    const width=board.clientWidth,height=board.scrollHeight;
    svg.setAttribute('viewBox','0 0 '+width+' '+height);
-   const getRect=id=>{
-     const el=board.querySelector('[data-ud4-id="'+id+'"]');
-     if(!el)return null;
+   const getRect=(id,asSource=false)=>{
+     const card=board.querySelector('[data-ud4-id="'+id+'"]');
+     if(!card)return null;
+     // Start after the parent's own Contribution / terminal explanation, not through it.
+     const el=asSource?(card.closest('.ud4-owner')||card):card;
      const r=el.getBoundingClientRect();
      return {x:r.left+r.width/2-boardRect.left,y:r.top-boardRect.top,bottom:r.bottom-boardRect.top};
    };
@@ -202,7 +204,7 @@
    ];
    const paths=[];
    for(const [source,targets] of connectors){
-     const s=getRect(source);
+     const s=getRect(source,true);
      if(!s)continue;
      const children=targets.map(getRect).filter(Boolean);
      if(!children.length)continue;
