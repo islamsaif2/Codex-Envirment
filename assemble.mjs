@@ -5,3 +5,5 @@ copyFileSync(new URL("./dashboard-release.mjs", import.meta.url), new URL("./wor
 console.log("Assembled Ultramedix dashboard from dashboard-release.mjs");
 // Apply the approved compact diagnostic canvas after copying the exact release.
 await import('./enhance-diagnostic-v2.mjs');
+// Replace the legacy absolute-position diagnostic tree with the approved V2 poster layout.
+await import('./enhance-diagnostic-v3.mjs');
