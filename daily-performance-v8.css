@@ -137,3 +137,9 @@
  .db-month{min-width:300px!important}
  .db-month-table table{font-size:8px!important}
 }
+
+/* Match the Date column to each row's existing alternating background. */
+.db-month .db-month-table tbody tr > th:first-child{
+  background:transparent!important;
+  background-color:transparent!important;
+}
