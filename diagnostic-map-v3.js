@@ -5,7 +5,12 @@
 (function(){
  if(typeof diagnosticTab==='undefined'||typeof dateControls!=='function')return;
  const s=diagnosticState;
- const open=s.v3open||=new Set(['stock','variants','paid','before','after','organic','prices','offers','cvr','funnel','engagement']);
+ // Preserve user expansion choices on rerender, but start with a compact diagnostic overview.
+ if(!s.v5DenseInitialized){
+   s.v3open=new Set(['stock','paid','prices','cvr']);
+   s.v5DenseInitialized=true;
+ }
+ const open=s.v3open;
  const E=x=>esc(String(x??''));
  const N=n=>Number.isFinite(n)?fmt(n):'—';
  const P=n=>Number.isFinite(n)?pct(n):'—';
@@ -231,7 +236,7 @@
    s.v4observer?.disconnect(); // Disconnect the previous poster's flow observer.
    const root=$('content');
    root.innerHTML='<div class="section-head ud3-page-head"><h2>Diagnostic Map</h2>'+dateControls()+'</div>'+
-    '<div class="ud3-toolbar"><label>Search <input id="ud3-search" type="search" placeholder="Search metrics..." value="'+E(s.v3search||'')+'"></label><button data-ud3-action="compact">Compact</button><button data-ud3-action="expand">Expand all</button><button data-ud3-action="collapse">Collapse all</button></div>'+
+    '<div class="ud3-toolbar"><label>Search <input id="ud3-search" type="search" placeholder="Search metrics..." value="'+E(s.v3search||'')+'"></label><button data-ud3-action="compact">'+(s.v3dense===false?'Comfortable':'Dense')+'</button><button data-ud3-action="expand">Expand all</button><button data-ud3-action="collapse">Collapse all</button></div>'+
     '<div class="ud3-canvas '+(s.v3dense===false?'':'ud3-compact')+'"><svg class="ud4-connectors" aria-hidden="true"></svg><div class="ud3-eyebrow"><span>PERFORMANCE → DRIVERS → TERMINAL QUESTIONS</span><span>Actual store data · Selected period</span></div>'+spine()+
     '<div class="ud3-columns">'+stock()+promotion()+price()+place()+'</div></div>';
    root.onclick=e=>{
