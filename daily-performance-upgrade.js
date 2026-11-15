@@ -8,6 +8,8 @@
  const previousRender=renderDayBusiness;
  const remoteCache=new Map();
  const pending=new Map();
+ const previousMixCache=new Map();
+ const previousMixPending=new Map();
  let observer=null;
  const wide=new Set(['metaFunnel','ga4Funnel']);
  const remote=new Set(['offersPerformance','paidOrganicMix']);
@@ -143,19 +145,47 @@
        (points.length>=1?diagnosticLine([['Total Orders',total],['Orders with Offers',offers]],fmt):'<small>No offer history for this month.</small>')+
        '</div>';
    }
-   const groups=data?.paidOrganicFirst||{};
-   const fromRows=(data?.orderVisitChannelAnalysis||[]).reduce((a,row)=>{
-     const type=String(row.medium||'').toLowerCase();
-     a[type==='paid'?'paid':type==='organic'?'organic':'unknown']+=Number(row.firstOrders||0);
-     return a;
-   },{paid:0,organic:0,unknown:0});
-   const counts=groups.total!==undefined?groups:fromRows;
-   const paid=Number(counts.paid)||0,organic=Number(counts.organic)||0,unknown=Number(counts.unknown)||0,total=paid+organic+unknown;
-   const pctOf=n=>total>0?n/total*100:0;
-   const p=pctOf(paid),o=pctOf(organic);
-   const chart='<div class="db-v7-donut" style="background:conic-gradient(#6880f6 0% '+p.toFixed(2)+'%,#20b99a '+p.toFixed(2)+'% '+(p+o).toFixed(2)+'%,#f2a65a '+(p+o).toFixed(2)+'% 100%)"><div class="db-v7-donut-inner"><strong>'+num(total)+'</strong><small>Attributed orders</small></div></div>';
-   const legend=[['Paid',paid,'paid'],['Organic',organic,'organic'],['Unknown',unknown,'unknown']].map(([label,n,tone])=>'<div><span class="db-v7-dot '+tone+'"></span>'+label+' · '+pctOf(n).toFixed(1)+'% <b>'+num(n)+'</b></div>').join('');
-   return '<div class="db-v7-remote" data-db-v7-month="'+E(month)+'" data-db-v7-key="'+E(key)+'">'+chart+'<div class="db-v7-pie-legend">'+legend+'</div><small class="db-v7-footnote">Shopify first-visit channel classification; all order statuses.</small></div>';
+   const mix=(source)=>{
+     const groups=source?.paidOrganicFirst||{};
+     const rows=(source?.orderVisitChannelAnalysis||[]).reduce((a,row)=>{
+       const type=String(row.medium||'').toLowerCase();
+       a[type==='paid'?'paid':type==='organic'?'organic':'unknown']+=Number(row.firstOrders||0);
+       return a;
+     },{paid:0,organic:0,unknown:0});
+     const counts=groups.total!==undefined?groups:rows;
+     const paid=Number(counts.paid)||0,organic=Number(counts.organic)||0,unknown=Number(counts.unknown)||0;
+     return {paid,organic,unknown,total:paid+organic+unknown};
+   };
+   const current=mix(data);
+   const periodKey=previousMixKey(month);
+   const prior=previousMixCache.get(periodKey);
+   const slice=comparableRows(month);
+   const share=(counts,key)=>counts.total>0?counts[key]/counts.total*100:null;
+   const donut=(counts,period)=>{
+     if(!counts)return '<div class="db-v8-pie-loading">Previous period loading…</div>';
+     const p=share(counts,'paid')||0,o=share(counts,'organic')||0;
+     return '<div class="db-v8-pie-block"><div class="db-v8-pie-label">'+period+'</div>'+
+       '<div class="db-v7-donut db-v8-donut" style="background:conic-gradient(#6880f6 0% '+p.toFixed(2)+'%,#20b99a '+p.toFixed(2)+'% '+(p+o).toFixed(2)+'%,#f2a65a '+(p+o).toFixed(2)+'% 100%)">'+
+       '<div class="db-v7-donut-inner"><strong>'+num(counts.total)+'</strong><small>Orders</small></div></div></div>';
+   };
+   const old=prior?.data?mix(prior.data):null;
+   const labels=[['Paid','paid'],['Organic','organic'],['Unknown','unknown']];
+   const rows=labels.map(([label,key])=>{
+     const cur=share(current,key),prev=old?share(old,key):null;
+     const delta=cur!==null&&prev!==null?cur-prev:null;
+     return '<div class="db-v8-mix-row"><span class="db-v7-dot '+key+'"></span><span>'+label+'</span>'+
+       '<b>'+ (cur===null?'—':cur.toFixed(1)+'%')+'</b>'+
+       '<span class="db-v8-mix-compare">'+(prev===null?'—':prev.toFixed(1)+'%')+'</span>'+
+       '<strong class="'+(delta===null?'':delta>=0?'db-v7-up':'db-v7-down')+'">'+(delta===null?'—':(delta>0?'+':'')+delta.toFixed(1)+' pp')+'</strong></div>';
+   }).join('');
+   const label=old?'Current vs previous · '+(slice.partial?'same elapsed days':'full months'):
+      prior?.error?'Previous period unavailable':'Loading previous period…';
+   return '<div class="db-v7-remote db-v8-paid-compare" data-db-v7-month="'+E(month)+'" data-db-v7-key="'+E(key)+'">'+
+     '<div class="db-v8-dual-pies">'+donut(current,'Current')+donut(old,'Previous')+'</div>'+
+     '<div class="db-v8-mix-summary">'+label+'</div>'+
+     '<div class="db-v8-mix-head"><span>Channel</span><span>Now</span><span>Prev.</span><span>Δ share</span></div>'+
+     '<div class="db-v8-mix-rows">'+rows+'</div>'+
+     '<small class="db-v7-footnote">Shopify first-visit attribution; all statuses. Share change is in percentage points, not growth rate.</small></div>';
  }
  function smallCard(key,rows,data,icon,month){
    if(remote.has(key)){
@@ -177,8 +207,28 @@
    return '<div class="db-card-grid db-v7-grid">'+normal.map(k=>smallCard(k,rows,data,icon,month)).join('')+
      large.map(k=>wideCard(k,month)).join('')+'</div>';
  };
+ function previousMixKey(month){
+   const {partial,maxDay}=comparableRows(month);
+   const prior=previousMonth(month);
+   const cutoff=partial?Math.min(maxDay,Number(monthLast(prior).slice(8))):0;
+   return businessId+'|mix-previous|'+month+'|'+(cutoff||'full');
+ }
+ function loadPreviousMix(month){
+   if(!dayBusiness.cards.includes('paidOrganicMix'))return;
+   const key=previousMixKey(month);
+   if(previousMixCache.has(key)||previousMixPending.has(key))return;
+   const prior=previousMonth(month);
+   const {partial,maxDay}=comparableRows(month);
+   const end=partial?prior+'-'+String(Math.min(maxDay,Number(monthLast(prior).slice(8)))).padStart(2,'0'):monthLast(prior);
+   const request=api('/api/dashboard?businessId='+encodeURIComponent(businessId)+'&startDate='+firstDay(prior)+'&endDate='+end+'&details=diagnostic')
+     .then(data=>{previousMixCache.set(key,{data});})
+     .catch(error=>{previousMixCache.set(key,{error:String(error?.message||error)});})
+     .finally(()=>{previousMixPending.delete(key);refreshRemote(month);});
+   previousMixPending.set(key,request);
+ }
  async function loadMonth(month){
    const key=businessId+'|'+month;
+   if(dayBusiness.cards.includes('paidOrganicMix'))loadPreviousMix(month);
    if(pending.has(key)||remoteCache.has(key))return;
    const start=firstDay(month),end=monthLast(month);
    const promise=api('/api/dashboard?businessId='+encodeURIComponent(businessId)+'&startDate='+start+'&endDate='+end+'&details=diagnostic')

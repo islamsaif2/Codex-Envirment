@@ -9,3 +9,5 @@ await import('./enhance-diagnostic-v2.mjs');
 await import('./enhance-diagnostic-v3.mjs');
 // Upgrade Daily Performance monthly card choices without changing underlying metric formulas.
 await import('./enhance-daily-performance-v7.mjs');
+// Daily Performance V8: weekday dates, six card slots and prior channel comparisons.
+await import('./enhance-daily-performance-v8.mjs');
