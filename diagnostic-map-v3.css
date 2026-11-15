@@ -166,3 +166,7 @@ body.theme-dark.diagnostic-map-page .ud3-canvas{background:#eaf0ec;color:#19372d
 .ud3-mini .ud4-period-visual .kpi-period-track{height:5px!important}
 @media(max-width:1100px){.ud4-spine-caption{margin:12px 0 12px}.ud4-period-visual .kpi-period-row{grid-template-columns:35px minmax(0,1fr) 56px;gap:3px}}
 @media(max-width:700px){.ud3-spine-row{flex-wrap:wrap}.ud3-spine-row>*{flex:1 1 140px!important}.ud4-spine-caption{font-size:8px;margin:11px 0}.ud3-spine>.ud4-profit-owner{width:min(100%,370px)}}
+
+/* The inner diagnostic split is a hierarchy too: visual arrows from parent sub-branch to each child. */
+.ud3-section-body>.ud3-section{position:relative;margin-top:13px}
+.ud3-section-body>.ud3-section:before{content:"↓";position:absolute;left:calc(50% - 6px);top:-17px;font-weight:900;font-size:13px;line-height:14px;color:#6aa38c;pointer-events:none}
