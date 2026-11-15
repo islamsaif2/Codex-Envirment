@@ -170,3 +170,140 @@ body.theme-dark.diagnostic-map-page .ud3-canvas{background:#eaf0ec;color:#19372d
 /* The inner diagnostic split is a hierarchy too: visual arrows from parent sub-branch to each child. */
 .ud3-section-body>.ud3-section{position:relative;margin-top:13px}
 .ud3-section-body>.ud3-section:before{content:"↓";position:absolute;left:calc(50% - 6px);top:-17px;font-weight:900;font-size:13px;line-height:14px;color:#6aa38c;pointer-events:none}
+
+/* V5 Executive Dense View: comparison bars live beside KPI value, not below chart. */
+body.diagnostic-map-page .main{padding:8px 12px 12px!important}
+body.diagnostic-map-page .ud3-page-head{margin-bottom:4px!important}
+body.diagnostic-map-page .ud3-toolbar{margin-bottom:4px!important;padding:4px 7px!important;gap:5px!important}
+body.diagnostic-map-page .ud3-toolbar button,body.diagnostic-map-page .ud3-toolbar input{padding:4px 7px!important;font-size:10px!important}
+body.diagnostic-map-page .ud3-canvas{padding:5px 8px 12px!important;border-radius:9px}
+body.diagnostic-map-page .ud3-eyebrow{margin:0 2px 3px!important;font-size:8px!important}
+body.diagnostic-map-page .ud3-spine{gap:0!important}
+body.diagnostic-map-page .ud3-spine-row{gap:6px!important}
+body.diagnostic-map-page .ud3-row1{max-width:990px!important}
+body.diagnostic-map-page .ud3-row2{max-width:630px!important}
+body.diagnostic-map-page .ud3-row3{max-width:990px!important}
+body.diagnostic-map-page .ud3-spine>.ud4-profit-owner{width:min(320px,100%)!important}
+body.diagnostic-map-page .ud4-owner{gap:3px!important}
+body.diagnostic-map-page .ud3-spine .ud3-kpi{border-radius:8px!important}
+body.diagnostic-map-page .ud3-kpi-inner{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) minmax(100px,40%)!important;
+ grid-template-rows:auto auto 28px 9px!important;
+ column-gap:5px!important;row-gap:0!important;
+ padding:5px 8px 4px!important;
+ position:relative;
+}
+body.diagnostic-map-page .ud3-root .ud3-kpi-inner{padding:6px 8px 4px!important}
+body.diagnostic-map-page .ud3-topline{grid-column:1/-1!important;grid-row:1!important;font-size:9px!important;line-height:1.2}
+body.diagnostic-map-page .ud3-topline small{font-size:8px!important}
+body.diagnostic-map-page .ud3-numline{
+ grid-column:1!important;grid-row:2!important;
+ display:flex!important;flex-wrap:wrap;gap:3px!important;
+ align-content:center!important;justify-content:space-between!important;
+ min-height:25px;margin:0!important;
+}
+body.diagnostic-map-page .ud3-numline b{font-size:16px!important;line-height:1.1!important}
+body.diagnostic-map-page .ud3-root .ud3-numline b{font-size:19px!important}
+body.diagnostic-map-page .ud3-delta{font-size:9px!important}
+body.diagnostic-map-page .ud4-period-visual{display:contents!important}
+body.diagnostic-map-page .ud4-period-visual .kpi-period-bars{
+ display:flex!important;flex-direction:column!important;
+ grid-column:2!important;grid-row:2!important;align-self:center!important;
+ gap:2px!important;padding:0!important;margin:0!important;
+ min-width:0!important;
+}
+body.diagnostic-map-page .ud4-period-visual .kpi-period-row{
+ display:grid!important;grid-template-columns:31px minmax(8px,1fr) minmax(32px,46px)!important;
+ gap:2px!important;align-items:center!important;margin:0!important;
+ min-width:0!important;height:10px!important;
+}
+body.diagnostic-map-page .ud4-period-visual .kpi-period-name{
+ font-size:7px!important;line-height:1.1!important;letter-spacing:-.15px;
+}
+body.diagnostic-map-page .ud4-period-visual .kpi-period-value{
+ font-size:8px!important;line-height:1.1!important;font-weight:750!important;
+ min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+body.diagnostic-map-page .ud4-period-visual .kpi-period-track{height:5px!important}
+body.diagnostic-map-page .ud4-period-visual .kpi-dual-chart{
+ grid-column:1/-1!important;grid-row:3!important;
+ height:26px!important;width:100%!important;min-height:0!important;
+ margin:0!important;align-self:center!important;display:block!important;
+}
+body.diagnostic-map-page .ud4-period-visual .kpi-chart-legend{
+ grid-column:1/-1!important;grid-row:4!important;
+ display:flex!important;justify-content:flex-end!important;
+ gap:7px!important;padding:0!important;margin:0!important;
+ font-size:7px!important;line-height:9px!important;
+}
+body.diagnostic-map-page .ud4-period-visual .kpi-line{width:10px!important}
+body.diagnostic-map-page .ud4-period-visual .kpi-chart-note{display:none!important}
+body.diagnostic-map-page .ud3-kpi .ud3-nodata{height:25px!important;margin:0!important;font-size:8px!important;grid-column:1/-1}
+body.diagnostic-map-page .ud3-contribution{
+ padding:4px 6px!important;border-radius:7px!important;
+ box-shadow:none!important;
+}
+body.diagnostic-map-page .ud3-contribution-title{font-size:9px!important;margin-bottom:1px!important;line-height:1.1!important}
+body.diagnostic-map-page .ud3-contribrow{padding:1px 0!important;font-size:8px!important;min-height:12px!important}
+body.diagnostic-map-page .ud3-contribrow b{font-size:8px!important}
+body.diagnostic-map-page .ud3-track{height:2px!important;margin:0 0 1px!important}
+body.diagnostic-map-page .ud3-contribution .ud3-muted{display:none!important}
+body.diagnostic-map-page .ud4-spine-caption{
+ display:none!important;
+}
+body.diagnostic-map-page .ud3-row1,
+body.diagnostic-map-page .ud3-row2,
+body.diagnostic-map-page .ud3-row3{margin-top:16px!important}
+body.diagnostic-map-page .ud3-branch-intro{margin:12px 0 4px!important;padding:2px 6px!important;font-size:8px!important}
+body.diagnostic-map-page .ud3-columns{margin-top:4px!important;gap:7px!important}
+body.diagnostic-map-page .ud3-colhead{padding:5px 7px!important}
+body.diagnostic-map-page .ud3-colhead h3{font-size:12px!important}
+body.diagnostic-map-page .ud3-colhead p{font-size:9px!important;margin-top:1px!important}
+body.diagnostic-map-page .ud3-colbody{padding:5px!important;gap:5px!important}
+body.diagnostic-map-page .ud3-section-head{min-height:25px!important;padding:4px 7px!important;font-size:10px!important}
+body.diagnostic-map-page .ud3-section-body{padding:4px!important;gap:4px!important}
+body.diagnostic-map-page .ud3-minis{gap:4px!important}
+body.diagnostic-map-page .ud3-mini{padding:4px!important}
+body.diagnostic-map-page .ud3-mini-title{font-size:9px!important}
+body.diagnostic-map-page .ud3-mini-num b{font-size:13px!important}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-dual-chart{height:20px!important}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-chart-legend{display:none!important}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-period-row{
+ grid-template-columns:25px minmax(7px,1fr) 34px!important;
+}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-period-name{font-size:6px!important}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-period-value{font-size:7px!important}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-period-track{height:4px!important}
+body.diagnostic-map-page .ud3-mini .ud3-spark{height:20px!important}
+body.diagnostic-map-page .ud3-miniquestion{padding:4px 6px!important;margin-top:2px!important;border-radius:7px!important}
+body.diagnostic-map-page .ud3-miniquestion h4{font-size:9px!important;margin:0 0 2px!important}
+body.diagnostic-map-page .ud3-miniquestion h4 span{font-size:7px!important}
+body.diagnostic-map-page .ud3-miniquestion p{font-size:8px!important;line-height:1.2!important;margin:0 0 3px!important}
+body.diagnostic-map-page .ud3-miniquestion button,
+body.diagnostic-map-page .ud3-ask button{padding:3px 5px!important;font-size:8px!important}
+body.diagnostic-map-page .ud3-ask{padding:5px!important}
+body.diagnostic-map-page .ud3-ask-title{font-size:9px!important}
+body.diagnostic-map-page .ud3-ask ul{margin:3px 0 4px!important}
+body.diagnostic-map-page .ud3-ask li{font-size:9px!important;line-height:1.25!important}
+body.diagnostic-map-page .ud3-tablewrap th,
+body.diagnostic-map-page .ud3-tablewrap td{padding:3px!important;font-size:9px!important}
+body.diagnostic-map-page .ud3-chart-box .dt-chart{height:66px!important}
+body.diagnostic-map-page .ud3-section-body>.ud3-section{margin-top:9px!important}
+body.diagnostic-map-page .ud3-section-body>.ud3-section::before{top:-14px!important}
+body.diagnostic-map-page .ud3-spine>.ud4-profit-owner{flex:none!important}
+/* Comfortable retains roomier chart heights, while Dense is the default. */
+body.diagnostic-map-page .ud3-canvas:not(.ud3-compact) .ud3-kpi-inner{
+ grid-template-rows:auto auto 51px 15px!important;padding:10px 12px 8px!important;
+}
+body.diagnostic-map-page .ud3-canvas:not(.ud3-compact) .ud4-period-visual .kpi-dual-chart{height:48px!important}
+body.diagnostic-map-page .ud3-canvas:not(.ud3-compact) .ud3-row1,
+body.diagnostic-map-page .ud3-canvas:not(.ud3-compact) .ud3-row2,
+body.diagnostic-map-page .ud3-canvas:not(.ud3-compact) .ud3-row3{margin-top:22px!important}
+body.diagnostic-map-page .ud3-canvas:not(.ud3-compact) .ud4-spine-caption{display:block!important;margin:8px 0!important}
+/* Keep period comparisons beside metrics also at narrow viewport widths */
+@media(max-width:700px){
+ body.diagnostic-map-page .ud3-kpi-inner{grid-template-columns:minmax(0,1fr) minmax(90px,42%)!important}
+ body.diagnostic-map-page .ud3-row1,body.diagnostic-map-page .ud3-row2,body.diagnostic-map-page .ud3-row3{margin-top:12px!important}
+ body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-period-row{grid-template-columns:23px minmax(8px,1fr) 32px!important}
+}
