@@ -12,6 +12,29 @@
  }
  const open=s.v3open;
  const E=x=>esc(String(x??''));
+const sourceSvg={
+ meta:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.1 15.3c0-3.4 1.8-7.7 5-7.7 2.3 0 4.1 2.7 5.4 4.8l1.5 2.4c1.2 1.9 2.1 2.8 3.3 2.8 1.6 0 2.5-1.8 2.5-3.6 0-2.1-1-3.9-2.6-3.9-1.5 0-2.8 1.8-4.4 4.3l-1.6 2.4c-1.6 2.4-3.3 4.1-5.7 4.1-2.7 0-4.1-2.1-4.1-4.9Z" fill="none" stroke="#0866ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ shopify:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.9 18.9 5l1.7 15.2L4 22 5 6.9Z" fill="#95bf47"/><path d="M9.1 6.7c.1-2.3 1.3-4.4 3.1-4.4 1.8 0 2.7 1.8 2.9 3.8" fill="none" stroke="#5e8e3e" stroke-width="1.3"/><path d="M15.3 9.5c-1.1-.8-4.2-.7-4.4 1.4-.1 1.2 1.4 1.6 2.4 2.2 1.2.7 1.6 1.4 1.3 2.4-.6 2-3.2 2.1-4.7 1.2" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ ga4:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.2 18.5V12a3.1 3.1 0 0 1 6.2 0v6.5a3.1 3.1 0 0 1-6.2 0Z" fill="#f9ab00"/><path d="M11.1 18.5V5.1a3.1 3.1 0 0 1 6.2 0v13.4a3.1 3.1 0 0 1-6.2 0Z" fill="#e37400"/><circle cx="20.5" cy="18.7" r="2.5" fill="#f9ab00"/></svg>',
+ bosta:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.4" y="1.4" width="21.2" height="21.2" rx="5.1" fill="#ee5c37"/><path d="M8 5.1v13.8M8 10.8c1.2-1.4 2.5-2.1 4.2-2.1 2.8 0 4.7 2.2 4.7 5.1 0 2.8-1.9 5-4.7 5-1.7 0-3.1-.8-4.2-2.1" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+ const sourcesFor=name=>{
+   const k=String(name||'').toLowerCase();
+   if(/price change|pricing decision/.test(k))return [];
+   if(/profit proxy|delivered revenue|delivered orders|delivered aov|delivery rate|cancelled rate|shipping costs|cancelled before pickup/.test(k))return ['shopify','bosta'];
+   if(/meta ads cpa|cost per outbound|meta purchase|meta impression|amount spent|advertising costs|total ad spend|cpm|ctr|creative|play time|watched/.test(k))return ['meta'];
+   if(/ga4|engagement|bounce rate|session duration|pages.*session|website experience/.test(k))return ['ga4'];
+   if(/website conversion rate|website cvr|conversion rate|website conversion funnel/.test(k))return ['shopify','ga4'];
+   if(/funnel/.test(k))return ['meta','ga4'];
+   if(/stock|variant|orders|aov|shopify|offer/.test(k))return ['shopify'];
+   return [];
+ };
+ function iconFor(name){
+   const src=sourcesFor(name);
+   return src.length?'<span class="ud6-sources" aria-label="Data source: '+src.join(', ')+'">'+src.map(key=>'<span class="ud6-src" title="'+key.toUpperCase()+'">'+sourceSvg[key]+'</span>').join('')+'</span>':'';
+ }
+ function named(name){return '<span class="ud6-metric-label">'+iconFor(name)+'<span>'+E(name)+'</span></span>';}
+
  const N=n=>Number.isFinite(n)?fmt(n):'—';
  const P=n=>Number.isFinite(n)?pct(n):'—';
  const M=n=>Number.isFinite(n)?money(n):'—';
@@ -21,9 +44,11 @@
  const val=(name)=>metric(name);
  const delta=(name)=>{
    const current=metric(name),previous=metric(name,previousDashboard);
-   if(!Number.isFinite(current)||!Number.isFinite(previous)||previous===0)return '<span class="ud3-muted">—</span>';
+   if(!Number.isFinite(current)||!Number.isFinite(previous)||previous===0)return '<span class="ud6-change missing">—</span>';
    const change=(current-previous)/Math.abs(previous)*100;
-   return '<span class="ud3-delta '+(change<0?'negative':'positive')+'">'+(change>0?'+':'')+change.toFixed(1)+'%</span>';
+   const lower=typeof sparkLowerIsBetter==='function'?sparkLowerIsBetter(name):/cpa|cpm|cost|cancel|bounce/i.test(name);
+   const favorable=change===0?null:lower?change<0:change>0;
+   return '<span class="ud6-change '+(favorable===null?'neutral':favorable?'good':'bad')+'" title="Change vs previous period">'+(change>0?'▲':change<0?'▼':'—')+' '+Math.abs(change).toFixed(1)+'%</span>';
  };
  const stamp=(name)=>{const x=val(name);return x===null?'—':kpiValueFormat(name,x)};
  function series(name,d=dashboard){
@@ -60,7 +85,7 @@
  }
  function kpi(id,name,main=false,extra=''){
    const label=({profit:'Profit proxy',revenue:'Delivered Revenue',ads:'Advertising Costs',ship:'Shipping Costs',delivered:'Delivered Orders',daov:'Delivered AOV',orders:'Total Orders',dr:'Delivery Rate',cancel:'Cancelled Rate'})[id];
-   return '<article class="ud3-kpi '+(main?'ud3-root':'')+'" data-ud4-id="'+E(id)+'" data-search="'+E(label.toLowerCase())+'"><div class="ud3-kpi-inner"><div class="ud3-topline"><span>'+E(label)+'</span><small>'+(main?'ROOT':'KPI')+'</small></div><div class="ud3-numline"><b>'+E(stamp(name))+'</b>'+delta(name)+'</div>'+svgTrend(name)+extra+'</div></article>';
+   return '<article class="ud3-kpi '+(main?'ud3-root':'')+'" data-ud4-id="'+E(id)+'" data-search="'+E(label.toLowerCase())+'"><div class="ud3-kpi-inner"><div class="ud3-topline"><span>'+named(label)+'</span><small>'+(main?'ROOT':'KPI')+'</small></div><div class="ud3-numline"><b>'+E(stamp(name))+'</b>'+delta(name)+'</div>'+svgTrend(name)+extra+'</div></article>';
  }
  const keys={profit:diagnosticNet,revenue:'Diagnostic Delivered Revenue',ads:'Total Ad Spend',ship:'Diagnostic Shipping Costs',delivered:'Delivered Orders',daov:'Delivered AOV',orders:'Total Orders',dr:'Delivery Rate',cancel:'Cancelled before pickup rate'};
  function contribution(id){
@@ -86,17 +111,17 @@
    return '<div class="ud3-contribution"><div class="ud3-contribution-title">Contribution to Change</div>'+list.map(([name,change])=>'<div class="ud3-contribrow"><span>'+E(name)+'</span><b class="'+(change<0?'negative':'positive')+'">'+(change>0?'+':'')+E(id==='orders'?N(change):M(change))+'</b></div><div class="ud3-track"><i style="width:'+(Math.abs(change)/max*100).toFixed(1)+'%;background:'+(change<0?'#d27c70':'#419b76')+'"></i></div>').join('')+'<p class="ud3-muted">'+E(note)+'</p></div>';
  }
  function small(name,title=name){
-   return '<div class="ud3-mini" data-search="'+E(title.toLowerCase())+'"><span class="ud3-mini-title" title="'+E(title)+'">'+E(title)+'</span><div class="ud3-mini-num"><b>'+E(stamp(name))+'</b>'+delta(name)+'</div>'+svgTrend(name)+'</div>';
+   return '<div class="ud3-mini" data-search="'+E(title.toLowerCase())+'"><span class="ud3-mini-title" title="'+E(title)+'">'+named(title)+'</span><div class="ud3-mini-num"><b>'+E(stamp(name))+'</b>'+delta(name)+'</div>'+svgTrend(name)+'</div>';
  }
  function custom(title,value,info=''){
-   return '<div class="ud3-mini" data-search="'+E(title.toLowerCase())+'"><span class="ud3-mini-title">'+E(title)+'</span><div class="ud3-mini-num"><b>'+E(value)+'</b></div>'+(info?'<span class="ud3-muted">'+E(info)+'</span>':'')+'</div>';
+   return '<div class="ud3-mini" data-search="'+E(title.toLowerCase())+'"><span class="ud3-mini-title">'+named(title)+'</span><div class="ud3-mini-num"><b>'+E(value)+'</b></div>'+(info?'<span class="ud3-muted">'+E(info)+'</span>':'')+'</div>';
  }
  const minis=(...a)=>'<div class="ud3-minis">'+a.join('')+'</div>';
  function terminal(qs,tab,button='Open existing analysis'){
    return '<div class="ud3-ask"><div class="ud3-ask-title">Questions to investigate <span>TERMINAL</span></div><ul>'+qs.map(q=>'<li>'+E(q)+'</li>').join('')+'</ul>'+(tab?'<button type="button" data-ud3-tab="'+E(tab)+'">↗ '+E(button)+'</button>':'')+'</div>';
  }
  function section(id,title,content,tag=''){
-   return '<div class="ud3-section" data-ud3-section="'+E(id)+'" data-search="'+E(title.toLowerCase())+'"><button class="ud3-section-head" type="button" data-ud3-toggle="'+E(id)+'" aria-expanded="'+open.has(id)+'"><strong>⌁ '+E(title)+'</strong><span>'+E(tag)+' <b>'+(open.has(id)?'⌄':'›')+'</b></span></button><div class="ud3-section-body"'+(open.has(id)?'':' hidden')+'>'+content+'</div></div>';
+   return '<div class="ud3-section" data-ud3-section="'+E(id)+'" data-search="'+E(title.toLowerCase())+'"><button class="ud3-section-head" type="button" data-ud3-toggle="'+E(id)+'" aria-expanded="'+open.has(id)+'"><strong>⌁ '+named(title)+'</strong><span>'+E(tag)+' <b>'+(open.has(id)?'⌄':'›')+'</b></span></button><div class="ud3-section-body"'+(open.has(id)?'':' hidden')+'>'+content+'</div></div>';
  }
  function column(id,title,subtitle,body){
    return '<div class="ud3-column ud3-'+E(id)+'"><div class="ud3-colhead" data-ud4-id="'+E(id)+'"><div><h3>'+E(title)+'</h3><p>'+E(subtitle)+'</p></div><button type="button" data-ud3-column="'+id+'" aria-label="Collapse '+E(title)+'">−</button></div><div class="ud3-colbody">'+body+'</div></div>';
@@ -104,14 +129,18 @@
  function stock(){
    const products=inventoryProductGroups(dashboard.inventory||{variants:[]},{period:s.stockPeriod??28}).products||[];
    const currentUnits=products.reduce((z,p)=>z+(p.known&&Number.isFinite(p.stock)?p.stock:0),0);
-   const stockKnown=products.some(p=>p.known);
-   const variantCount=products.reduce((z,p)=>z+p.variants.length,0);
-   const rows=products.flatMap(p=>p.variants.map(x=>({product:p.name,variant:x.row.variant||'Default',stock:x.row.stock,units:x.units})));
-   const table='<div class="ud3-tablewrap"><table><thead><tr><th>Product / Variant</th><th>Stock</th><th>Units sold</th></tr></thead><tbody>'+rows.slice(0,7).map(r=>'<tr><td title="'+E(r.product+' · '+r.variant)+'">'+E(r.product+' · '+r.variant)+'</td><td>'+E(N(r.stock))+'</td><td>'+E(N(r.units))+'</td></tr>').join('')+'</tbody></table></div>';
+   const known=products.some(p=>p.known);
+   const variants=products.flatMap(p=>p.variants.map(v=>({product:p.name,variant:v.row.variant||'Default',stock:v.row.stock,units:v.units})));
+   const table='<div class="ud6-stock-scroll" tabindex="0" aria-label="Scrollable list of all products and variants"><table><thead><tr><th>Product / Variant</th><th>Stock</th><th>Units ordered</th></tr></thead><tbody>'+
+     variants.map(row=>'<tr><td title="'+E(row.product+' · '+row.variant)+'">'+E(row.product+' · '+row.variant)+'</td><td>'+E(N(row.stock))+'</td><td>'+E(N(row.units))+'</td></tr>').join('')+'</tbody></table></div>';
    return column('product','01 · Product','Stock & variants',
-    section('stock','Product Stock',minis(custom('Available Units',stockKnown?N(currentUnits):'—','Current snapshot'),custom('Tracked Products',N(products.length)))+
-     '<p class="ud3-note">Current stock is not proof of historical stock availability.</p>'+terminal(['Were the affected products available during the decline?','Was there a restock or supply delay?'],'Inventory','Open Inventory Tracking'),'CURRENT')+
-    section('variants','Variants Stock',minis(custom('Variants',N(variantCount)),custom('Products',N(products.length)))+table+terminal(['Did a best-selling variant run out?','Are historical orders correctly linked to the same SKU?'],'Inventory','Open Variant Stock'),'VARIANTS'));
+    section('stock','Product / Variant Stock',
+      minis(custom('Available Units',known?N(currentUnits):'—','Current snapshot'),
+            custom('Products',N(products.length)),
+            custom('Variants',N(variants.length)))+
+      table+
+      '<p class="ud3-note">Current stock, not historical availability. Scroll inside the table for all products and variants.</p>'+
+      terminal(['Were the top-selling variants in stock during the change?','Did a restock or supplier shortage occur?'],'Inventory','Open Inventory Tracking'),'SHOPIFY'));
  }
  function traffic(kind){
    const rows=(dashboard.orderVisitChannelAnalysis||[]).filter(r=>String(r.medium||'').toLowerCase()===kind).slice().sort((a,b)=>(b.firstOrders||0)-(a.firstOrders||0));
@@ -161,8 +190,7 @@
    return column('promotion','02 · Promotion','Paid & organic channels',meta+organic);
  }
  function prices(){
-   const original=diagnosticPrices();
-   return '<div class="ud3-chart-box">'+original+'</div>'+terminal(['Did prices change before the drop?','Did the customer-visible offer or discount end?'],'Products & Page Analysis','Open Product Analysis');
+   return '<div class="ud6-price-question"><strong>Did our product prices change?</strong><p>Ask the brand owner: Were any product/variant prices raised, reduced, or temporarily discounted? What date did the change happen?</p><p class="ud3-note">No verified historical price database is connected, so no price-change metric or chart is shown.</p></div>';
  }
  function offers(){
    const rows=dashboard.diagnostic?.offers||[];
@@ -172,7 +200,7 @@
  }
  function price(){
    return column('price','03 · Price & Offers','Pricing, discounts & promotions',
-    section('prices','Product Price Changes',prices(),'HISTORY')+
+    section('prices','Price Change? — Owner Question',prices(),'ASK OWNER')+
     section('offers','Offers Performance',offers(),'ORDERS'));
  }
  function place(){
@@ -262,7 +290,7 @@
      const tab=e.target.closest('[data-ud3-tab]');
      if(tab){const dest=tab.dataset.ud3Tab;if(dest==='Creative Analysis')$('nav-creative')?.click();else setPage(dest);return;}
      const action=e.target.closest('[data-ud3-action]');
-     if(action){const a=action.dataset.ud3Action;if(a==='expand')for(const x of ['stock','variants','paid','before','after','organic','prices','offers','cvr','funnel','engagement','experience'])open.add(x);else if(a==='collapse')open.clear();else s.v3dense=!(s.v3dense!==false);render();}
+     if(action){const a=action.dataset.ud3Action;if(a==='expand')for(const x of ['stock','paid','before','after','organic','prices','offers','cvr','funnel','engagement','experience'])open.add(x);else if(a==='collapse')open.clear();else s.v3dense=!(s.v3dense!==false);render();}
    };
    root.onchange=e=>{
      if(e.target.id==='dt-product'||e.target.id==='dt-variant'){

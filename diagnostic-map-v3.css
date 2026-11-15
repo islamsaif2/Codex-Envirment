@@ -319,3 +319,56 @@ body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-period-bars{grid-colu
 body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-dual-chart{grid-column:1/-1!important;grid-row:3!important;height:20px!important}
 body.diagnostic-map-page .ud3-mini .ud3-nodata{grid-column:1/-1;grid-row:3}
 body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-chart-legend{display:none!important}
+
+/* Diagnostic V6: familiar pill deltas, existing provenance icons, scrollable combined inventory. */
+body.diagnostic-map-page .ud6-change{
+ display:inline-flex;align-items:center;justify-content:center;gap:2px;
+ flex:0 0 auto;white-space:nowrap;width:max-content;
+ padding:3px 6px;border-radius:7px;font-size:10px!important;
+ line-height:1.1;font-weight:800;letter-spacing:-.15px;
+}
+body.diagnostic-map-page .ud6-change.bad{background:#ffe5e9;color:#e53554}
+body.diagnostic-map-page .ud6-change.good{background:#def9ed;color:#13965c}
+body.diagnostic-map-page .ud6-change.neutral{background:#eef1f5;color:#74818e}
+body.diagnostic-map-page .ud6-change.missing{background:transparent;color:#96a19d;padding:3px 0}
+body.diagnostic-map-page .ud3-root .ud6-change.bad{background:#ffe5e9;color:#d52d49}
+body.diagnostic-map-page .ud3-root .ud6-change.good{background:#d9f7e5;color:#12814d}
+body.diagnostic-map-page .ud3-numline{align-items:center!important}
+body.diagnostic-map-page .ud3-mini-num{align-items:center!important}
+body.diagnostic-map-page .ud3-mini .ud6-change{font-size:8px!important;padding:2px 4px;border-radius:5px}
+body.diagnostic-map-page .ud6-metric-label{
+ display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;vertical-align:middle
+}
+body.diagnostic-map-page .ud6-metric-label>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+body.diagnostic-map-page .ud6-sources{display:inline-flex;gap:2px;align-items:center;flex:0 0 auto}
+body.diagnostic-map-page .ud6-src{display:inline-flex;width:13px;height:13px;align-items:center;justify-content:center;flex:0 0 13px}
+body.diagnostic-map-page .ud6-src svg{display:block;width:13px;height:13px}
+body.diagnostic-map-page .ud3-mini .ud6-src,body.diagnostic-map-page .ud3-section-head .ud6-src{width:12px;height:12px;flex-basis:12px}
+body.diagnostic-map-page .ud3-mini .ud6-src svg,body.diagnostic-map-page .ud3-section-head .ud6-src svg{width:12px;height:12px}
+body.diagnostic-map-page .ud3-mini-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.diagnostic-map-page .ud3-mini-title .ud6-metric-label{max-width:100%}
+body.diagnostic-map-page .ud3-topline>span:first-child{min-width:0;max-width:100%}
+body.diagnostic-map-page .ud3-section-head strong .ud6-metric-label{min-width:0}
+body.diagnostic-map-page .ud6-stock-scroll{
+ overflow-y:auto;overflow-x:auto;
+ max-height:285px;min-height:70px;
+ border:1px solid #dfe8e2;border-radius:7px;
+ scrollbar-width:thin;scrollbar-color:#9ebcac #eff4f0;
+}
+body.diagnostic-map-page .ud6-stock-scroll:focus{outline:2px solid #75ac8d;outline-offset:1px}
+body.diagnostic-map-page .ud6-stock-scroll table{border-collapse:separate;border-spacing:0;width:100%;min-width:270px;font-size:9px}
+body.diagnostic-map-page .ud6-stock-scroll th{
+ position:sticky;top:0;background:#eef6f1;z-index:1;
+ font-size:9px;font-weight:750;text-align:left;color:#3c6b50;
+ padding:6px 5px;border-bottom:1px solid #dbe8dd;
+}
+body.diagnostic-map-page .ud6-stock-scroll td{
+ padding:5px;border-bottom:1px solid #e5eee8;
+ max-width:152px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+body.diagnostic-map-page .ud6-stock-scroll th:not(:first-child),
+body.diagnostic-map-page .ud6-stock-scroll td:not(:first-child){text-align:right}
+body.diagnostic-map-page .ud6-stock-scroll tbody tr:nth-child(even){background:#fafcfb}
+body.diagnostic-map-page .ud6-price-question{padding:7px 8px;border:1px solid #f0e2c6;background:#fffaf1;border-radius:8px;color:#67502d}
+body.diagnostic-map-page .ud6-price-question strong{font-size:11px}
+body.diagnostic-map-page .ud6-price-question p{font-size:10px;line-height:1.45;margin:5px 0}
