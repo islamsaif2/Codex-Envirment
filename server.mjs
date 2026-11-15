@@ -1,5 +1,6 @@
 import http from "node:http";
 import worker from "./worker.mjs";
+import {readLocalOrders} from "./order-read-fallback.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
 installGoogleSheetResponseCache();
@@ -172,7 +173,7 @@ async function dashboardResponse(request, ctx) {
   });
 }
 
-const env = { SPREADSHEET_ID: process.env.SPREADSHEET_ID || DEFAULT_SHEET, BUSINESS_STORE: kv };
+const env = { SPREADSHEET_ID: process.env.SPREADSHEET_ID || DEFAULT_SHEET, BUSINESS_STORE: kv, readLocalOrders, missingOptionalSheets: new Map([[DEFAULT_SHEET,new Set(["Shopify Sessions Data","Shopify Sessions Attribution"])]]) };
 
 // Read Shopify's exported attribution table directly from the existing workbook.
 // Keep model-specific attributed orders separate from session-based conversion metrics.
@@ -217,7 +218,28 @@ async function attributionRows(){
   })().finally(()=>{attributionCache.pending=null;});
   return attributionCache.pending;
 }
+async function monthlyAttributionResponse(){
+  const groups=new Map();
+  for(const row of await attributionRows()){
+    if(!["paid","organic","unknown"].includes(row.traffic))continue;
+    const month=row.day.slice(0,7);
+    const key=JSON.stringify([month,row.model,row.channel.toLowerCase(),row.traffic]);
+    const item=groups.get(key)||{month,model:row.model,channel:row.channel,traffic:row.traffic,sessions:0,orders:0,sales:0};
+    item.sessions+=row.sessions;
+    item.orders+=row.orders;
+    item.sales+=row.sales;
+    groups.set(key,item);
+  }
+  const months={};
+  for(const {month,model,...item} of groups.values())((months[month]??={})[model]??=[]).push(item);
+  for(const models of Object.values(months))for(const channels of Object.values(models)){
+    channels.sort((a,b)=>b.sessions-a.sessions||b.orders-a.orders||a.channel.localeCompare(b.channel));
+    channels.splice(5);
+  }
+  return Response.json({months});
+}
 async function attributionResponse(url){
+ if(url.searchParams.get("group")==="month")return monthlyAttributionResponse();
  const model=url.searchParams.get("model")||"linear";
  const traffic=url.searchParams.get("traffic")||"all";
  const store=url.searchParams.get("store")||"all";
@@ -266,7 +288,7 @@ async function creativeThumbnailResponse(source){
   const key=target.href,existing=creativeImageCache.get(key);
   if(existing&&existing.expires>Date.now())
     return new Response(existing.body,{status:200,headers:{"Content-Type":existing.type,"Cache-Control":"public,max-age=3600","X-Ultramedix-Image-Cache":"HIT"}});
-  const upstream=await fetch(target.href,{signal:AbortSignal.timeout(12_000),headers:{"Accept":"image/avif,image/webp,image/jpeg,image/png,image/*;q=0.8","User-Agent":"Mozilla/5.0 (compatible; UltramedixAnalytics/1.0)"}});
+  const upstream=await fetch(target.href,{redirect:"error",signal:AbortSignal.timeout(12_000),headers:{"Accept":"image/avif,image/webp,image/jpeg,image/png,image/*;q=0.8","User-Agent":"Mozilla/5.0 (compatible; UltramedixAnalytics/1.0)"}});
   if(!upstream.ok)return Response.json({error:"Thumbnail expired or blocked at source",status:upstream.status},{status:upstream.status===404?404:502});
   const type=(upstream.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
   if(!/^image\/(jpeg|png|webp|avif|gif)$/.test(type))return Response.json({error:"CDN response was not an image"},{status:415});
@@ -328,3 +350,5 @@ const server = http.createServer(async (req, res) => {
   }
 });
 server.listen(PORT, HOST, () => console.log(`Ultramedix dashboard listening on http://${HOST}:${PORT}`));
+
+
