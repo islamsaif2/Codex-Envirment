@@ -61,3 +61,79 @@
 .db-v9-previous{color:var(--muted,#72818d)}
 .db-v9-count-row .db-v7-up{color:#188765}
 .db-v9-count-row .db-v7-down{color:#ce5569}
+
+/* V10: each monthly table must grow naturally for ALL selected metrics.
+   The month strip remains the only horizontal navigator between complete months.
+   There is no scrolling or cropping inside an individual month table. */
+.db-months{
+  grid-auto-columns:max-content!important;
+  grid-auto-flow:column!important;
+  align-items:start!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+  max-width:100%!important;
+  gap:7px!important;
+  padding-bottom:7px!important;
+}
+.db-month{
+  width:max-content!important;
+  min-width:min(320px,100%)!important;
+  max-width:none!important;
+  overflow:visible!important;
+  box-sizing:border-box!important;
+}
+.db-month-table{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  overflow:visible!important;
+  border-radius:7px!important;
+}
+.db-month-table table{
+  width:100%!important;
+  min-width:max-content!important;
+  table-layout:auto!important;
+  border-collapse:collapse!important;
+  font-size:8px!important;
+  line-height:1.05!important;
+  font-variant-numeric:tabular-nums!important;
+}
+.db-month-table thead th,
+.db-month-table tbody td,
+.db-month-table tbody th,
+.db-month-table tfoot th,
+.db-month-table tfoot td{
+  padding:1px 2px!important;
+  box-sizing:border-box!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-size:8px!important;
+  line-height:1.12!important;
+}
+.db-month-table tbody tr{height:13px!important;min-height:13px!important;max-height:none!important}
+.db-month-table thead th{font-size:8px!important;padding:3px 2px!important}
+.db-month-table thead th span{font-size:8px!important}
+.db-month-table svg{width:10px!important;height:10px!important}
+.db-month-table tbody th:first-child,
+.db-month-table thead th:first-child,
+.db-month-table tfoot th:first-child{
+  min-width:77px!important;
+  padding-left:4px!important;
+}
+.db-month-table tbody th:first-child{font-size:8px!important}
+.db-month-table time{font-size:8px!important;white-space:nowrap!important}
+.db-month-table td:not(:first-child),.db-month-table thead th:not(:first-child){
+  min-width:38px!important;
+}
+.db-month-table .db-summary-label{font-size:7px!important;line-height:1.05!important;margin-bottom:0!important}
+.db-month-table tfoot th,.db-month-table tfoot td{font-size:8px!important;padding:2px!important}
+.db-month h3{padding:3px 6px!important;font-size:10px!important}
+/* Cards follow the month table width, without forcing a nested overflow viewport. */
+.db-month .db-card-grid{width:100%!important;min-width:0!important;max-width:none!important}
+.db-month .db-month-card{overflow:visible!important}
+@media(max-width:600px){
+ .db-months{grid-auto-columns:max-content!important}
+ .db-month{min-width:300px!important}
+ .db-month-table table{font-size:8px!important}
+}
