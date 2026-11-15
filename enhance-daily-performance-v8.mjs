@@ -12,7 +12,7 @@ function replaceExactly(before,after,label){
 }
 replaceExactly(
  "d.slice(8)+'</time></th>'",
- "new Date(d+'T12:00:00Z').toLocaleDateString('en',{weekday:'long',day:'numeric',timeZone:'UTC'})+'</time></th>'",
+ "new Date(d+'T12:00:00Z').toLocaleDateString('en',{weekday:'long',timeZone:'UTC'})+', '+Number(d.slice(8))+'</time></th>'",
  "table day label");
 replaceExactly(
  "function dayBusinessCardPicker(keys){\n  return '<div class=\"db-selection-label\">Monthly cards</div><div class=\"db-metrics\" aria-label=\"Monthly cards\">'+keys.map((active,i)=>\n    '<label class=\"db-chip\"><span class=\"db-chip-index\">'+(i+1)+'</span><select data-db-card=\"'+i+'\" aria-label=\"Monthly card '+(i+1)+'\">'+\n    Object.entries(dayBusinessCards).filter(([key])=>key===active||!keys.includes(key)).map(([key,[title]])=>'<option value=\"'+key+'\" '+(key===active?'selected':'')+'>'+title+'</option>').join('')+'</select></label>').join('')+'</div>';\n}",
