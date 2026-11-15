@@ -35,7 +35,22 @@
  function svgTrend(name){
    if(!name)return '<span class="ud3-nodata">No trend source</span>';
    if(typeof cardPeriodInfo==='function' && (sparkSpecs[name]||funnelRateMetrics.has(name))){
-     return '<div class="ud4-period-visual" data-period-title="'+encodeURIComponent(name)+'">'+cardPeriodInfo(name)+'</div>';
+     const raw=cardPeriodInfo(name);
+     // Keep the dashboard's full-valued comparison calculations and graph.
+     // Display short bar labels beside the metric, with exact values on hover.
+     const box=document.createElement('div');
+     box.innerHTML=raw;
+     box.querySelectorAll('.kpi-period-value').forEach(node=>{
+       const exact=node.textContent.trim();
+       node.title=exact;
+       const numeric=exact.match(/-?\\d[\\d,]*(?:\\.\\d+)?/);
+       if(!numeric)return;
+       const value=Number(numeric[0].replaceAll(',',''));
+       if(!Number.isFinite(value)||Math.abs(value)<1000)return;
+       const small=new Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(value);
+       node.textContent=(exact.includes('EGP')?'EGP ':'')+small;
+     });
+     return '<div class="ud4-period-visual" data-period-title="'+encodeURIComponent(name)+'">'+box.innerHTML+'</div>';
    }
    const rows=series(name);
    if(rows.length<2)return '<span class="ud3-nodata">No daily trend available</span>';
