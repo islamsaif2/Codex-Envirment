@@ -125,7 +125,7 @@
    const rows=dashboard.diagnostic?.offers||[];
    if(!rows.length)return '<p class="ud3-note">No order-discount history available.</p>';
    return '<div class="ud3-chart-box">'+diagnosticLine([['Total Orders',rows.map(r=>({date:r.date,value:r.orders}))],['Orders with Offers',rows.map(r=>({date:r.date,value:r.offers}))]],fmt)+'</div>'+
-    terminal(['Was the offer discontinued or its terms changed?','Were offer-linked products available?'],'Orders','Open Orders Analysis');
+    terminal(['Was the offer discontinued or its terms changed?','Were offer-linked products available?'],'Daily Performance (most important)','Open Daily Orders Analysis');
  }
  function price(){
    return column('price','03 · Price & Offers','Pricing, discounts & promotions',
@@ -136,9 +136,9 @@
    return column('place','04 · Place','Website & conversion',
     section('cvr','Website Conversion Rate',minis(small('Conversion Rate','Website CVR'),small('GA4 sessions','Sessions'))+'<p class="ud3-note">Website conversion rate is not the terminal metric — inspect the funnel below.</p>','CVR')+
     section('funnel','Website Conversion Funnel',funnel('ga4')+
-      terminal(['Which measurable stage lost the most conversion?','Did checkout, shipping conditions or device experience change?'],'GA4','Open GA4 Funnel'),'GA4')+
+      terminal(['Which measurable stage lost the most conversion?','Did checkout, shipping conditions or device experience change?'],'GA4 Data','Open GA4 Funnel'),'GA4')+
     section('engagement','Engagement',minis(small('GA4 engagement rate','Engagement Rate'),small('GA4 bounce rate','Bounce Rate'),small('Average engagement time','Average Engagement Time'),small('GA4 engaged sessions','Engaged Sessions'),small('Average session duration','Avg Session Duration'),small('Average pages per session','Pages / Session'))+
-     terminal(['Did incoming audience or landing-page content change?'],'GA4','Open Engagement Analysis'),'TRAFFIC')+
+     terminal(['Did incoming audience or landing-page content change?'],'GA4 Data','Open Engagement Analysis'),'TRAFFIC')+
     section('experience','Website Experience / CRO','<p class="ud3-note">Page-level sessions and available site metrics belong in the existing page analysis; CRO is not a standalone calculated KPI.</p>'+
       (dashboard.pagesAnalysis?.length?'<div class="ud3-tablewrap"><table><thead><tr><th>Page</th><th>Sessions</th></tr></thead><tbody>'+dashboard.pagesAnalysis.slice(0,5).map(r=>'<tr><td>'+E(r.title||r.page||r.path||'Page')+'</td><td>'+N(r.sessions)+'</td></tr>').join('')+'</tbody></table></div>':'')+
       terminal(['Was a landing page, device experience or checkout changed?'],'Products & Page Analysis','Open Page Analysis'),'CRO'));
@@ -150,7 +150,7 @@
     '<div class="ud3-line"></div><div class="ud3-spine-row ud3-row2">'+kpi('delivered',keys.delivered)+kpi('daov',keys.daov)+'</div>'+
     '<div class="ud3-line"></div><div class="ud3-spine-row ud3-row3">'+kpi('orders',keys.orders)+kpi('dr',keys.dr)+kpi('cancel',keys.cancel)+'</div>'+
     '<div class="ud3-under-spine"><div>'+contribution('profit')+rev+channels+'</div>'+
-    '<div class="ud3-miniquestion"><h4>Delivery Rate <span>TERMINAL</span></h4><p>Did couriers, regions or delivery confirmation processes change? Compare completed cohorts.</p><button data-ud3-tab="Shipping">↗ Open Shipping Analysis</button></div>'+
+    '<div class="ud3-miniquestion"><h4>Delivery Rate <span>TERMINAL</span></h4><p>Did couriers, regions or delivery confirmation processes change? Compare completed cohorts.</p><button data-ud3-tab="Shipping and operation Analysis">↗ Open Shipping Analysis</button></div>'+
     '<div class="ud3-miniquestion"><h4>Cancelled Rate <span>TERMINAL</span></h4><p>Did cancellation rules, customer confirmation or stock availability change?</p><button data-ud3-tab="Shipping">↗ Open Shipping Analysis</button></div></div>'+
     '<div class="ud3-line"></div><p class="ud3-branch-intro">TOTAL ORDERS → FOUR DIAGNOSTIC BRANCHES ↓</p></div>';
  }
@@ -185,7 +185,7 @@
      root.querySelectorAll('.ud3-match').forEach(el=>el.classList.remove('ud3-match'));
      if(!q)return;
      const target=[...root.querySelectorAll('[data-search]')].find(el=>(el.dataset.search||'').includes(q));
-     if(target){const section=target.closest('[data-ud3-section]');if(section&&!open.has(section.dataset.ud3Section)){open.add(section.dataset.ud3Section);render();return;}target.classList.add('ud3-match');target.scrollIntoView({block:'nearest',behavior:'smooth'});}
+     if(target){const sections=[];for(let p=target.closest('[data-ud3-section]');p;p=p.parentElement?.closest('[data-ud3-section]'))sections.push(p.dataset.ud3Section);const closed=sections.filter(id=>!open.has(id));if(closed.length){closed.forEach(id=>open.add(id));render();return;}target.classList.add('ud3-match');target.scrollIntoView({block:'nearest',behavior:'smooth'});}
    };
    bindDateRange();
  }
