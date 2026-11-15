@@ -27,10 +27,7 @@ replaceExactly(
  "const saveCardChoices=()=>{try{localStorage.setItem('ultra-day-business-cards',JSON.stringify(state.cards));}catch{}renderDayBusiness();};\n  panel.querySelectorAll('[data-db-card]').forEach(input=>input.onchange=()=>{\n    state.cards[Number(input.dataset.dbCard)]=input.value;\n    saveCardChoices();\n  });\n  panel.querySelector('[data-db-card-add]')?.addEventListener('click',()=>{\n    if(state.cards.length>=6)return;\n    const next=Object.keys(dayBusinessCards).find(k=>!state.cards.includes(k));\n    if(next){state.cards.push(next);saveCardChoices();}\n  });\n  panel.querySelectorAll('[data-db-card-remove]').forEach(button=>button.onclick=()=>{\n    if(state.cards.length<=1)return;\n    state.cards.splice(Number(button.dataset.dbCardRemove),1);\n    saveCardChoices();\n  });",
  "add/remove card handlers");
 const css=fs.readFileSync('daily-performance-v8.css','utf8');
-const js=fs.readFileSync('daily-performance-v8.js','utf8');
-new vm.Script(js,{filename:'daily-performance-v8.js'});
 html=html.replace('</head>','<style id="ultra-daily-performance-v8">'+css+'</style></head>');
-html=html.replace('</body>','<script>\n'+js+'\n</script>\n</body>');
 for(const [i,m] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].entries())
  if(m[1].trim())new vm.Script(m[1],{filename:'daily-performance-v8-inline-'+i});
 worker=worker.replace(found[1],Buffer.from(html,'utf8').toString('base64'));
