@@ -113,3 +113,56 @@ body.theme-dark.diagnostic-map-page .ud3-canvas{background:#eaf0ec;color:#19372d
 @media(max-width:1380px){.ud3-under-spine{grid-template-columns:1fr 1fr}.ud3-under-spine>div:first-child{grid-column:1/-1}.ud3-columns{gap:8px}.ud3-canvas{padding:9px}}
 @media(max-width:1090px){.ud3-columns{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){body.diagnostic-map-page .main{padding:8px!important}.ud3-columns{grid-template-columns:1fr}.ud3-under-spine{grid-template-columns:1fr}.ud3-under-spine>div:first-child{grid-column:auto;grid-template-columns:1fr}.ud3-canvas{padding:7px}.ud3-numline b{font-size:15px}.ud3-root .ud3-numline b{font-size:19px}}
+
+/* V4: visible hierarchical flow + correctly attributed driver cards. */
+.ud3-canvas{position:relative!important}
+.ud4-connectors{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
+.ud3-canvas > :not(.ud4-connectors){position:relative;z-index:1}
+.ud4-owner{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.ud4-owner > .ud3-kpi{width:100%;min-width:0}
+.ud3-spine > .ud4-profit-owner{width:min(370px,100%);flex:none}
+.ud3-spine-row{align-items:flex-start!important;gap:11px}
+.ud3-row1 > .ud4-owner,.ud3-row3 > .ud4-owner{flex:1 1 0;min-width:0}
+.ud3-row1 > .ud3-kpi,.ud3-row2 > .ud3-kpi,.ud3-row3 > .ud3-kpi{flex:1 1 0;min-width:0}
+.ud3-row1{max-width:1100px}
+.ud3-row2{max-width:720px}
+.ud3-row3{max-width:1100px}
+.ud4-spine-caption{align-self:flex-start;background:#edf3f0;color:#648477;font-size:9px;font-weight:750;letter-spacing:.2px;padding:4px 7px;border-radius:5px;margin:13px 0 14px;min-height:18px;position:relative;z-index:2}
+.ud3-spine > .ud3-branch-intro{margin:25px 0 10px;padding:5px 9px;border-radius:6px;background:#edf3f0}
+.ud3-spine .ud3-contribution{width:100%;background:#fff;color:#1d4834;box-shadow:0 2px 6px rgba(30,70,50,.05);min-width:0}
+.ud3-spine .ud3-contribution-title{font-size:11px}
+.ud3-spine .ud3-contribution .ud3-muted{color:#687d71}
+.ud3-row3 .ud3-miniquestion{margin-top:6px}
+.ud3-kpi.ud3-root{width:100%}
+.ud3-kpi .ud3-kpi-inner{padding:9px 10px 10px}
+.ud3-kpi .ud3-numline b{font-size:18px}
+.ud3-kpi.ud3-root .ud3-numline b{font-size:23px}
+/* Use the site's own KPI comparison widget (solid current / dashed previous + two period bars). */
+.ud4-period-visual{margin-top:5px;min-width:0;overflow:hidden}
+.ud4-period-visual .kpi-dual-chart{width:100%!important;height:52px!important;display:block;overflow:visible}
+.ud4-period-visual .kpi-chart-legend{display:flex!important;justify-content:center;gap:13px;font-size:9px!important;padding:3px 0 4px!important;margin:0}
+.ud4-period-visual .kpi-chart-legend span{display:flex;align-items:center;gap:4px}
+.ud4-period-visual .kpi-line{display:inline-block;width:14px;height:0;border-top:2px solid #1dab7b}
+.ud4-period-visual .kpi-line.previous{border-top:2px dashed #8ba5cc}
+.ud4-period-visual .kpi-period-bars{display:flex!important;flex-direction:column;gap:4px;padding:0!important;margin:2px 0 4px}
+.ud4-period-visual .kpi-period-row{display:grid!important;grid-template-columns:39px minmax(0,1fr) 64px;gap:5px;align-items:center;min-width:0;margin:0!important}
+.ud4-period-visual .kpi-period-name{font-size:9px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ud4-period-visual .kpi-period-track{height:7px!important;border-radius:7px;background:#e4ece8;overflow:hidden;position:relative}
+.ud4-period-visual .kpi-period-fill{height:100%!important;display:block!important;border-radius:7px}
+.ud4-period-visual .kpi-period-fill.previous{background:#8ba5cc!important}
+.ud4-period-visual .kpi-period-fill.current{background:#18b49c!important}
+.ud4-period-visual .kpi-period-value{font-size:9px!important;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:750}
+.ud4-period-visual .kpi-chart-note{font-size:8px!important;line-height:1.25;color:#7b8e85;white-space:normal;max-height:21px;overflow:hidden;margin:4px 0 0}
+.ud4-period-visual .kpi-no-trend{font-size:9px}
+.ud3-root .ud4-period-visual{color:#fff}
+.ud3-root .ud4-period-visual .kpi-period-name,.ud3-root .ud4-period-visual .kpi-period-value{color:#e8f7ed}
+.ud3-root .ud4-period-visual .kpi-chart-note{color:#c1dccc}
+.ud3-root .ud4-period-visual .kpi-period-track{background:rgba(255,255,255,.23)}
+.ud3-mini .ud4-period-visual .kpi-dual-chart{height:32px!important}
+.ud3-mini .ud4-period-visual .kpi-chart-note{display:none}
+.ud3-mini .ud4-period-visual .kpi-chart-legend{gap:7px;padding:1px 0 3px!important}
+.ud3-mini .ud4-period-visual .kpi-period-row{grid-template-columns:37px minmax(0,1fr) 52px;gap:3px}
+.ud3-mini .ud4-period-visual .kpi-period-name,.ud3-mini .ud4-period-visual .kpi-period-value{font-size:8px!important}
+.ud3-mini .ud4-period-visual .kpi-period-track{height:5px!important}
+@media(max-width:1100px){.ud4-spine-caption{margin:12px 0 12px}.ud4-period-visual .kpi-period-row{grid-template-columns:35px minmax(0,1fr) 56px;gap:3px}}
+@media(max-width:700px){.ud3-spine-row{flex-wrap:wrap}.ud3-spine-row>*{flex:1 1 140px!important}.ud4-spine-caption{font-size:8px;margin:11px 0}.ud3-spine>.ud4-profit-owner{width:min(100%,370px)}}
