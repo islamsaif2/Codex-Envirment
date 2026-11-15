@@ -228,6 +228,7 @@
  function render(){
    if(page!==diagnosticTab||!dashboard)return;
    s.layoutObserver?.disconnect(); // Disable old absolute-position engine.
+   s.v4observer?.disconnect(); // Disconnect the previous poster's flow observer.
    const root=$('content');
    root.innerHTML='<div class="section-head ud3-page-head"><h2>Diagnostic Map</h2>'+dateControls()+'</div>'+
     '<div class="ud3-toolbar"><label>Search <input id="ud3-search" type="search" placeholder="Search metrics..." value="'+E(s.v3search||'')+'"></label><button data-ud3-action="compact">Compact</button><button data-ud3-action="expand">Expand all</button><button data-ud3-action="collapse">Collapse all</button></div>'+
