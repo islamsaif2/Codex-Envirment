@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+const path='worker.mjs';
+let worker=fs.readFileSync(path,'utf8');
+const embedded=worker.match(/const APP_HTML_B64 = "([^"]+)"/);
+if(!embedded)throw Error('Diagnostic V2: missing embedded HTML');
+let html=Buffer.from(embedded[1],'base64').toString('utf8');
+if(!html.includes('function renderDiagnosticTree()')||!html.includes('function diagnosticMapPanel(id)')||!html.includes('</head>')||!html.includes('</body>'))throw Error('Diagnostic V2: expected existing map not found');
+const css=fs.readFileSync('diagnostic-map-v2.css','utf8');
+const js=fs.readFileSync('diagnostic-map-v2.js','utf8');
+new vm.Script(js,{filename:'diagnostic-map-v2.js'});
+html=html.replace('</head>','<style id="ultramedix-diagnostic-v2">'+css+'</style></head>');
+html=html.replace('</body>','<script>\n'+js+'\n</script>\n</body>');
+for(const [i,tag] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].entries())if(tag[1].trim())new vm.Script(tag[1],{filename:'diagnostic-v2-inline-'+i});
+worker=worker.replace(embedded[1],Buffer.from(html,'utf8').toString('base64'));
+fs.writeFileSync(path,worker);
+console.log('Diagnostic Map V2: compact inline canvas, real metrics, contribution cards, terminal questions installed');
