@@ -7,3 +7,5 @@ console.log("Assembled Ultramedix dashboard from dashboard-release.mjs");
 await import('./enhance-diagnostic-v2.mjs');
 // Replace the legacy absolute-position diagnostic tree with the approved V2 poster layout.
 await import('./enhance-diagnostic-v3.mjs');
+// Upgrade Daily Performance monthly card choices without changing underlying metric formulas.
+await import('./enhance-daily-performance-v7.mjs');
