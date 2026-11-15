@@ -1,0 +1,50 @@
+
+/* Monthly diagnostic card choices, scoped to Daily Performance. */
+body:not(.diagnostic-map-page) .db-v7-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.db-v7-grid>.db-v7-wide{grid-column:1/-1;min-width:0;padding:8px 9px!important}
+.db-v7-grid>.db-month-card{min-width:0}
+.db-v7-wide h4{font-size:11px!important;margin:0 0 6px!important;color:var(--text,#243149)}
+.db-v7-note{margin:0 0 7px;font-size:9px;line-height:1.35;color:var(--muted,#64748b)}
+.db-v7-funnel-list{display:flex;flex-direction:column;gap:6px}
+.db-v7-funnel-row{display:grid;grid-template-columns:minmax(0,1fr) 1.2fr;gap:3px 8px;align-items:center;min-width:0}
+.db-v7-funnel-heading{display:flex;align-items:center;justify-content:space-between;min-width:0;gap:3px;font-size:10px;font-weight:600}
+.db-v7-funnel-heading span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.db-v7-funnel-heading strong{font-size:10px;white-space:nowrap;color:var(--text,#243149)}
+.db-v7-track{grid-column:2;grid-row:1;position:relative;height:13px;border-radius:7px;overflow:hidden;background:var(--line,#e3ebec)}
+.db-v7-track i{position:absolute;left:0;border-radius:7px;display:block;transition:width .25s}
+.db-v7-track .db-v7-bar-prior{top:0;bottom:0;background:#8d9fe8;opacity:.75}
+.db-v7-track .db-v7-bar-now{top:4px;height:5px;background:#189e82;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+.db-v7-funnel-label{grid-column:2;display:flex;justify-content:space-between;gap:4px;font-size:8px;color:var(--muted,#6c7a88);white-space:nowrap}
+.db-v7-funnel-label .db-v7-up{color:#188765;font-weight:700}
+.db-v7-funnel-label .db-v7-down{color:#ce5569;font-weight:700}
+.db-v7-footnote{display:block;font-size:9px!important;color:var(--muted,#72818b);line-height:1.3;margin:6px 0 0}
+.db-v7-special .db-v7-remote{min-width:0}
+.db-v7-special .db-v7-remote>small{font-size:9px}
+.db-v7-donut{width:min(144px,92%);aspect-ratio:1;border-radius:50%;position:relative;margin:8px auto}
+.db-v7-donut-inner{position:absolute;inset:23%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card,#fff);text-align:center}
+.db-v7-donut-inner strong{font-size:15px;line-height:1.2}
+.db-v7-donut-inner small{font-size:8px!important}
+.db-v7-pie-legend{display:grid;gap:4px}
+.db-v7-pie-legend>div{display:flex;align-items:center;gap:4px;font-size:9px;min-width:0}
+.db-v7-pie-legend b{margin-left:auto;font-size:9px}
+.db-v7-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;display:inline-block}
+.db-v7-dot.paid{background:#6880f6}
+.db-v7-dot.organic{background:#20b99a}
+.db-v7-dot.unknown{background:#f2a65a}
+.db-v7-offers .dt-chart{width:100%;height:95px;max-height:95px;display:block;overflow:visible}
+.db-v7-offers .dt-chart text{font-size:12px}
+.db-v7-offers .dt-legend{display:flex;gap:6px;font-size:9px;flex-wrap:wrap}
+.db-v7-summary{font-size:9px;font-weight:650;color:var(--muted,#667989);padding-bottom:3px}
+.db-v7-products .db-rank-info{min-width:0}
+.db-v7-product-columns,.db-v7-products .db-rank-title{display:grid!important;grid-template-columns:minmax(0,1fr) 37px 60px;align-items:center;gap:3px}
+.db-v7-product-columns{font-size:8px;color:var(--muted,#64748b);font-weight:700;padding:3px 0 4px;border-bottom:1px solid var(--line,#dce3ed)}
+.db-v7-product-columns span:not(:first-child){text-align:right}
+.db-v7-products .db-rank-title b{font-size:9px;justify-self:end;min-width:0}
+.db-v7-products .db-rank-title strong{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.db-v7-stock-badge{font-size:8px;font-weight:700;white-space:nowrap;justify-self:end;padding:3px 4px;border-radius:4px;max-width:60px;overflow:hidden;text-overflow:ellipsis}
+.db-v7-stock-badge.in{color:#187c50;background:#e2f8e9}
+.db-v7-stock-badge.partial{color:#ab6f16;background:#fff2d4}
+.db-v7-stock-badge.out{color:#c73e51;background:#ffe3e8}
+.db-v7-stock-badge.unknown{color:#677787;background:#e8edf3}
+.db-v7-inventory-caption{font-size:8px!important;line-height:1.2;color:var(--muted,#738197);margin-top:5px}
+@media(max-width:600px){.db-v7-funnel-row{grid-template-columns:minmax(0,1fr) 1fr;gap:3px}.db-v7-funnel-heading{font-size:9px}}
