@@ -25,15 +25,22 @@
    if(!d)return [];
    try{return (sparkDaily(d,name)||[]).filter(r=>Number.isFinite(r.value)&&(!dateFrom||r.date>=dateFrom)&&(!dateTo||r.date<=dateTo)).map(r=>({date:r.date,value:r.value})).slice(-44);}catch{return [];}
  }
+ // Render the SAME dual-period chart and comparison bars already used by dashboard KPI cards.
+ // These use the existing daily rolling average, date alignment and selected comparison window.
  function svgTrend(name){
-   const rows=series(name);if(rows.length<2)return '<span class="ud3-nodata">No daily trend</span>';
-   const arr=rows.map(r=>r.value),lo=Math.min(...arr),hi=Math.max(...arr);
-   const line=arr.map((q,i)=>(i?'L':'M')+(i*160/(arr.length-1)).toFixed(1)+','+(23-19*(q-lo)/(hi-lo||1)).toFixed(1)).join(' ');
-   return '<svg class="ud3-spark" viewBox="0 0 160 27" preserveAspectRatio="none" aria-label="Daily trend"><path d="'+line+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+   if(!name)return '<span class="ud3-nodata">No trend source</span>';
+   if(typeof cardPeriodInfo==='function' && (sparkSpecs[name]||funnelRateMetrics.has(name))){
+     return '<div class="ud4-period-visual" data-period-title="'+encodeURIComponent(name)+'">'+cardPeriodInfo(name)+'</div>';
+   }
+   const rows=series(name);
+   if(rows.length<2)return '<span class="ud3-nodata">No daily trend available</span>';
+   const values=rows.map(r=>r.value),lo=Math.min(...values),hi=Math.max(...values);
+   const path=values.map((v,i)=>(i?'L':'M')+(i*160/(values.length-1)).toFixed(1)+','+(23-19*(v-lo)/(hi-lo||1)).toFixed(1)).join(' ');
+   return '<svg class="ud3-spark" viewBox="0 0 160 27" preserveAspectRatio="none" aria-label="Current period daily trend; comparison unavailable"><path d="'+path+'" fill="none" stroke="#19a77c" stroke-width="2"/></svg>';
  }
  function kpi(id,name,main=false,extra=''){
    const label=({profit:'Profit proxy',revenue:'Delivered Revenue',ads:'Advertising Costs',ship:'Shipping Costs',delivered:'Delivered Orders',daov:'Delivered AOV',orders:'Total Orders',dr:'Delivery Rate',cancel:'Cancelled Rate'})[id];
-   return '<article class="ud3-kpi '+(main?'ud3-root':'')+'" data-search="'+E(label.toLowerCase())+'"><div class="ud3-kpi-inner"><div class="ud3-topline"><span>'+E(label)+'</span><small>'+(main?'ROOT':'KPI')+'</small></div><div class="ud3-numline"><b>'+E(stamp(name))+'</b>'+delta(name)+'</div>'+svgTrend(name)+extra+'</div></article>';
+   return '<article class="ud3-kpi '+(main?'ud3-root':'')+'" data-ud4-id="'+E(id)+'" data-search="'+E(label.toLowerCase())+'"><div class="ud3-kpi-inner"><div class="ud3-topline"><span>'+E(label)+'</span><small>'+(main?'ROOT':'KPI')+'</small></div><div class="ud3-numline"><b>'+E(stamp(name))+'</b>'+delta(name)+'</div>'+svgTrend(name)+extra+'</div></article>';
  }
  const keys={profit:diagnosticNet,revenue:'Diagnostic Delivered Revenue',ads:'Total Ad Spend',ship:'Diagnostic Shipping Costs',delivered:'Delivered Orders',daov:'Delivered AOV',orders:'Total Orders',dr:'Delivery Rate',cancel:'Cancelled before pickup rate'};
  function contribution(id){
@@ -72,7 +79,7 @@
    return '<div class="ud3-section" data-ud3-section="'+E(id)+'" data-search="'+E(title.toLowerCase())+'"><button class="ud3-section-head" type="button" data-ud3-toggle="'+E(id)+'" aria-expanded="'+open.has(id)+'"><strong>⌁ '+E(title)+'</strong><span>'+E(tag)+' <b>'+(open.has(id)?'⌄':'›')+'</b></span></button><div class="ud3-section-body"'+(open.has(id)?'':' hidden')+'>'+content+'</div></div>';
  }
  function column(id,title,subtitle,body){
-   return '<div class="ud3-column ud3-'+E(id)+'"><div class="ud3-colhead"><div><h3>'+E(title)+'</h3><p>'+E(subtitle)+'</p></div><button type="button" data-ud3-column="'+id+'" aria-label="Collapse '+E(title)+'">−</button></div><div class="ud3-colbody">'+body+'</div></div>';
+   return '<div class="ud3-column ud3-'+E(id)+'"><div class="ud3-colhead" data-ud4-id="'+E(id)+'"><div><h3>'+E(title)+'</h3><p>'+E(subtitle)+'</p></div><button type="button" data-ud3-column="'+id+'" aria-label="Collapse '+E(title)+'">−</button></div><div class="ud3-colbody">'+body+'</div></div>';
  }
  function stock(){
    const products=inventoryProductGroups(dashboard.inventory||{variants:[]},{period:s.stockPeriod??28}).products||[];
@@ -160,15 +167,61 @@
       terminal(['Was a landing page, device experience or checkout changed?'],'Products & Page Analysis','Open Page Analysis'),'CRO'));
  }
  function spine(){
-   const rev=contribution('revenue'),channels=contribution('orders');
-   return '<div class="ud3-spine">'+kpi('profit',keys.profit,true)+
-    '<div class="ud3-line"></div><div class="ud3-spine-row ud3-row1">'+kpi('revenue',keys.revenue)+kpi('ads',keys.ads)+kpi('ship',keys.ship)+'</div>'+
-    '<div class="ud3-line"></div><div class="ud3-spine-row ud3-row2">'+kpi('delivered',keys.delivered)+kpi('daov',keys.daov)+'</div>'+
-    '<div class="ud3-line"></div><div class="ud3-spine-row ud3-row3">'+kpi('orders',keys.orders)+kpi('dr',keys.dr)+kpi('cancel',keys.cancel)+'</div>'+
-    '<div class="ud3-under-spine"><div>'+contribution('profit')+rev+channels+'</div>'+
-    '<div class="ud3-miniquestion"><h4>Delivery Rate <span>TERMINAL</span></h4><p>Did couriers, regions or delivery confirmation processes change? Compare completed cohorts.</p><button data-ud3-tab="Shipping and operation Analysis">↗ Open Shipping Analysis</button></div>'+
-    '<div class="ud3-miniquestion"><h4>Cancelled Rate <span>TERMINAL</span></h4><p>Did cancellation rules, customer confirmation or stock availability change?</p><button data-ud3-tab="Shipping">↗ Open Shipping Analysis</button></div></div>'+
-    '<div class="ud3-line"></div><p class="ud3-branch-intro">TOTAL ORDERS → FOUR DIAGNOSTIC BRANCHES ↓</p></div>';
+   // Contributions attach to their own parent metrics, never pooled into a shared row.
+   const owner=(id,name,root=false)=>'<div class="ud4-owner ud4-'+id+'-owner">'+kpi(id,name,root)+contribution(id)+'</div>';
+   return '<div class="ud3-spine">'+owner('profit',keys.profit,true)+
+     '<div class="ud4-spine-caption">Profit → Delivered Revenue / Advertising Costs / Shipping Costs</div>'+
+     '<div class="ud3-spine-row ud3-row1">'+owner('revenue',keys.revenue)+kpi('ads',keys.ads)+kpi('ship',keys.ship)+'</div>'+
+     '<div class="ud4-spine-caption">Delivered Revenue → Delivered Orders / Delivered AOV</div>'+
+     '<div class="ud3-spine-row ud3-row2">'+kpi('delivered',keys.delivered)+kpi('daov',keys.daov)+'</div>'+
+     '<div class="ud4-spine-caption">Delivered Orders → Total Orders / Delivery Rate / Cancelled Rate</div>'+
+     '<div class="ud3-spine-row ud3-row3">'+owner('orders',keys.orders)+
+      '<div class="ud4-owner">'+kpi('dr',keys.dr)+
+       '<div class="ud3-miniquestion"><h4>Delivery Rate <span>TERMINAL</span></h4><p>Did couriers, regions or delivery confirmation change? Compare completed cohorts.</p><button data-ud3-tab="Shipping and operation Analysis">↗ Open Shipping Analysis</button></div></div>'+
+      '<div class="ud4-owner">'+kpi('cancel',keys.cancel)+
+       '<div class="ud3-miniquestion"><h4>Cancelled Rate <span>TERMINAL</span></h4><p>Did cancellation, customer confirmation or stock availability change?</p><button data-ud3-tab="Shipping and operation Analysis">↗ Open Shipping Analysis</button></div></div></div>'+
+     '<p class="ud3-branch-intro">TOTAL ORDERS → FOUR DIAGNOSTIC BRANCHES ↓</p></div>';
+ }
+ function drawFlowArrows(root){
+   const board=root.querySelector('.ud3-canvas'),svg=board?.querySelector('.ud4-connectors');
+   if(!board||!svg)return;
+   const boardRect=board.getBoundingClientRect();
+   const width=board.clientWidth,height=board.scrollHeight;
+   svg.setAttribute('viewBox','0 0 '+width+' '+height);
+   const getRect=id=>{
+     const el=board.querySelector('[data-ud4-id="'+id+'"]');
+     if(!el)return null;
+     const r=el.getBoundingClientRect();
+     return {x:r.left+r.width/2-boardRect.left,y:r.top-boardRect.top,bottom:r.bottom-boardRect.top};
+   };
+   const connectors=[
+     ['profit',['revenue','ads','ship']],
+     ['revenue',['delivered','daov']],
+     ['delivered',['orders','dr','cancel']],
+     ['orders',['product','promotion','price','place']]
+   ];
+   const paths=[];
+   for(const [source,targets] of connectors){
+     const s=getRect(source);
+     if(!s)continue;
+     const children=targets.map(getRect).filter(Boolean);
+     if(!children.length)continue;
+     // Connectors are routed through a horizontal rail with separate downward arrowheads.
+     // Parent annotations remain attached beneath their own metric cards.
+     const rail=(s.bottom+Math.min(...children.map(c=>c.y)))/2;
+     if(rail<=s.bottom+7)continue;
+     const range=[s.x,...children.map(c=>c.x)];
+     paths.push('<path d="M'+s.x.toFixed(1)+' '+s.bottom.toFixed(1)+' V'+rail.toFixed(1)+' H'+Math.min(...range).toFixed(1)+' M'+Math.min(...range).toFixed(1)+' '+rail.toFixed(1)+' H'+Math.max(...range).toFixed(1)+'" stroke="#76ab94" stroke-width="1.8" fill="none" stroke-linecap="round"/>');
+     for(const c of children){
+       paths.push('<path d="M'+c.x.toFixed(1)+' '+rail.toFixed(1)+' V'+Math.max(rail+2,c.y-5).toFixed(1)+'" stroke="#76ab94" stroke-width="1.8" fill="none" stroke-linecap="round"/>');
+       paths.push('<path d="M'+(c.x-4).toFixed(1)+' '+(c.y-8).toFixed(1)+' L'+c.x.toFixed(1)+' '+(c.y-2).toFixed(1)+' L'+(c.x+4).toFixed(1)+' '+(c.y-8).toFixed(1)+'" stroke="#398569" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" fill="none"/>');
+     }
+   }
+   svg.innerHTML=paths.join('');
+ }
+ function scheduleFlow(root){
+   cancelAnimationFrame(s.v4flowFrame||0);
+   s.v4flowFrame=requestAnimationFrame(()=>drawFlowArrows(root));
  }
  function render(){
    if(page!==diagnosticTab||!dashboard)return;
@@ -176,13 +229,13 @@
    const root=$('content');
    root.innerHTML='<div class="section-head ud3-page-head"><h2>Diagnostic Map</h2>'+dateControls()+'</div>'+
     '<div class="ud3-toolbar"><label>Search <input id="ud3-search" type="search" placeholder="Search metrics..." value="'+E(s.v3search||'')+'"></label><button data-ud3-action="compact">Compact</button><button data-ud3-action="expand">Expand all</button><button data-ud3-action="collapse">Collapse all</button></div>'+
-    '<div class="ud3-canvas '+(s.v3dense===false?'':'ud3-compact')+'"><div class="ud3-eyebrow"><span>PERFORMANCE → DRIVERS → TERMINAL QUESTIONS</span><span>Actual store data · Selected period</span></div>'+spine()+
+    '<div class="ud3-canvas '+(s.v3dense===false?'':'ud3-compact')+'"><svg class="ud4-connectors" aria-hidden="true"></svg><div class="ud3-eyebrow"><span>PERFORMANCE → DRIVERS → TERMINAL QUESTIONS</span><span>Actual store data · Selected period</span></div>'+spine()+
     '<div class="ud3-columns">'+stock()+promotion()+price()+place()+'</div></div>';
    root.onclick=e=>{
      const toggle=e.target.closest('[data-ud3-toggle]');
      if(toggle){const id=toggle.dataset.ud3Toggle;open.has(id)?open.delete(id):open.add(id);render();return;}
      const columnButton=e.target.closest('[data-ud3-column]');
-     if(columnButton){const body=columnButton.closest('.ud3-column')?.querySelector('.ud3-colbody');if(body){body.hidden=!body.hidden;columnButton.textContent=body.hidden?'+':'−';}return;}
+     if(columnButton){const body=columnButton.closest('.ud3-column')?.querySelector('.ud3-colbody');if(body){body.hidden=!body.hidden;columnButton.textContent=body.hidden?'+':'−';scheduleFlow(root);}return;}
      const tab=e.target.closest('[data-ud3-tab]');
      if(tab){const dest=tab.dataset.ud3Tab;if(dest==='Creative Analysis')$('nav-creative')?.click();else setPage(dest);return;}
      const action=e.target.closest('[data-ud3-action]');
@@ -204,8 +257,24 @@
      if(target){const sections=[];for(let p=target.closest('[data-ud3-section]');p;p=p.parentElement?.closest('[data-ud3-section]'))sections.push(p.dataset.ud3Section);const closed=sections.filter(id=>!open.has(id));if(closed.length){closed.forEach(id=>open.add(id));render();return;}target.classList.add('ud3-match');target.scrollIntoView({block:'nearest',behavior:'smooth'});}
    };
    bindDateRange();
+   // Keep arrows in sync with page width, date filter, and section expansion.
+   scheduleFlow(root);
+   s.v4observer?.disconnect();
+   if(typeof ResizeObserver!=='undefined'){
+     s.v4observer=new ResizeObserver(()=>scheduleFlow(root));
+     const board=root.querySelector('.ud3-canvas');
+     if(board)s.v4observer.observe(board);
+     root.querySelectorAll('.ud3-kpi,.ud3-column').forEach(node=>s.v4observer.observe(node));
+   }
  }
  renderDiagnosticTree=render;
  renderDiagnosticDetails=function(){};
+ // The old refresh handler only updated the map if #dt-viewport existed.
+ // This poster intentionally has no viewport; update comparison visuals on the new map.
+ const priorRefresh=refreshComparisonCards;
+ refreshComparisonCards=function(){
+   priorRefresh();
+   if(page===diagnosticTab&&dashboard)renderDiagnosticTree();
+ };
  if(page===diagnosticTab&&dashboard)render();
 })();
