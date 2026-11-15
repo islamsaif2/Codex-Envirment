@@ -307,3 +307,15 @@ body.diagnostic-map-page .ud3-canvas:not(.ud3-compact) .ud4-spine-caption{displa
  body.diagnostic-map-page .ud3-row1,body.diagnostic-map-page .ud3-row2,body.diagnostic-map-page .ud3-row3{margin-top:12px!important}
  body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-period-row{grid-template-columns:23px minmax(8px,1fr) 32px!important}
 }
+
+/* Sub-metric cards use the same side-by-side period bar grid as top KPIs. */
+body.diagnostic-map-page .ud3-mini{
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(70px,47%)!important;
+ grid-template-rows:auto auto 20px!important;column-gap:4px!important;row-gap:1px!important;
+}
+body.diagnostic-map-page .ud3-mini-title{grid-column:1/-1;grid-row:1}
+body.diagnostic-map-page .ud3-mini-num{grid-column:1;grid-row:2;min-height:19px;margin:0!important}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-period-bars{grid-column:2!important;grid-row:2!important}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-dual-chart{grid-column:1/-1!important;grid-row:3!important;height:20px!important}
+body.diagnostic-map-page .ud3-mini .ud3-nodata{grid-column:1/-1;grid-row:3}
+body.diagnostic-map-page .ud3-mini .ud4-period-visual .kpi-chart-legend{display:none!important}
