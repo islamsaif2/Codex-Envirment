@@ -3,6 +3,17 @@
 (function installDiagnosticV2(){
   if(typeof renderDiagnosticTree!=='function'||typeof diagnosticState==='undefined')return;
   const oldRender=renderDiagnosticTree;
+  // Add available low-level Meta cost drivers, without generating unsupported values.
+  const beforeBranch=diagnosticNodes.get('before')?.node;
+  if(beforeBranch){
+    for(const [id,label,metric] of [['meta-impressions','Impressions','Meta impressions'],['outbound-cpc','Cost per Outbound Click','Cost per outbound click']]){
+      if(cardMetricPaths[metric] && !diagnosticNodes.has(id)){
+        const item=[id,label,'ice',metric];
+        beforeBranch[4].push(item);
+        diagnosticNodes.set(id,{node:item,parent:'before'});
+      }
+    }
+  }
   const defaultExpanded=['profit','revenue','delivered','orders','promotion','paid','meta','cpa','before','after','price','place','engagement'];
   for(const id of defaultExpanded)diagnosticState.open.add(id);
   const ownerQuestions={
@@ -118,6 +129,16 @@
       const panel=branch?.querySelector(':scope > .dt-map-panel');
       if(panel){
         panel.insertAdjacentHTML('beforeend','<p class="dt-v2-note">Current stock and reported sales velocity; not historical availability.</p><button type="button" class="dt-v2-link" data-dt-tab="Inventory">Open Inventory analysis ↗</button>');
+      }
+    }
+    // Existing daily trends become tiny inline graphs only where a node has no chart.
+    for(const [id,entry] of diagnosticNodes){
+      const metric=entry.node[3];
+      if(!metric)continue;
+      const el=root.querySelector('[data-dt-node="'+id+'"]');
+      if(el && !el.querySelector('.dt-mini svg')){
+        const chart=trend(id,metric);
+        if(chart)el.insertAdjacentHTML('beforeend',chart);
       }
     }
     const title=root.querySelector('.dt-head h2');
