@@ -157,35 +157,38 @@
      return {paid,organic,unknown,total:paid+organic+unknown};
    };
    const current=mix(data);
-   const periodKey=previousMixKey(month);
-   const prior=previousMixCache.get(periodKey);
-   const slice=comparableRows(month);
-   const share=(counts,key)=>counts.total>0?counts[key]/counts.total*100:null;
-   const donut=(counts,period)=>{
-     if(!counts)return '<div class="db-v8-pie-loading">Previous period loading…</div>';
-     const p=share(counts,'paid')||0,o=share(counts,'organic')||0;
-     return '<div class="db-v8-pie-block"><div class="db-v8-pie-label">'+period+'</div>'+
-       '<div class="db-v7-donut db-v8-donut" style="background:conic-gradient(#6880f6 0% '+p.toFixed(2)+'%,#20b99a '+p.toFixed(2)+'% '+(p+o).toFixed(2)+'%,#f2a65a '+(p+o).toFixed(2)+'% 100%)">'+
-       '<div class="db-v7-donut-inner"><strong>'+num(counts.total)+'</strong><small>Orders</small></div></div></div>';
-   };
+   const prior=previousMixCache.get(previousMixKey(month));
    const old=prior?.data?mix(prior.data):null;
-   const labels=[['Paid','paid'],['Organic','organic'],['Unknown','unknown']];
-   const rows=labels.map(([label,key])=>{
-     const cur=share(current,key),prev=old?share(old,key):null;
-     const delta=cur!==null&&prev!==null?cur-prev:null;
-     return '<div class="db-v8-mix-row"><span class="db-v7-dot '+key+'"></span><span>'+label+'</span>'+
-       '<b>'+ (cur===null?'—':cur.toFixed(1)+'%')+'</b>'+
-       '<span class="db-v8-mix-compare">'+(prev===null?'—':prev.toFixed(1)+'%')+'</span>'+
-       '<strong class="'+(delta===null?'':delta>=0?'db-v7-up':'db-v7-down')+'">'+(delta===null?'—':(delta>0?'+':'')+delta.toFixed(1)+' pp')+'</strong></div>';
+   const slice=comparableRows(month);
+   const share=(channel)=>current.total>0?current[channel]/current.total*100:0;
+   const paidShare=share('paid'),organicShare=share('organic'),unknownShare=share('unknown');
+   // One donut for the CURRENT period. Percentages appear on this donut only.
+   // Order-count comparisons belong exclusively to the breakdown below.
+   const chart='<div class="db-v9-donut-wrap">'+
+     '<div class="db-v7-donut db-v9-donut" role="img" aria-label="Current orders: Paid '+paidShare.toFixed(1)+'%, Organic '+organicShare.toFixed(1)+'%, Unknown '+unknownShare.toFixed(1)+'%" '+
+     'style="background:conic-gradient(#6880f6 0% '+paidShare.toFixed(2)+'%,#20b99a '+paidShare.toFixed(2)+'% '+(paidShare+organicShare).toFixed(2)+'%,#f2a65a '+(paidShare+organicShare).toFixed(2)+'% 100%)">'+
+     '<div class="db-v7-donut-inner"><strong>'+num(current.total)+'</strong><small>Current orders</small></div></div>'+
+     '<div class="db-v9-donut-pcts">'+
+       [['Paid','paid',paidShare],['Organic','organic',organicShare],['Unknown','unknown',unknownShare]].map(([name,key,value])=>
+       '<span class="db-v9-donut-pct '+key+'"><i></i>'+E(name)+' '+value.toFixed(1)+'%</span>').join('')+
+     '</div></div>';
+   const rows=[['Paid','paid'],['Organic','organic'],['Unknown','unknown']].map(([label,key])=>{
+     const currentOrders=current[key];
+     const previousOrders=old?old[key]:null;
+     const change=previousOrders===null?null:currentOrders-previousOrders;
+     return '<div class="db-v9-count-row"><span class="db-v7-dot '+key+'"></span><span class="db-v9-channel">'+E(label)+'</span>'+
+       '<b>'+num(currentOrders)+'</b>'+
+       '<span class="db-v9-previous">'+(previousOrders===null?'—':num(previousOrders))+'</span>'+
+       '<strong class="'+(change===null?'':change>0?'db-v7-up':change<0?'db-v7-down':'')+'">'+
+       (change===null?'—':change>0?'+'+num(change):num(change))+'</strong></div>';
    }).join('');
-   const label=old?'Current vs previous · '+(slice.partial?'same elapsed days':'full months'):
-      prior?.error?'Previous period unavailable':'Loading previous period…';
-   return '<div class="db-v7-remote db-v8-paid-compare" data-db-v7-month="'+E(month)+'" data-db-v7-key="'+E(key)+'">'+
-     '<div class="db-v8-dual-pies">'+donut(current,'Current')+donut(old,'Previous')+'</div>'+
-     '<div class="db-v8-mix-summary">'+label+'</div>'+
-     '<div class="db-v8-mix-head"><span>Channel</span><span>Now</span><span>Prev.</span><span>Δ share</span></div>'+
-     '<div class="db-v8-mix-rows">'+rows+'</div>'+
-     '<small class="db-v7-footnote">Shopify first-visit attribution; all statuses. Share change is in percentage points, not growth rate.</small></div>';
+   const periodText=old?'Current vs previous month'+(slice.partial?' · same elapsed days':''):
+     prior?.error?'Previous month unavailable':'Loading previous month…';
+   return '<div class="db-v7-remote db-v9-paid-counts" data-db-v7-month="'+E(month)+'" data-db-v7-key="'+E(key)+'">'+
+     chart+'<div class="db-v8-mix-summary">'+E(periodText)+'</div>'+
+     '<div class="db-v9-count-head"><span>Channel</span><span>Current</span><span>Previous</span><span>Δ Orders</span></div>'+
+     '<div class="db-v9-count-rows">'+rows+'</div>'+
+     '<small class="db-v7-footnote">Shopify first-visit attribution · all order statuses. Percentage shares are shown only on the current donut; comparisons use order counts.</small></div>';
  }
  function smallCard(key,rows,data,icon,month){
    if(remote.has(key)){
