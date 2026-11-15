@@ -43,7 +43,7 @@
      box.querySelectorAll('.kpi-period-value').forEach(node=>{
        const exact=node.textContent.trim();
        node.title=exact;
-       const numeric=exact.match(/-?\\d[\\d,]*(?:\\.\\d+)?/);
+       const numeric=exact.match(/-?\d[\d,]*(?:\.\d+)?/);
        if(!numeric)return;
        const value=Number(numeric[0].replaceAll(',',''));
        if(!Number.isFinite(value)||Math.abs(value)<1000)return;
