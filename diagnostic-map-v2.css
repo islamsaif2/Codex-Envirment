@@ -78,3 +78,6 @@ body.diagnostic-map-page .dt-viewport .dt-canvas .dt-branch,body.diagnostic-map-
 body.diagnostic-map-page .dt-viewport{max-height:none!important}
 body.diagnostic-map-page .dt-canvas .dt-roots>li>.dt-branch-card{align-self:center!important}
 body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="profit"])>ul{max-width:100%!important}
+
+body.diagnostic-map-page .dt-canvas ul.dt-v2-questions{display:block!important;padding-left:15px!important;margin:4px 0 6px!important;width:100%!important}
+body.diagnostic-map-page .dt-canvas .dt-v2-questions li{display:list-item!important;position:static!important;width:auto!important;left:auto!important;top:auto!important;flex:none!important}
