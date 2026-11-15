@@ -1,0 +1,73 @@
+
+/* Ultramedix Diagnostic Map V2 — inline, compact and data-driven. */
+body.diagnostic-map-page {--dt-forest:#154634;--dt-mist:#edf4ef;--dt-stroke:#d6e5db;--dt-ink:#193b30}
+body.diagnostic-map-page .main{max-width:none!important;padding:16px 20px!important}
+body.diagnostic-map-page .dt-head{margin-bottom:8px}
+body.diagnostic-map-page .dt-actions{display:flex;flex-wrap:wrap;gap:7px;padding:8px 10px;background:var(--card,#fff);border:1px solid var(--dt-stroke);border-radius:11px;margin-bottom:10px}
+body.diagnostic-map-page .dt-actions .btn{padding:6px 10px;border-radius:7px}
+body.diagnostic-map-page .dt-layout{display:block!important}
+body.diagnostic-map-page #dt-detail{display:none!important}
+body.diagnostic-map-page .dt-viewport{overflow:visible!important;height:auto!important;min-height:0!important;touch-action:auto!important;cursor:default!important;border:0!important;background:transparent!important}
+body.diagnostic-map-page .dt-canvas{width:100%!important;max-width:1800px!important;margin:0 auto!important;padding:4px 0 35px!important;min-height:0!important;zoom:1!important;position:relative!important}
+body.diagnostic-map-page .dt-connectors{display:none!important}
+body.diagnostic-map-page .dt-canvas ul{position:static!important;display:flex!important;flex-flow:row wrap!important;gap:10px!important;margin:0!important;padding:0!important;width:100%!important;min-width:0!important;list-style:none}
+body.diagnostic-map-page .dt-canvas .dt-roots{flex-direction:column!important;align-items:center!important;gap:12px!important}
+body.diagnostic-map-page .dt-canvas li.dt-branch{position:relative!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;left:auto!important;top:auto!important;transform:none!important;margin:0!important;min-height:0!important;min-width:0!important;flex:1 1 155px!important;gap:7px!important;max-width:100%!important}
+body.diagnostic-map-page .dt-canvas ul::before,body.diagnostic-map-page .dt-canvas li::before,body.diagnostic-map-page .dt-canvas li::after{display:none!important;content:none!important}
+body.diagnostic-map-page .dt-canvas .dt-roots>li{width:100%!important;flex:1 1 100%!important;align-items:center!important}
+body.diagnostic-map-page .dt-canvas .dt-roots>li>.dt-centered-row{width:100%!important}
+body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="profit"])>.dt-branch-card{max-width:290px!important;width:100%!important}
+body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="revenue"])>.dt-branch-card{max-width:320px!important;width:100%!important}
+body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="delivered"])>.dt-branch-card{max-width:320px!important;width:100%!important}
+body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="orders"])>.dt-branch-card{max-width:340px!important;width:100%!important}
+body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="orders"])>ul{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;align-items:start!important;gap:12px!important}
+body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="orders"])>ul>li{width:100%!important}
+body.diagnostic-map-page .dt-branch-card{position:relative!important;left:auto!important;top:auto!important;width:100%!important;max-width:100%!important;min-width:0!important}
+body.diagnostic-map-page .dt-node{width:100%!important;min-height:74px!important;border:1px solid var(--dt-stroke)!important;border-top:3px solid var(--branch)!important;border-left:1px solid var(--dt-stroke)!important;background:var(--card,#fff)!important;border-radius:11px!important;box-shadow:0 2px 9px rgba(23,63,42,.055)!important;overflow:hidden}
+body.diagnostic-map-page .dt-node.dt-selected{outline:1px solid var(--branch)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--branch) 16%,transparent)!important}
+body.diagnostic-map-page .dt-label{padding:10px!important}
+body.diagnostic-map-page .dt-label strong{font-size:11px!important;line-height:1.25;letter-spacing:.04px}
+body.diagnostic-map-page .dt-value{display:inline-block;font-size:18px;font-weight:800;margin-top:3px}
+body.diagnostic-map-page .dt-delta{display:inline-block;font-size:11px}
+body.diagnostic-map-page .dt-mini svg{height:25px}
+body.diagnostic-map-page .dt-toggle{width:25px;flex-shrink:0}
+body.diagnostic-map-page .dt-node.dt-green{--branch:#18845c}
+body.diagnostic-map-page .dt-node.dt-blue{--branch:#3e75bd}
+body.diagnostic-map-page .dt-node.dt-purple{--branch:#8e62be}
+body.diagnostic-map-page .dt-node.dt-amber{--branch:#bd8a30}
+body.diagnostic-map-page .dt-node.dt-rose{--branch:#c36d92}
+body.diagnostic-map-page .dt-node.dt-pink{--branch:#d6819b}
+body.diagnostic-map-page .dt-node.dt-ice{--branch:#54a3cd}
+body.diagnostic-map-page .dt-node:has([data-dt-node="profit"]){background:linear-gradient(135deg,#103e30,#236c51)!important;color:#fff!important;border-color:#18513e!important}
+body.diagnostic-map-page .dt-node:has([data-dt-node="profit"]) .dt-label,body.diagnostic-map-page .dt-node:has([data-dt-node="profit"]) .dt-toggle{color:#fff!important}
+body.diagnostic-map-page .dt-map-panel{position:relative!important;left:auto!important;top:auto!important;width:100%!important;max-width:100%!important;max-height:none!important;min-width:0!important;padding:10px!important;margin:0!important;overflow:visible!important;box-shadow:none!important;border:1px solid var(--dt-stroke)!important;border-radius:9px!important}
+body.diagnostic-map-page .dt-map-panel:has(.dt-stock-grid) .dt-stock-grid{max-height:380px;overflow:auto}
+body.diagnostic-map-page .dt-map-panel .dt-funnel{overflow-x:auto!important}
+body.diagnostic-map-page .dt-map-panel .dt-funnel .flow-kpi{width:135px}
+body.diagnostic-map-page .dt-map-panel .dt-funnel .funnel-sequence{min-width:max-content}
+body.diagnostic-map-page .dt-branch>ul{margin-top:3px!important}
+body.diagnostic-map-page .dt-branch .dt-branch>ul{gap:7px!important}
+body.diagnostic-map-page .dt-v2-insight{width:100%;background:var(--card,#fff);border:1px solid var(--dt-stroke);border-radius:9px;padding:9px 10px;min-width:0;font-size:11px}
+body.diagnostic-map-page .dt-v2-insight h4{margin:0 0 6px;font-size:11px;color:var(--dt-forest)}
+body.theme-dark.diagnostic-map-page .dt-v2-insight h4{color:#95dbb9}
+body.diagnostic-map-page .dt-v2-insight .dt-v2-row{display:flex;gap:6px;justify-content:space-between;align-items:center;padding:3px 0}
+body.diagnostic-map-page .dt-v2-track{height:5px;border-radius:99px;background:#e4ede8;overflow:hidden;margin:2px 0 5px}
+body.diagnostic-map-page .dt-v2-track i{display:block;height:100%;background:#198b66;border-radius:99px}
+body.diagnostic-map-page .dt-v2-muted{color:var(--muted,#73837b);font-size:10px;line-height:1.35}
+body.diagnostic-map-page .dt-v2-questions{font-size:10px;line-height:1.45;margin:5px 0 7px;padding-left:13px}
+body.diagnostic-map-page .dt-v2-questions li{display:list-item!important;min-height:0!important;list-style:disc!important;margin:3px 0!important}
+body.diagnostic-map-page .dt-v2-link{width:100%;display:block;border:1px solid #b2d4c0;background:#eef9f1;color:#176347;border-radius:7px;padding:6px 8px;cursor:pointer;font-weight:650;font-size:10px;text-align:center}
+body.diagnostic-map-page .dt-v2-link:hover{background:#daefdf}
+body.diagnostic-map-page .dt-v2-note{margin:4px 0;color:var(--muted,#73837b);font-size:10px}
+body.diagnostic-map-page .dt-v2-inline-graph{width:100%;overflow:hidden;padding-top:3px}
+body.diagnostic-map-page .dt-v2-inline-graph svg{width:100%;height:49px}
+body.diagnostic-map-page .dt-v2-chart-panel{width:100%;background:var(--card,#fff);border:1px solid var(--dt-stroke);padding:8px;border-radius:9px;min-width:0;overflow:hidden}
+body.diagnostic-map-page .dt-v2-chart-panel .dt-chart{max-height:116px}
+body.diagnostic-map-page .dt-v2-chart-panel .dt-actions{margin:0 0 4px;padding:0;border:0;box-shadow:none}
+body.diagnostic-map-page .dt-v2-chart-panel select{max-width:100%;font-size:10px}
+body.diagnostic-map-page .dt-v2-chart-panel p{font-size:10px;margin:5px 0}
+body.diagnostic-map-page .dt-stock-card:nth-child(n+7){display:none}
+body.diagnostic-map-page .dt-stock-grid{max-height:370px;overflow:auto}
+body.diagnostic-map-page .dt-head .section-head{margin-bottom:0}
+@media(max-width:1250px){body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="orders"])>ul{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:700px){body.diagnostic-map-page .main{padding:8px!important}body.diagnostic-map-page .dt-canvas li:has(>.dt-branch-card [data-dt-node="orders"])>ul{grid-template-columns:1fr!important}body.diagnostic-map-page .dt-canvas .dt-siblings{flex-direction:column!important}body.diagnostic-map-page .dt-canvas .dt-branch{flex-basis:100%!important}}
