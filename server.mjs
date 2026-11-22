@@ -319,7 +319,8 @@ async function creativeThumbnailResponse(source){
 
 // Analyze completed Egypt-local calendar days by default, not partial UTC days.
 function lastCompletedEgyptDay(){
-  const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Cairo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const p=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:"Africa/Cairo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  const today=`${p.year}-${p.month}-${p.day}`;
   return new Date(Date.parse(today+"T12:00:00Z")-86400000).toISOString().slice(0,10);
 }
 const server = http.createServer(async (req, res) => {
