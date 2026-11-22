@@ -317,6 +317,11 @@ async function creativeThumbnailResponse(source){
   return new Response(body,{status:200,headers:{"Content-Type":type,"Cache-Control":"public,max-age=3600","X-Ultramedix-Image-Cache":"MISS"}});
 }
 
+// Analyze completed Egypt-local calendar days by default, not partial UTC days.
+function lastCompletedEgyptDay(){
+  const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Cairo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  return new Date(Date.parse(today+"T12:00:00Z")-86400000).toISOString().slice(0,10);
+}
 const server = http.createServer(async (req, res) => {
   const started = Date.now();
   try {
@@ -330,10 +335,10 @@ const server = http.createServer(async (req, res) => {
     if(req.method==="GET"&&url.pathname==="/api/decision-intelligence"){
       const store=(url.searchParams.get("store")||"").trim();
       const model=url.searchParams.get("model")||"linear";
-      const asOf=url.searchParams.get("asOf")||new Date(Date.now()-86400000).toISOString().slice(0,10);
+      const asOf=url.searchParams.get("asOf")||lastCompletedEgyptDay();
       if(!/^[a-z0-9.-]+\.myshopify\.com$/i.test(store)||
          !["linear","first_click","last_click","last_non_direct_click","any_click"].includes(model)||
-         !/^\d{4}-\d{2}-\d{2}$/.test(asOf)){
+         !/^\d{4}-\d{2}-\d{2}$/.test(asOf)||asOf>lastCompletedEgyptDay()){
         res.writeHead(400,{"content-type":"application/json; charset=utf-8"});
         res.end(JSON.stringify({error:"Use a valid store, attribution model and YYYY-MM-DD asOf date"}));
         return;
