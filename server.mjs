@@ -3,7 +3,7 @@ import worker from "./worker.mjs";
 import {readLocalOrders} from "./order-read-fallback.mjs";
 import {analyzeAttribution} from "./decision-intelligence/anomaly.mjs";
 import {diagnoseChannels} from "./decision-intelligence/diagnose.mjs";
-import {readDecisionContext,evaluateDataQuality} from "./decision-intelligence/context.mjs";
+import {readDecisionContext,evaluateDataQuality,excludeIncidentDates} from "./decision-intelligence/context.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
 installGoogleSheetResponseCache();
@@ -351,10 +351,13 @@ const server = http.createServer(async (req, res) => {
         caution:"Incident register unavailable; data integrity not verified"}:
         evaluateDataQuality(context.incidents,{source:"Shopify Attribution",asOf,
           policy:context.setup?.dataRepairPolicy});
-      const report=quality.mayAnalyze?analyzeAttribution(rows,{store,model,asOf}):{
+      const filtered=context.incidents===null?{rows,excludedDates:[]}:
+        excludeIncidentDates(rows,context.incidents,{source:"Shopify Attribution",policy:context.setup?.dataRepairPolicy});
+      const report=quality.mayAnalyze?analyzeAttribution(filtered.rows,{store,model,asOf}):{
         version:"0.1.0",asOf,store,model,findings:[],evaluatedSegments:0,
         warnings:["Analysis suppressed by a confirmed tracking incident covering the selected date."]};
-      report.diagnosis=quality.mayAnalyze?diagnoseChannels(rows,{store,model,asOf}):null;
+      report.diagnosis=quality.mayAnalyze?diagnoseChannels(filtered.rows,{store,model,asOf}):null;
+      report.excludedIncidentDates=filtered.excludedDates;
       report.dataQuality=quality;
       report.context={available:context.availability,
         businessId:context.setup?.businessId||null,
