@@ -1,0 +1,22 @@
+name: Decision Intelligence MVP checks
+on:
+  pull_request:
+    paths:
+      - 'decision-intelligence/**'
+      - 'test/decision-*.test.mjs'
+      - 'server.mjs'
+      - '.github/workflows/decision-intelligence-checks.yml'
+  push:
+    branches:
+      - feature/decision-intelligence-mvp
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check server.mjs
+      - run: node --check decision-intelligence/anomaly.mjs && node --check decision-intelligence/diagnose.mjs && node --check decision-intelligence/context.mjs
+      - run: node --test test/decision-*.test.mjs
