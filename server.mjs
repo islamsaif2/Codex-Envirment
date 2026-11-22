@@ -4,7 +4,7 @@ import {readLocalOrders} from "./order-read-fallback.mjs";
 import {analyzeAttribution} from "./decision-intelligence/anomaly.mjs";
 import {diagnoseChannels} from "./decision-intelligence/diagnose.mjs";
 import {readDecisionContext,evaluateDataQuality,excludeIncidentDates} from "./decision-intelligence/context.mjs";
-import {readInventoryHistory,interpretInventoryRows} from "./decision-intelligence/inventory-history.mjs";
+import {readInventoryMatrix,interpretInventoryRows} from "./decision-intelligence/inventory-history.mjs";
 import {inventoryHistoryPage} from "./decision-intelligence/inventory-history-view.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
@@ -355,7 +355,7 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({error:"Supply store, from and to (YYYY-MM-DD), optional variantId"}));
         return;
       }
-      const raw=await readInventoryHistory(env.SPREADSHEET_ID);
+      const raw=await readInventoryMatrix(env.SPREADSHEET_ID,{store});
       const report=interpretInventoryRows(raw,{store,from,to,variantId:variantId||null});
       res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"no-store"});
       res.end(JSON.stringify(report));
