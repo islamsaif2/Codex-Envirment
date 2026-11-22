@@ -60,7 +60,7 @@ export function analyzeAttribution(rows, opts={}) {
     if(!cmp)continue;
     candidates.push({id:[store,model,asOf,segment].join(":"),asOf,store,model,
       dimension:segment==="*|*"?"store":"channel",segment:segment==="*|*"?"All channels":channel,traffic:segment==="*|*"?"all":traffic,
-      current,baseline,baselineDays:historicalDays.size,...cmp,
+      current,baseline,baselineDays:historicalDays.size,comparisonDates:[...historicalDays].sort(),...cmp,
       hypothesis:"Observed order-rate deviation. This does not establish a cause.",
       nextStep:"Check tracking coverage, traffic mix, checkout issues and comparable periods."});
   }
@@ -73,6 +73,7 @@ export function analyzeAttribution(rows, opts={}) {
     rules:{minCurrentSessions:40,minBaselineSessions:200,minComparableWeekdays:3,
       falseDiscoveryRate:0.05,minRelativeChange:0.15},
     evaluatedSegments:candidates.length,findings,
+    explanation:"Each finding compares an observed attributed order/session rate with a same-weekday historical baseline; adjustedP controls multiple testing, not causality.",
     warnings:["Observational evidence only, not proven root causes.",
       "Attribution models can differ from Shopify total orders.",
       "Historical channel counts and tracking changes can affect results.",
