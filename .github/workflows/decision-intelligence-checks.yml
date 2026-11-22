@@ -18,5 +18,5 @@ jobs:
         with:
           node-version: '22'
       - run: node --check server.mjs
-      - run: node --check decision-intelligence/anomaly.mjs && node --check decision-intelligence/diagnose.mjs && node --check decision-intelligence/context.mjs
+      - run: node --check decision-intelligence/anomaly.mjs && node --check decision-intelligence/diagnose.mjs && node --check decision-intelligence/context.mjs && node --check decision-intelligence/inventory-history.mjs && node --check decision-intelligence/inventory-history-view.mjs
       - run: node --test test/decision-*.test.mjs
