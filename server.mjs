@@ -340,9 +340,9 @@ const server = http.createServer(async (req, res) => {
       const from=url.searchParams.get("from")||"";
       const to=url.searchParams.get("to")||"";
       const variantId=url.searchParams.get("variantId")||"";
-      if(!/^[a-z0-9.-]+\\.myshopify\\.com$/i.test(store)||
-         !/^\\d{4}-\\d{2}-\\d{2}$/.test(from)||
-         !/^\\d{4}-\\d{2}-\\d{2}$/.test(to)||from>to||
+      if(!/^[a-z0-9.-]+\.myshopify\.com$/i.test(store)||
+         !/^\d{4}-\d{2}-\d{2}$/.test(from)||
+         !/^\d{4}-\d{2}-\d{2}$/.test(to)||from>to||
          variantId.length>160){
         res.writeHead(400,{"content-type":"application/json; charset=utf-8"});
         res.end(JSON.stringify({error:"Supply store, from and to (YYYY-MM-DD), optional variantId"}));
