@@ -4,6 +4,7 @@ import {readLocalOrders} from "./order-read-fallback.mjs";
 import {analyzeAttribution} from "./decision-intelligence/anomaly.mjs";
 import {diagnoseChannels} from "./decision-intelligence/diagnose.mjs";
 import {readDecisionContext,evaluateDataQuality,excludeIncidentDates} from "./decision-intelligence/context.mjs";
+import {readInventoryHistory,interpretInventoryRows} from "./decision-intelligence/inventory-history.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
 installGoogleSheetResponseCache();
@@ -332,6 +333,25 @@ const server = http.createServer(async (req, res) => {
       const response=await creativeThumbnailResponse(url.searchParams.get("url")||"");
       res.writeHead(response.status,Object.fromEntries(response.headers.entries()));
       res.end(Buffer.from(await response.arrayBuffer()));
+      return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/inventory-history"){
+      const store=(url.searchParams.get("store")||"").trim();
+      const from=url.searchParams.get("from")||"";
+      const to=url.searchParams.get("to")||"";
+      const variantId=url.searchParams.get("variantId")||"";
+      if(!/^[a-z0-9.-]+\\.myshopify\\.com$/i.test(store)||
+         !/^\\d{4}-\\d{2}-\\d{2}$/.test(from)||
+         !/^\\d{4}-\\d{2}-\\d{2}$/.test(to)||from>to||
+         variantId.length>160){
+        res.writeHead(400,{"content-type":"application/json; charset=utf-8"});
+        res.end(JSON.stringify({error:"Supply store, from and to (YYYY-MM-DD), optional variantId"}));
+        return;
+      }
+      const raw=await readInventoryHistory(env.SPREADSHEET_ID);
+      const report=interpretInventoryRows(raw,{store,from,to,variantId:variantId||null});
+      res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"no-store"});
+      res.end(JSON.stringify(report));
       return;
     }
     if(req.method==="GET"&&url.pathname==="/api/decision-intelligence"){
