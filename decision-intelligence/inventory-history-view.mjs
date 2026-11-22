@@ -22,7 +22,7 @@ form.addEventListener('submit',async ev=>{
   for(const v of [x.periodStart+' → '+x.periodEnd,x.product+' / '+x.variant,x.startingStock,x.endingStock,x.unitsSold,x.daysOutOfStock,x.source,x.quality])tr.appendChild(e('td',v));
   body.appendChild(tr);
  }
- const values=data.rows.filter(x=>Number.isFinite(x.endingStock)).sort((a,b)=>a.periodStart.localeCompare(b.periodStart)).slice(0,90);
+ const firstVariant=data.rows.find(x=>Number.isFinite(x.endingStock))?.variantId;\n const values=data.rows.filter(x=>x.variantId===firstVariant&&Number.isFinite(x.endingStock)).sort((a,b)=>a.periodStart.localeCompare(b.periodStart)).slice(0,90);
  const svg=document.getElementById('chart');svg.replaceChildren();
  if(values.length>1){
   const min=Math.min(...values.map(x=>x.endingStock)),max=Math.max(...values.map(x=>x.endingStock)),span=Math.max(max-min,1);
