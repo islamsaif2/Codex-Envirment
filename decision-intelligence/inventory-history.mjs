@@ -74,7 +74,7 @@ export async function readInventoryMatrix(spreadsheetId,{store}={}){
  if(hit&&hit.expires>Date.now())return hit.rows;
  const url=new URL("https://docs.google.com/spreadsheets/d/"+encodeURIComponent(spreadsheetId)+"/gviz/tq");
  url.searchParams.set("tqx","out:json");url.searchParams.set("headers","0");
- url.searchParams.set("sheet","Inventory Stock Matrix");url.searchParams.set("range","A1:AZ");
+ url.searchParams.set("sheet","Inventory Stock Matrix");url.searchParams.set("range","A1:ZZ");
  const response=await fetch(url,{signal:AbortSignal.timeout(30000)});
  if(!response.ok)throw Error("Inventory matrix unavailable HTTP "+response.status);
  const body=await response.text(),a=body.indexOf("{"),b=body.lastIndexOf("}");
