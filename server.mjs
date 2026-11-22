@@ -330,9 +330,9 @@ const server = http.createServer(async (req, res) => {
       const store=(url.searchParams.get("store")||"").trim();
       const model=url.searchParams.get("model")||"linear";
       const asOf=url.searchParams.get("asOf")||new Date(Date.now()-86400000).toISOString().slice(0,10);
-      if(!/^[a-z0-9.-]+\\.myshopify\\.com$/i.test(store)||
+      if(!/^[a-z0-9.-]+\.myshopify\.com$/i.test(store)||
          !["linear","first_click","last_click","last_non_direct_click","any_click"].includes(model)||
-         !/^\\d{4}-\\d{2}-\\d{2}$/.test(asOf)){
+         !/^\d{4}-\d{2}-\d{2}$/.test(asOf)){
         res.writeHead(400,{"content-type":"application/json; charset=utf-8"});
         res.end(JSON.stringify({error:"Use a valid store, attribution model and YYYY-MM-DD asOf date"}));
         return;
