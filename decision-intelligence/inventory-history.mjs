@@ -42,3 +42,46 @@ export async function readInventoryHistory(spreadsheetId){
  })();
  try{return await cache.pending}finally{cache.pending=null}
 }
+
+// Stock matrix parser: values are per date, blank is NOT zero.
+export function parseInventoryMatrix(grid,{store}={}){
+ const h=grid[0]||[],sources=grid[1]||[];
+ const dom=String(sources[1]||"").trim();
+ if(!store||dom.toLowerCase()!==String(store).toLowerCase())return {verifiedStore:false,rows:[]};
+ const out=[];
+ for(const r of grid.slice(2)){
+  const id=String(r[0]||"").trim();if(!id)continue;
+  for(let i=5;i<h.length;i++){
+   const d=String(h[i]||"").slice(0,10);
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||r[i]===null||r[i]===undefined||r[i]==="")continue;
+   const n=Number(r[i]),src=String(sources[i]||"");if(!Number.isFinite(n))continue;
+   const live=src.includes("LIVE SNAPSHOT"),hist=src.includes("ShopifyQL");
+   if(!live&&!hist)continue;
+   out.push({periodStart:d,periodEnd:d,granularity:"daily",store:dom,variantId:id,
+     product:String(r[1]||""),variant:String(r[2]||""),startingStock:null,endingStock:n,
+     unitsSold:null,daysOutOfStock:null,adjustmentNet:null,adjustmentReason:"",
+     inventoryState:"",source:live?"Shopify Admin live snapshot":"ShopifyQL inventory",
+     recordedAt:live?String(r[4]||""):"",
+     quality:live?"Stock at sync, not full-day availability":"Day ending stock, not intraday availability"});
+  }
+ }
+ return {verifiedStore:true,rows:out};
+}
+const matrixCache=new Map();
+export async function readInventoryMatrix(spreadsheetId,{store}={}){
+ const key=spreadsheetId+"|"+store,hit=matrixCache.get(key);
+ if(hit&&hit.expires>Date.now())return hit.rows;
+ const url=new URL("https://docs.google.com/spreadsheets/d/"+encodeURIComponent(spreadsheetId)+"/gviz/tq");
+ url.searchParams.set("tqx","out:json");url.searchParams.set("headers","0");
+ url.searchParams.set("sheet","Inventory Stock Matrix");url.searchParams.set("range","A1:AZ");
+ const response=await fetch(url,{signal:AbortSignal.timeout(30000)});
+ if(!response.ok)throw Error("Inventory matrix unavailable HTTP "+response.status);
+ const body=await response.text(),a=body.indexOf("{"),b=body.lastIndexOf("}");
+ if(a<0||b<a)throw Error("Invalid matrix response");
+ const payload=JSON.parse(body.slice(a,b+1));
+ if(payload.status!=="ok"||!Array.isArray(payload.table?.rows))throw Error("Inventory matrix unavailable");
+ const grid=payload.table.rows.map(r=>(r.c||[]).map(c=>c?.v??c?.f??""));
+ const parsed=parseInventoryMatrix(grid,{store});
+ if(!parsed.verifiedStore)throw Error("Inventory matrix source store missing or mismatched");
+ matrixCache.set(key,{rows:parsed.rows,expires:Date.now()+120000});return parsed.rows;
+}
