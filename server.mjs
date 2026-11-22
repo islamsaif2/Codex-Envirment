@@ -5,6 +5,7 @@ import {analyzeAttribution} from "./decision-intelligence/anomaly.mjs";
 import {diagnoseChannels} from "./decision-intelligence/diagnose.mjs";
 import {readDecisionContext,evaluateDataQuality,excludeIncidentDates} from "./decision-intelligence/context.mjs";
 import {readInventoryHistory,interpretInventoryRows} from "./decision-intelligence/inventory-history.mjs";
+import {inventoryHistoryPage} from "./decision-intelligence/inventory-history-view.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
 installGoogleSheetResponseCache();
@@ -333,6 +334,12 @@ const server = http.createServer(async (req, res) => {
       const response=await creativeThumbnailResponse(url.searchParams.get("url")||"");
       res.writeHead(response.status,Object.fromEntries(response.headers.entries()));
       res.end(Buffer.from(await response.arrayBuffer()));
+      return;
+    }
+    if(req.method==="GET"&&url.pathname==="/inventory-history"){
+      res.writeHead(200,{"content-type":"text/html; charset=utf-8","cache-control":"no-store",
+        "content-security-policy":"default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'"});
+      res.end(inventoryHistoryPage());
       return;
     }
     if(req.method==="GET"&&url.pathname==="/api/inventory-history"){
