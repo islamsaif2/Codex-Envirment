@@ -1,6 +1,7 @@
 import http from "node:http";
 import worker from "./worker.mjs";
 import {readLocalOrders} from "./order-read-fallback.mjs";
+import {analyzeAttribution} from "./decision-intelligence/anomaly.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
 installGoogleSheetResponseCache();
@@ -323,6 +324,23 @@ const server = http.createServer(async (req, res) => {
       const response=await creativeThumbnailResponse(url.searchParams.get("url")||"");
       res.writeHead(response.status,Object.fromEntries(response.headers.entries()));
       res.end(Buffer.from(await response.arrayBuffer()));
+      return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/decision-intelligence"){
+      const store=(url.searchParams.get("store")||"").trim();
+      const model=url.searchParams.get("model")||"linear";
+      const asOf=url.searchParams.get("asOf")||new Date(Date.now()-86400000).toISOString().slice(0,10);
+      if(!/^[a-z0-9.-]+\\.myshopify\\.com$/i.test(store)||
+         !["linear","first_click","last_click","last_non_direct_click","any_click"].includes(model)||
+         !/^\\d{4}-\\d{2}-\\d{2}$/.test(asOf)){
+        res.writeHead(400,{"content-type":"application/json; charset=utf-8"});
+        res.end(JSON.stringify({error:"Use a valid store, attribution model and YYYY-MM-DD asOf date"}));
+        return;
+      }
+      const rows=await attributionRows();
+      const report=analyzeAttribution(rows,{store,model,asOf});
+      res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"no-store"});
+      res.end(JSON.stringify(report));
       return;
     }
     if(req.method==="GET"&&url.pathname==="/api/shopify-attribution"){
