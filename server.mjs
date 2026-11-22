@@ -2,6 +2,7 @@ import http from "node:http";
 import worker from "./worker.mjs";
 import {readLocalOrders} from "./order-read-fallback.mjs";
 import {analyzeAttribution} from "./decision-intelligence/anomaly.mjs";
+import {diagnoseChannels} from "./decision-intelligence/diagnose.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
 installGoogleSheetResponseCache();
@@ -339,6 +340,7 @@ const server = http.createServer(async (req, res) => {
       }
       const rows=await attributionRows();
       const report=analyzeAttribution(rows,{store,model,asOf});
+      report.diagnosis=diagnoseChannels(rows,{store,model,asOf});
       res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"no-store"});
       res.end(JSON.stringify(report));
       return;
