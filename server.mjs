@@ -3,6 +3,7 @@ import worker from "./worker.mjs";
 import {readLocalOrders} from "./order-read-fallback.mjs";
 import {analyzeAttribution} from "./decision-intelligence/anomaly.mjs";
 import {diagnoseChannels} from "./decision-intelligence/diagnose.mjs";
+import {readDecisionContext,evaluateDataQuality} from "./decision-intelligence/context.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
 installGoogleSheetResponseCache();
@@ -345,8 +346,22 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const rows=await attributionRows();
-      const report=analyzeAttribution(rows,{store,model,asOf});
-      report.diagnosis=diagnoseChannels(rows,{store,model,asOf});
+      const context=await readDecisionContext(env.SPREADSHEET_ID);
+      const quality=context.incidents===null?{source:"Shopify Attribution",status:"unknown",mayAnalyze:true,
+        caution:"Incident register unavailable; data integrity not verified"}:
+        evaluateDataQuality(context.incidents,{source:"Shopify Attribution",asOf,
+          policy:context.setup?.dataRepairPolicy});
+      const report=quality.mayAnalyze?analyzeAttribution(rows,{store,model,asOf}):{
+        version:"0.1.0",asOf,store,model,findings:[],evaluatedSegments:0,
+        warnings:["Analysis suppressed by a confirmed tracking incident covering the selected date."]};
+      report.diagnosis=quality.mayAnalyze?diagnoseChannels(rows,{store,model,asOf}):null;
+      report.dataQuality=quality;
+      report.context={available:context.availability,
+        businessId:context.setup?.businessId||null,
+        primaryGoal:context.setup?.primaryGoal||"Balanced",
+        historicalInventory:context.setup?.historicalInventory||"Not sure",
+        note:"Business goals are configuration only; causal diagnosis and profit ranking not yet enabled."};
+      report.warnings=[...(report.warnings||[]),...context.warnings];
       res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"no-store"});
       res.end(JSON.stringify(report));
       return;
