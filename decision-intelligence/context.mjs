@@ -57,6 +57,19 @@ export function evaluateDataQuality(incidents,{asOf,source="Shopify Attribution"
     mayAnalyze:!exclusions.length,activeIncidents:confirmed,undatedOrOpenIncidents:unspecified,
     caution:"No-reported-incident does not prove complete data. Events need dated evidence and source-level validation."};
 }
+export function excludeIncidentDates(rows,incidents,{source="Shopify Attribution",policy="Exclude from baseline"}={}){
+ if(policy!=="Exclude from baseline")return {rows,excludedDates:[]};
+ const normalize=x=>String(x).trim().toLowerCase().replace(/[^a-z0-9]+/g,"");
+ const ranges=incidents.filter(i=>normalize(i.source)===normalize(source)&&i.status==="Confirmed"
+   &&i.handling==="Exclude from baseline"&&i.start&&i.end&&i.start<=i.end);
+ const excluded=new Set();
+ const clean=rows.filter(r=>{
+   const hit=ranges.some(i=>r.day>=i.start&&r.day<=i.end);
+   if(hit)excluded.add(r.day);
+   return !hit;
+ });
+ return {rows:clean,excludedDates:[...excluded].sort()};
+}
 export async function readDecisionContext(spreadsheetId){
   const [setup,incidents]=await Promise.allSettled([
     sheetRows(spreadsheetId,"Decision Intelligence Setup",100),
