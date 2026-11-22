@@ -52,7 +52,8 @@ export function parseInventoryMatrix(grid,{store}={}){
  for(const r of grid.slice(2)){
   const id=String(r[0]||"").trim();if(!id)continue;
   for(let i=5;i<h.length;i++){
-   const d=String(h[i]||"").slice(0,10);
+   const hd=String(h[i]||"");const mt=hd.match(/^Date\((\d+),(\d+),(\d+)/);
+   const d=mt?[mt[1],String(Number(mt[2])+1).padStart(2,"0"),String(mt[3]).padStart(2,"0")].join("-"):hd.slice(0,10);
    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||r[i]===null||r[i]===undefined||r[i]==="")continue;
    const n=Number(r[i]),src=String(sources[i]||"");if(!Number.isFinite(n))continue;
    const live=src.includes("LIVE SNAPSHOT"),hist=src.includes("ShopifyQL");
