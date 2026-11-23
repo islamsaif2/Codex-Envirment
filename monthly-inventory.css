@@ -43,3 +43,5 @@ body.theme-dark .db-month .monthly-product-scroll thead th{
 }
 .monthly-product-scroll{isolation:isolate;position:relative;scroll-padding-top:48px}
 .db-month .monthly-product-scroll tbody tr{height:auto}
+.monthly-inventory-notes,.db-v7-products .monthly-inventory-notes{font-size:6px;line-height:1.4}
+.monthly-inventory-notes span{white-space:normal;overflow:visible;text-overflow:clip}

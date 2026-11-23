@@ -1,15 +1,23 @@
 const monthlyInventoryState={business:'',loading:false,data:null,error:'',request:0};
-const monthlyInventoryDescriptions={avgStock:'Mean of total recorded variant stock on complete historical days; requires at least 70% variant-day snapshot coverage. The tooltip lists the complete days used.',coverage:'Sum of min(stock, estimated demand) divided by sum of estimated demand, for supported variant-days.',availability:'Estimated demand from adequately stocked variants divided by total estimated demand.',lostUnits:'Sum of max(0, estimated demand minus stock) on supported dates. An estimate, without extrapolation across missing dates.',unitsSold:'Shopify units from item quantities and product lines. ≥ marks a known minimum when a multi-product order lacks per-line quantities.'};
+const monthlyInventoryDescriptions={
+ avgStock:'The average total stock across all sizes on days with complete records. For example, 10 units one day and 30 the next gives an average of 20. Missing records are excluded.',
+ availability:'The share of expected demand coming from sizes with enough stock. Popular sizes count more: plenty of XL stock will not make up for a sold-out M if most customers buy M.',
+ lostUnits:'An estimate of how many units stock could not cover. If expected demand was 10 and only 2 units were available, the estimate is 8. It does not confirm that 8 customers tried to buy.',
+ unitsSold:'Units identified from Shopify orders. ≥93 means at least 93 units are confirmed, but some orders contain several products without specifying the quantity of each.',
+ coverage:'The share of estimated demand that stock could cover.'
+};
 const monthlyInventoryFields={
  avgStock:'AVG Daily Stock',availability:'Demand-Weighted Availability %',lostUnits:'Estimated Lost Units',unitsSold:'Units Sold'
 };
 function monthlyInventoryNotes(){
- return '<div class="monthly-inventory-notes" title="'+esc(Object.values(monthlyInventoryDescriptions).join(' '))+'">'+
- '<span>AVG Daily Stock averages recorded daily variant stock; missing snapshots stay unknown.</span>'+
- '<span>Availability weights adequately stocked variants by estimated demand.</span>'+
- '<span>Lost Units estimates stock-constrained demand; Units Sold uses Shopify quantities; ≥ means some mixed-order quantities cannot be allocated.</span>'+
- '<span>Demand uses 70% prior 28d + 30% preceding 90d, requiring 7/14 eligible days; otherwise recent or historical fallback.</span>'+
- '<span>Closing snapshots approximate daily availability. Missing history shows Insufficient Data; older fallback has lower confidence.</span></div>';
+ const notes=[
+  'AVG Daily Stock: Your average daily stock across all sizes. For example, 10 units one day and 30 the next gives 20. Only days with complete stock records are included.',
+  'Availability: Did you have enough stock in the sizes customers wanted? Popular sizes count more, so lots of XL stock cannot make up for a sold-out M if most customers buy M.',
+  'Lost Units: Estimated demand that stock could not cover. If demand was 10 units and stock was 2, the estimate is 8. These are estimated missed units, not confirmed lost sales.',
+  'Units Sold: Units identified in Shopify orders. ≥93 means at least 93 are confirmed; some orders contain several products without saying how many of each were bought.',
+  'Demand estimate: We use sales from days with enough stock: 70% from the previous 28 days and 30% from the 90 days before those. We need 7 usable recent days and 14 older days. If recent weeks were sold out, we use usable older history. Daily stock records cannot show every stockout during the day. Missing records stay unknown; older estimates have lower confidence.'
+ ];
+ return '<div class="monthly-inventory-notes">'+notes.map(text=>'<span title="'+esc(text)+'">'+esc(text)+'</span>').join('')+'</div>';
 }
 function loadMonthlyInventory(){
  if(monthlyInventoryState.business!==businessId){
