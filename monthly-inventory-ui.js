@@ -97,7 +97,8 @@ function monthlyInventoryProductCard(markup,month,data){
   return '<tr>'+monthlyProductColumns.map(([key])=>key==='name'?'<th scope="row"><span class="monthly-product-name">'+image+'<span title="'+esc(monthlyInventoryTooltip(row))+'">'+esc(row.name)+'<small>'+value(row,'sessions')+' sessions · '+value(row,'cr')+' CR</small></span></span></th>':
     '<td title="'+esc(monthlyInventoryTooltip(row))+'">'+value(row,key)+'</td>').join('')+'</tr>';
  }).join('');
- card.insertAdjacentHTML('beforeend','<div class="monthly-product-scroll" data-product-scroll="'+month+'" tabindex="0" aria-label="All products for '+month+'"><table><thead><tr>'+headers+'</tr></thead><tbody>'+body+'</tbody></table></div>'+monthlyInventoryNotes());
+ const notes=monthlyInventoryNotes();
+ card.insertAdjacentHTML('beforeend','<div class="monthly-product-scroll" data-product-scroll="'+month+'" tabindex="0" aria-label="All products for '+month+'"><table><thead><tr>'+headers+'</tr></thead><tbody>'+body+'</tbody></table></div><details class="monthly-product-notes"><summary>Notes</summary>'+notes+'</details>');
  return holder.innerHTML;
 }
 function bindMonthlyProductTables(){
@@ -156,6 +157,7 @@ renderProductAnalysis=function(...args){
   if(dashboard&&originals)dashboard.monthlyProducts=originals;
  }
 };
+
 
 
 
