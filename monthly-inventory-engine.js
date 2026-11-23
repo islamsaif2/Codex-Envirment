@@ -34,7 +34,7 @@ function estimateInventoryDemand(eligible,day) {
 }
 function buildMonthlyInventory(history,orderRows,today) {
   const variants=new Map();
-  const nameIds=new Map(),sales=new Map(),badSales=new Set(),badUnits=new Set(),sold=new Map();
+  const nameIds=new Map(),sales=new Map(),uncertainSales=new Set(),badUnits=new Set(),sold=new Map();
   const addAlias=(product,size,id)=>{
     const key=inventoryKey(product)+'|'+inventorySize(size);
     if(!nameIds.has(key))nameIds.set(key,new Set());
@@ -42,24 +42,27 @@ function buildMonthlyInventory(history,orderRows,today) {
   };
   const dates=(history[0]||[]).map(inventoryDay);
   let duplicateConflicts=0;
-  for(const row of history.slice(1)){
-    const store=String(row[0]||''),id=String(row[1]||'');
-    if(!id||!row[2])continue;
-    const source=store+'|'+id;
-    const product=String(row[2]);
-    const key=source;
+  const records=history.slice(1).filter(row=>row[1]&&row[2]).map(row=>({
+    row,rank:dates.reduce((n,date,col)=>n+(col>=5&&date&&date<today&&inventoryNumber(row[col])!==null?1:0),0)
+  }));
+  for(const {row,rank} of records){
+    const product=String(row[2]),size=inventorySize(row[3]);
+    const key=inventoryKey(product)+'|'+size;
     let item=variants.get(key);
-    if(!item){item={id:key,product,size:String(row[3]||''),stock:new Map(),conflicts:new Set(),ambiguous:false};variants.set(key,item);}
-    addAlias(row[2],row[3],key);
-    addAlias(product,row[3],key);
+    if(!item){item={id:key,product,size,stock:new Map(),ranks:new Map(),conflicts:new Set(),ambiguous:false};variants.set(key,item);}
+    addAlias(product,size,key);
     for(let col=5;col<dates.length;col++){
       const date=dates[col],stock=inventoryNumber(row[col]);
       if(!date||date>=today||stock===null)continue;
-      if(item.stock.has(date)&&item.stock.get(date)!==stock){
-        item.conflicts.add(date);duplicateConflicts++;
-      }else item.stock.set(date,stock);
+      const oldRank=item.ranks.get(date);
+      // Several temporary Shopify IDs repeat a size in this sheet. Use its
+      // most complete history record, with short records filling only gaps.
+      if(oldRank===undefined||rank>oldRank){
+        item.stock.set(date,stock);item.ranks.set(date,rank);item.conflicts.delete(date);
+      }else if(rank===oldRank&&item.stock.get(date)!==stock)item.conflicts.add(date);
     }
   }
+  duplicateConflicts=[...variants.values()].reduce((n,v)=>n+v.conflicts.size,0);
   const headers=orderRows[0]||[];
   const column=name=>headers.findIndex(h=>inventoryKey(h)===inventoryKey(name));
   const dateCol=column('Day'),linesCol=column('Sales (Product title, Unit price)'),sizeCol=column('Product variant only');
@@ -72,25 +75,26 @@ function buildMonthlyInventory(history,orderRows,today) {
     const lines=String(row[linesCol]||'').replace(/\r/g,'').split('\n').filter(x=>x.trim());
     const sizes=String(row[sizeCol]||'').replace(/\r/g,'').split('\n');
     const qty=inventoryNumber(row[qtyCol]);
-    const reliable=Number.isInteger(qty)&&qty>0&&sizes.length===lines.length&&(qty===lines.length||lines.length===1);
+    const titles=lines.map(line=>line.replace(/,\s*(?:(?:EGP|E£|LE|\$)\s*)?[\d,.]+\s*$/i,'').trim());
+    const productKeys=[...new Set(titles.map(inventoryKey))];
+    const usableQty=Number.isInteger(qty)&&qty>=lines.length&&qty>0;
+    const exactLines=usableQty&&sizes.length===lines.length&&(qty===lines.length||lines.length===1);
+    if(productKeys.length===1&&usableQty){
+      const k=productKeys[0]+'|'+day.slice(0,7);
+      sold.set(k,(sold.get(k)||0)+qty);
+    }
     for(let i=0;i<lines.length;i++){
-      const title=lines[i].replace(/,\s*(?:(?:EGP|E£|LE|\$)\s*)?[\d,.]+\s*$/i,'').trim();
-      const product=title;
-      const p=inventoryKey(product),month=day.slice(0,7),monthKey=p+'|'+month;
-      if(!reliable){badSales.add(monthKey);badUnits.add(monthKey);continue;}
-      const units=lines.length===1?qty:1; sold.set(monthKey,(sold.get(monthKey)||0)+units);
-      const ids=nameIds.get(inventoryKey(title)+'|'+inventorySize(sizes[i]));
-      let candidates=[...(ids||[])];
-      if(candidates.length>1){
-        const yesterday=new Date(Date.parse(day)-86400000).toISOString().slice(0,10);
-        candidates=candidates.filter(id=>{
-          const variant=variants.get(id);
-          return !variant.conflicts.has(day)&&variant.stock.has(day)&&
-            (variant.stock.get(day)>0||(!variant.conflicts.has(yesterday)&&variant.stock.get(yesterday)>0));
-        });
+      const product=titles[i],key=inventoryKey(product),monthKey=key+'|'+day.slice(0,7);
+      const units=lines.length===1&&usableQty?qty:1;
+      if(productKeys.length!==1||!usableQty)sold.set(monthKey,(sold.get(monthKey)||0)+units);
+      if(!usableQty||productKeys.length>1&&!exactLines)badUnits.add(monthKey);
+      const ids=nameIds.get(key+'|'+inventorySize(sizes[i]));
+      if(ids?.size!==1||!exactLines){
+        if(ids?.size)for(const id of ids)uncertainSales.add(id+'|'+day);
+        else for(const variant of variants.values())if(inventoryKey(variant.product)===key)uncertainSales.add(variant.id+'|'+day);
+        continue;
       }
-      if(candidates.length!==1){badSales.add(monthKey);continue;}
-      const id=candidates[0];
+      const id=[...ids][0];
       if(!sales.has(id))sales.set(id,new Map());
       const daily=sales.get(id);daily.set(day,(daily.get(day)||0)+units);
       const variant=variants.get(id);
@@ -118,7 +122,7 @@ function buildMonthlyInventory(history,orderRows,today) {
       const previous=variant.conflicts.has(yesterday)?null:variant.stock.get(yesterday);
       const unitsToday=units.get(date)||0;
       const threshold=estimate.demand??(eligible.length?eligible.slice(-28).reduce((n,r)=>n+r.units,0)/Math.min(28,eligible.length):1);
-      if(!badSales.has(inventoryKey(variant.product)+'|'+date.slice(0,7))&&!variant.ambiguous&&stock>0&&previous>0&&stock>=Math.max(1,threshold,unitsToday)&&previous>=Math.max(1,threshold))eligible.push({date,time:Date.parse(date),units:unitsToday});
+      if(!uncertainSales.has(variant.id+'|'+date)&&!variant.ambiguous&&stock>0&&previous>0&&stock>=Math.max(1,threshold,unitsToday)&&previous>=Math.max(1,threshold))eligible.push({date,time:Date.parse(date),units:unitsToday});
     }
     variant.series=series;
   }
@@ -151,16 +155,16 @@ function buildMonthlyInventory(history,orderRows,today) {
         daily.push({date,stock:full?stock:null,demand:full&&modelled===active.length?dayDemand:null,lost:full&&modelled===active.length?dayLost:null});
       }
       const coverage=expected?observed/expected:0,modelCoverage=expected?demandDays/expected:0;
-      const enough=coverage>=.7&&modelCoverage>=.7&&!badSales.has(key+'|'+month);
-      products.push({name:product.name,month,avgStock:coverage>=.7&&complete>=.7*expectedDates&&complete?stockSum/complete:null,
+      const enough=coverage>=.7&&modelCoverage>=.7;
+      products.push({name:product.name,month,avgStock:coverage>=.7&&complete?stockSum/complete:null,
         coverage:enough&&demand>0?served/demand:null,availability:enough&&demand>0?available/demand:null,
-        lostUnits:enough?lost:null,unitsSold:badUnits.has(key+'|'+month)?null:sold.get(key+'|'+month)||0,
+        lostUnits:enough?lost:null,unitsSold:sold.get(key+'|'+month)||0,unitsSoldExact:!badUnits.has(key+'|'+month),
         snapshotCoverage:coverage,modelCoverage,completeDays:complete,completeDayCoverage:expectedDates?complete/expectedDates:0,observedVariantDays:observed,expectedVariantDays:expected,
         confidence:!enough?'Insufficient Data':confidence.has('Low confidence')?'Low confidence':confidence.has('Historical fallback')?'Historical fallback':coverage<.9||complete<.9*expectedDates?'Partial history':'Reliable',
         daily});
     }
   }
-  return {products,duplicateConflicts,asOf:today,method:'Conditional 70/30 · recent 28d ≥7 eligible days; older preceding 90d ≥14. Historical fallback ≤365d. Closing-snapshot approximation.'};
+  return {products,duplicateConflicts,asOf:today,historyResolution:'Product + normalized size; most complete record takes precedence per date. Equal-completeness conflicts remain unknown.',method:'Conditional 70/30 · recent 28d ≥7 eligible days; older preceding 90d ≥14. Historical fallback ≤365d. Closing-snapshot approximation.'};
 }
 async function readMonthlyInventory(env,business) {
   const key=business.spreadsheetId,old=inventoryMonthlyCache.get(key);
@@ -172,6 +176,7 @@ async function readMonthlyInventory(env,business) {
   pending.catch(()=>{if(inventoryMonthlyCache.get(key)?.pending===pending)inventoryMonthlyCache.delete(key);});
   return pending;
 }
+
 
 
 

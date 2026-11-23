@@ -1,5 +1,5 @@
 const monthlyInventoryState={business:'',loading:false,data:null,error:'',request:0};
-const monthlyInventoryDescriptions={avgStock:'Mean of total recorded variant stock on complete historical days; requires at least 70% complete-day coverage.',coverage:'Sum of min(stock, estimated demand) divided by sum of estimated demand, for supported variant-days.',availability:'Estimated demand from adequately stocked variants divided by total estimated demand.',lostUnits:'Sum of max(0, estimated demand minus stock) on supported dates. An estimate, without extrapolation across missing dates.',unitsSold:'Actual Shopify units from item quantities and product lines, across the existing monthly order population.'};
+const monthlyInventoryDescriptions={avgStock:'Mean of total recorded variant stock on complete historical days; requires at least 70% variant-day snapshot coverage. The tooltip lists the complete days used.',coverage:'Sum of min(stock, estimated demand) divided by sum of estimated demand, for supported variant-days.',availability:'Estimated demand from adequately stocked variants divided by total estimated demand.',lostUnits:'Sum of max(0, estimated demand minus stock) on supported dates. An estimate, without extrapolation across missing dates.',unitsSold:'Shopify units from item quantities and product lines. ≥ marks a known minimum when a multi-product order lacks per-line quantities.'};
 const monthlyInventoryFields={
  avgStock:'AVG Daily Stock',coverage:'Inventory Coverage %',availability:'Demand-Weighted Availability %',lostUnits:'Estimated Lost Units',unitsSold:'Units Sold'
 };
@@ -7,7 +7,7 @@ function monthlyInventoryNotes(){
  return '<div class="monthly-inventory-notes" title="'+esc(Object.values(monthlyInventoryDescriptions).join(' '))+'">'+
  '<span>AVG Daily Stock averages recorded daily variant stock; missing snapshots stay unknown.</span>'+
  '<span>Coverage = fulfilled estimated demand ÷ estimated demand; availability weights adequately stocked variants by demand.</span>'+
- '<span>Lost Units estimates stock-constrained demand; Units Sold uses actual Shopify quantities and existing order rules.</span>'+
+ '<span>Lost Units estimates stock-constrained demand; Units Sold uses Shopify quantities; ≥ means some mixed-order quantities cannot be allocated.</span>'+
  '<span>Demand uses 70% prior 28d + 30% preceding 90d, requiring 7/14 eligible days; otherwise recent or historical fallback.</span>'+
  '<span>Closing snapshots approximate daily availability. Missing history shows Insufficient Data; older fallback has lower confidence.</span></div>';
 }
@@ -36,11 +36,11 @@ function monthlyInventoryItem(name,month){
 function monthlyInventoryDisplay(row,key){
  if(!row||!Number.isFinite(row[key]))return 'Insufficient Data';
  if(['coverage','availability'].includes(key))return pct(row[key]);
- return Number(row[key]).toLocaleString('en',{maximumFractionDigits:key==='unitsSold'?0:1});
+ return (key==='unitsSold'&&row.unitsSoldExact===false?'≥ ':'')+Number(row[key]).toLocaleString('en',{maximumFractionDigits:key==='unitsSold'?0:1});
 }
 function monthlyInventoryTooltip(row){
  if(!row)return monthlyInventoryState.error?'History source unavailable':'Historical metrics are loading or unavailable';
- return row.confidence+' · snapshots '+pct(row.snapshotCoverage)+' · demand evidence '+pct(row.modelCoverage)+' · '+row.completeDays+' complete stock days';
+ return row.confidence+' · snapshots '+pct(row.snapshotCoverage)+' · demand evidence '+pct(row.modelCoverage)+' · '+row.completeDays+' complete stock days'+(row.unitsSoldExact===false?' · Units Sold is a known minimum; some mixed-product quantities cannot be allocated':'');
 }
 function monthlyInventoryProductCard(markup,month){
  const holder=document.createElement('div');holder.innerHTML=markup;
@@ -101,6 +101,7 @@ renderProductAnalysis=function(...args){
   if(dashboard&&originals)dashboard.monthlyProducts=originals;
  }
 };
+
 
 
 
