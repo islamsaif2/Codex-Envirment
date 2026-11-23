@@ -1,0 +1,9 @@
+.monthly-inventory-notes{font-size:10px;color:var(--muted,#687989);line-height:1.25;margin-top:7px}
+.monthly-inventory-notes span{display:block}
+.monthly-inventory-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;flex-basis:100%;width:100%;margin-top:4px}
+.monthly-inventory-grid span{min-width:0}
+.monthly-inventory-grid small{font-size:8px!important;line-height:1.2;white-space:normal}
+.monthly-inventory-grid b{display:block;font-size:10px;font-weight:650;white-space:normal}
+.db-v7-products ol>li{flex-wrap:wrap}
+.monthly-inventory-confidence{font-size:9px!important;flex-basis:100%;color:var(--muted,#687989)}
+.monthly-inventory-notes span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

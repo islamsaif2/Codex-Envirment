@@ -11,3 +11,5 @@ await import('./enhance-diagnostic-v3.mjs');
 await import('./enhance-daily-performance-v7.mjs');
 // Daily Performance V8: weekday dates, six card slots and prior channel comparisons.
 await import('./enhance-daily-performance-v8.mjs');
+
+await import('./enhance-monthly-inventory.mjs');
