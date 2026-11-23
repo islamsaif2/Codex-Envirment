@@ -1113,12 +1113,9 @@ const journeyColumn=key=>mapping.has(key)?mapCol(mapping,key,"orders.range",orde
       xlarge:"xl",extralarge:"xl",xxlarge:"xxl",xxxlarge:"xxxl","2xl":"xxl","3xl":"xxxl","4xl":"xxxxl"};
     return aliases[label]||label;
   };
-  // Inventory tab must only publish variants with a real Shopify stock snapshot.
-  // Historical-only rows can exist in Inventory Tracking but are not live variants.
-  const hasShopifyStockSnapshot = row => String(row[0]??"").startsWith("gid://shopify/ProductVariant/") && dateCandidates(row[9]).length > 0;
   const currentSizes=new Map();
   for(const variant of inventoryRange?mappedDataRows(inventoryRaw,inventoryRange):[]){
-    if(!hasShopifyStockSnapshot(variant))continue;
+    if(!String(variant[0]??"").startsWith("gid://shopify/ProductVariant/"))continue;
     const key=productTitleKey(variant[1]),size=sizeKey(variant[2]);
     const sizes=currentSizes.get(key)||new Set();
     if(size)sizes.add(size);
@@ -1168,7 +1165,7 @@ const journeyColumn=key=>mapping.has(key)?mapCol(mapping,key,"orders.range",orde
     status:String((inventoryRaw[1]?.[21]||inventoryRaw[6]?.[23])??""),
     demandBasis:String((inventoryRaw[2]?.[21]||inventoryRaw[11]?.[23])??""),
     updated:String(inventoryRaw[1]?.[9]??""),
-    variants:mappedDataRows(inventoryRaw,inventoryRange).filter(hasShopifyStockSnapshot).map(r=>{
+    variants:mappedDataRows(inventoryRaw,inventoryRange).filter(r=>String(r[0]??"").startsWith("gid://shopify/ProductVariant/")).map(r=>{
       const optional=i=>{
         const value=String(r[i]??"").trim().replace(/,/g,"");
         return value!==""&&Number.isFinite(Number(value))?Number(value):null;
