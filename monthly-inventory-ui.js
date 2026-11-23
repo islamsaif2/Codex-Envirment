@@ -53,7 +53,7 @@ function monthlyInventoryTooltip(row){
 const monthlyProductSort=new Map();
 const monthlyProductScroll=new Map();
 const monthlyProductColumns=[
- ['name','Product'],['orders','Orders'],
+ ['name','Product'],['stockHealth','Stock Health'],
  ['avgStock','AVG Stock'],['availability','Demand-Weighted Availability'],['lostUnits','Lost Units'],['unitsSold','Units Sold']
 ];
 function monthlyProductRows(data,month){
@@ -70,9 +70,9 @@ function monthlyProductRows(data,month){
 function monthlyInventoryProductCard(markup,month,data){
  const holder=document.createElement('div');holder.innerHTML=markup;
  const card=holder.querySelector('.db-v7-products');if(!card)return markup;
- const products=monthlyProductRows(data,month),sort=monthlyProductSort.get(month)||{key:'orders',asc:false};
+ const products=monthlyProductRows(data,month),sort=monthlyProductSort.get(month)||{key:'stockHealth',asc:false};
  products.sort((a,b)=>{
-  const x=a[sort.key],y=b[sort.key];
+  const x=a[sort.key==='stockHealth'?'availability':sort.key],y=b[sort.key==='stockHealth'?'availability':sort.key];
   if(sort.key==='name')return (sort.asc?1:-1)*a.name.localeCompare(b.name);
   if(!Number.isFinite(x))return Number.isFinite(y)?1:a.name.localeCompare(b.name);
   if(!Number.isFinite(y))return -1;
@@ -84,9 +84,10 @@ function monthlyInventoryProductCard(markup,month,data){
  const headers=monthlyProductColumns.map(([key,label])=>{
   const active=sort.key===key,order=active?(sort.asc?'ascending':'descending'):'none';
   const extras=key==='name'?'<span class="monthly-product-subsort">'+[['sessions','Sessions'],['cr','CR']].map(([field,text])=>'<button type="button" data-monthly-product-sort="'+field+'" data-product-month="'+month+'">'+text+(sort.key===field?(sort.asc?' ↑':' ↓'):' ↕')+'</button>').join(' · ')+'</span>':'';
-  return '<th scope="col" aria-sort="'+order+'"><button type="button" data-monthly-product-sort="'+key+'" data-product-month="'+month+'" title="'+esc(monthlyInventoryDescriptions[key]||label)+'">'+label+(active?(sort.asc?' ↑':' ↓') :' ↕')+'</button>'+extras+'</th>';
+  return '<th scope="col" aria-sort="'+order+'"><button type="button" data-monthly-product-sort="'+key+'" data-product-month="'+month+'" title="'+esc(key==='stockHealth'?'Stock Health uses Demand-Weighted Availability: the share of expected demand belonging to sizes with enough stock.':monthlyInventoryDescriptions[key]||label)+'">'+label+(active?(sort.asc?' ↑':' ↓') :' ↕')+'</button>'+extras+'</th>';
  }).join('');
  const value=(row,key)=>{
+  if(key==='stockHealth')return Number.isFinite(row.availability)?pct(row.availability):'Insufficient Data';
   if(Object.hasOwn(monthlyInventoryFields,key))return monthlyInventoryDisplay(row,key);
   if(key==='cr')return Number.isFinite(row.cr)?pct(row.cr):'—';
   return Number.isFinite(row[key])?fmt(row[key]):'—';
@@ -107,7 +108,7 @@ function bindMonthlyProductTables(){
  }
  root.querySelectorAll('[data-monthly-product-sort]').forEach(button=>button.onclick=()=>{
   const month=button.dataset.productMonth,key=button.dataset.monthlyProductSort;
-  const previous=monthlyProductSort.get(month)||{key:'orders',asc:false};
+  const previous=monthlyProductSort.get(month)||{key:'stockHealth',asc:false};
   monthlyProductSort.set(month,{key,asc:previous.key===key?!previous.asc:key==='name'});
   monthlyProductScroll.set(month,0);
   const strip=root.querySelector('.db-months'),x=strip?.scrollLeft||0,y=window.scrollY;
@@ -155,6 +156,7 @@ renderProductAnalysis=function(...args){
   if(dashboard&&originals)dashboard.monthlyProducts=originals;
  }
 };
+
 
 
 
