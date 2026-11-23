@@ -45,3 +45,17 @@ body.theme-dark .db-month .monthly-product-scroll thead th{
 .db-month .monthly-product-scroll tbody tr{height:auto}
 .monthly-inventory-notes,.db-v7-products .monthly-inventory-notes{font-size:6px;line-height:1.4}
 .monthly-inventory-notes span{white-space:normal;overflow:visible;text-overflow:clip}
+/* Product Analysis occupies exactly the two normal card columns. */
+.db-month .db-v7-grid>.db-v7-products{
+ grid-column:1 / -1;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;
+}
+.db-month .monthly-product-scroll{width:100%;max-width:100%}
+.db-month .monthly-product-scroll table{width:100%;min-width:0;max-width:100%;table-layout:fixed}
+.db-month .monthly-product-scroll th,.db-month .monthly-product-scroll td{min-width:0!important;max-width:none;overflow:hidden;padding:3px}
+.db-month .monthly-product-scroll th:first-child{width:32%;min-width:0!important}
+.db-month .monthly-product-scroll th:not(:first-child){width:13.6%}
+.db-month .monthly-product-scroll thead th button{width:100%;padding:1px;overflow-wrap:anywhere}
+.db-month .monthly-product-scroll .monthly-product-name{width:100%;min-width:0;gap:4px}
+.db-month .monthly-product-scroll .monthly-product-name>span{min-width:0;overflow-wrap:anywhere}
+.db-month .monthly-product-scroll .monthly-product-subsort{display:flex;justify-content:center;white-space:normal}
+.db-month .monthly-product-scroll .monthly-product-subsort button{width:auto;font-size:7px}
