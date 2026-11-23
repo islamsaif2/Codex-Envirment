@@ -25,3 +25,21 @@
 .monthly-product-name small{display:block;font-size:8px!important;color:var(--muted,#687989)}
 .monthly-product-subsort{display:block;font-size:8px;white-space:nowrap}
 .db-month .monthly-product-subsort button{font-size:8px;padding:1px}
+/* Product names are row labels, not sticky column headers. */
+.db-month .monthly-product-scroll tbody th{
+ position:static!important;top:auto!important;left:auto!important;z-index:auto!important;
+ overflow:visible;white-space:normal;vertical-align:middle;
+}
+.db-month .monthly-product-scroll thead{
+ position:sticky;top:0;z-index:5;background:#edf2f9;
+}
+.db-month .monthly-product-scroll thead th{
+ position:static!important;top:auto!important;background:#edf2f9!important;
+ color:#27384f;vertical-align:middle;box-shadow:0 1px 0 #cfd9e8;
+}
+body.theme-dark .db-month .monthly-product-scroll thead,
+body.theme-dark .db-month .monthly-product-scroll thead th{
+ background:#202c40!important;color:#e6edf7;
+}
+.monthly-product-scroll{isolation:isolate;position:relative;scroll-padding-top:48px}
+.db-month .monthly-product-scroll tbody tr{height:auto}
