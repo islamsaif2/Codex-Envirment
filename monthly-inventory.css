@@ -67,3 +67,11 @@ body.theme-dark .db-month .monthly-product-scroll thead th{
  width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;
 }
 .db-month .db-v7-products>.monthly-product-scroll{min-width:0;max-width:100%;overflow:auto}
+/* Reserve a readable two-card lane for monthly Product Analysis. */
+.db-month:has(.db-v7-products){min-width:480px!important}
+.db-month:has(.db-v7-products)>.db-card-grid{width:480px!important;max-width:480px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.db-month .monthly-product-scroll thead th{padding:4px 3px!important}
+.db-month .monthly-product-scroll .col-grip{display:none!important}
+.db-month .monthly-product-scroll thead th>button{
+ width:100%;min-width:0;padding:1px!important;white-space:normal;word-break:normal;overflow-wrap:normal;font-size:9px;line-height:1.25;
+}
