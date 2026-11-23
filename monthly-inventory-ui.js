@@ -12,7 +12,7 @@ const monthlyInventoryFields={
 function monthlyInventoryNotes(){
  const notes=[
   'AVG Daily Stock: Your average daily stock across all sizes. For example, 10 units one day and 30 the next gives 20. Only days with complete stock records are included.',
-  'Availability: Did you have enough stock in the sizes customers wanted? Popular sizes count more, so lots of XL stock cannot make up for a sold-out M if most customers buy M.',
+  'Demand-Weighted Availability: For each day in the month, we check whether each size had enough stock to meet its estimated daily demand. Days when popular sizes had enough stock count more toward the percentage; less-demanded sizes count less. Demand is estimated from the previous 28 days and the 90 days before those, using days with enough stock.',
   'Lost Units: Estimated demand that stock could not cover. If demand was 10 units and stock was 2, the estimate is 8. These are estimated missed units, not confirmed lost sales.',
   'Units Sold: Units identified in Shopify orders. ≥93 means at least 93 are confirmed; some orders contain several products without saying how many of each were bought.',
   'Demand estimate: We use sales from days with enough stock: 70% from the previous 28 days and 30% from the 90 days before those. We need 7 usable recent days and 14 older days. If recent weeks were sold out, we use usable older history. Daily stock records cannot show every stockout during the day. Missing records stay unknown; older estimates have lower confidence.'
