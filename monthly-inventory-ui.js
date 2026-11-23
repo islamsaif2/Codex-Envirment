@@ -1,12 +1,12 @@
 const monthlyInventoryState={business:'',loading:false,data:null,error:'',request:0};
 const monthlyInventoryDescriptions={avgStock:'Mean of total recorded variant stock on complete historical days; requires at least 70% variant-day snapshot coverage. The tooltip lists the complete days used.',coverage:'Sum of min(stock, estimated demand) divided by sum of estimated demand, for supported variant-days.',availability:'Estimated demand from adequately stocked variants divided by total estimated demand.',lostUnits:'Sum of max(0, estimated demand minus stock) on supported dates. An estimate, without extrapolation across missing dates.',unitsSold:'Shopify units from item quantities and product lines. ≥ marks a known minimum when a multi-product order lacks per-line quantities.'};
 const monthlyInventoryFields={
- avgStock:'AVG Daily Stock',coverage:'Inventory Coverage %',availability:'Demand-Weighted Availability %',lostUnits:'Estimated Lost Units',unitsSold:'Units Sold'
+ avgStock:'AVG Daily Stock',availability:'Demand-Weighted Availability %',lostUnits:'Estimated Lost Units',unitsSold:'Units Sold'
 };
 function monthlyInventoryNotes(){
  return '<div class="monthly-inventory-notes" title="'+esc(Object.values(monthlyInventoryDescriptions).join(' '))+'">'+
  '<span>AVG Daily Stock averages recorded daily variant stock; missing snapshots stay unknown.</span>'+
- '<span>Coverage = fulfilled estimated demand ÷ estimated demand; availability weights adequately stocked variants by demand.</span>'+
+ '<span>Availability weights adequately stocked variants by estimated demand.</span>'+
  '<span>Lost Units estimates stock-constrained demand; Units Sold uses Shopify quantities; ≥ means some mixed-order quantities cannot be allocated.</span>'+
  '<span>Demand uses 70% prior 28d + 30% preceding 90d, requiring 7/14 eligible days; otherwise recent or historical fallback.</span>'+
  '<span>Closing snapshots approximate daily availability. Missing history shows Insufficient Data; older fallback has lower confidence.</span></div>';
@@ -39,38 +39,84 @@ function monthlyInventoryDisplay(row,key){
  return (key==='unitsSold'&&row.unitsSoldExact===false?'≥ ':'')+Number(row[key]).toLocaleString('en',{maximumFractionDigits:key==='unitsSold'?0:1});
 }
 function monthlyInventoryTooltip(row){
- if(!row)return monthlyInventoryState.error?'History source unavailable':'Historical metrics are loading or unavailable';
+ if(!row||!Number.isFinite(row.snapshotCoverage))return monthlyInventoryState.error?'History source unavailable':'Historical metrics are loading or unavailable';
  return row.confidence+' · snapshots '+pct(row.snapshotCoverage)+' · demand evidence '+pct(row.modelCoverage)+' · '+row.completeDays+' complete stock days'+(row.unitsSoldExact===false?' · Units Sold is a known minimum; some mixed-product quantities cannot be allocated':'');
 }
-function monthlyInventoryProductCard(markup,month){
+const monthlyProductSort=new Map();
+const monthlyProductScroll=new Map();
+const monthlyProductColumns=[
+ ['name','Product'],['orders','Orders'],
+ ['avgStock','AVG Stock'],['availability','Demand-Weighted Availability'],['lostUnits','Lost Units'],['unitsSold','Units Sold']
+];
+function monthlyProductRows(data,month){
+ const rows=new Map();
+ for(const product of data.products||[])rows.set(monthlyInventoryName(product.name),{...product,cr:product.sessions>0?product.orders/product.sessions:null});
+ for(const history of monthlyInventoryState.data?.products||[]){
+  if(history.month!==month)continue;
+  const key=monthlyInventoryName(history.name);
+  const existing=rows.get(key)||{name:history.name,orders:0,sessions:null,cr:null,thumbnail:(dayBusiness.inventorySnapshot||[]).find(v=>monthlyInventoryName(v.product)===key)?.imageUrl||''};
+  rows.set(key,{...existing,...history});
+ }
+ return [...rows.values()];
+}
+function monthlyInventoryProductCard(markup,month,data){
  const holder=document.createElement('div');holder.innerHTML=markup;
  const card=holder.querySelector('.db-v7-products');if(!card)return markup;
- card.querySelector('.db-v7-product-columns')?.remove();
- card.querySelector('.db-v7-inventory-caption')?.remove();
- card.querySelectorAll('.db-v7-stock-badge').forEach(x=>x.remove());
- for(const li of card.querySelectorAll('ol > li')){
-  const title=li.querySelector('.db-rank-title strong');if(!title)continue;
-  const row=monthlyInventoryItem(title.textContent,month);
-  const metrics=document.createElement('div');metrics.className='monthly-inventory-grid';metrics.title=monthlyInventoryTooltip(row);
-  for(const [key,label] of Object.entries(monthlyInventoryFields)){
-   const cell=document.createElement('span'),small=document.createElement('small'),number=document.createElement('b');
-   small.textContent=label;cell.title=monthlyInventoryDescriptions[key];number.textContent=monthlyInventoryDisplay(row,key);cell.append(small,number);metrics.append(cell);
-  }
-  li.append(metrics);
-  const badge=document.createElement('small');badge.className='monthly-inventory-confidence';
-  badge.textContent=row?row.confidence+(row.snapshotCoverage<.9?' · '+pct(row.snapshotCoverage)+' snapshots':''):monthlyInventoryState.error?'History unavailable':'Loading history…';
-  badge.title=monthlyInventoryTooltip(row);li.append(badge);
- }
- card.insertAdjacentHTML('beforeend',monthlyInventoryNotes());
+ const products=monthlyProductRows(data,month),sort=monthlyProductSort.get(month)||{key:'orders',asc:false};
+ products.sort((a,b)=>{
+  const x=a[sort.key],y=b[sort.key];
+  if(sort.key==='name')return (sort.asc?1:-1)*a.name.localeCompare(b.name);
+  if(!Number.isFinite(x))return Number.isFinite(y)?1:a.name.localeCompare(b.name);
+  if(!Number.isFinite(y))return -1;
+  return (sort.asc?x-y:y-x)||a.name.localeCompare(b.name);
+ });
+ const heading=card.querySelector('h4');
+ heading.innerHTML=(heading.querySelector('svg')?.outerHTML||'')+' Product Analysis <small>'+products.length+' products</small>';
+ card.replaceChildren(heading);
+ const headers=monthlyProductColumns.map(([key,label])=>{
+  const active=sort.key===key,order=active?(sort.asc?'ascending':'descending'):'none';
+  const extras=key==='name'?'<span class="monthly-product-subsort">'+[['sessions','Sessions'],['cr','CR']].map(([field,text])=>'<button type="button" data-monthly-product-sort="'+field+'" data-product-month="'+month+'">'+text+(sort.key===field?(sort.asc?' ↑':' ↓'):' ↕')+'</button>').join(' · ')+'</span>':'';
+  return '<th scope="col" aria-sort="'+order+'"><button type="button" data-monthly-product-sort="'+key+'" data-product-month="'+month+'" title="'+esc(monthlyInventoryDescriptions[key]||label)+'">'+label+(active?(sort.asc?' ↑':' ↓') :' ↕')+'</button>'+extras+'</th>';
+ }).join('');
+ const value=(row,key)=>{
+  if(Object.hasOwn(monthlyInventoryFields,key))return monthlyInventoryDisplay(row,key);
+  if(key==='cr')return Number.isFinite(row.cr)?pct(row.cr):'—';
+  return Number.isFinite(row[key])?fmt(row[key]):'—';
+ };
+ const body=products.map(row=>{
+  const image=/^https:\/\//i.test(row.thumbnail||'')?'<img src="'+esc(row.thumbnail)+'" alt="" loading="lazy" onerror="this.hidden=true">':'';
+  return '<tr>'+monthlyProductColumns.map(([key])=>key==='name'?'<th scope="row"><span class="monthly-product-name">'+image+'<span title="'+esc(monthlyInventoryTooltip(row))+'">'+esc(row.name)+'<small>'+value(row,'sessions')+' sessions · '+value(row,'cr')+' CR</small></span></span></th>':
+    '<td title="'+esc(monthlyInventoryTooltip(row))+'">'+value(row,key)+'</td>').join('')+'</tr>';
+ }).join('');
+ card.insertAdjacentHTML('beforeend','<div class="monthly-product-scroll" data-product-scroll="'+month+'" tabindex="0" aria-label="All products for '+month+'"><table><thead><tr>'+headers+'</tr></thead><tbody>'+body+'</tbody></table></div>'+monthlyInventoryNotes());
  return holder.innerHTML;
+}
+function bindMonthlyProductTables(){
+ const root=$('content');if(!root)return;
+ for(const area of root.querySelectorAll('[data-product-scroll]')){
+  area.scrollTop=monthlyProductScroll.get(area.dataset.productScroll)||0;
+  area.onscroll=()=>monthlyProductScroll.set(area.dataset.productScroll,area.scrollTop);
+ }
+ root.querySelectorAll('[data-monthly-product-sort]').forEach(button=>button.onclick=()=>{
+  const month=button.dataset.productMonth,key=button.dataset.monthlyProductSort;
+  const previous=monthlyProductSort.get(month)||{key:'orders',asc:false};
+  monthlyProductSort.set(month,{key,asc:previous.key===key?!previous.asc:key==='name'});
+  monthlyProductScroll.set(month,0);
+  const strip=root.querySelector('.db-months'),x=strip?.scrollLeft||0,y=window.scrollY;
+  renderDayBusiness();
+  const updated=root.querySelector('.db-months');if(updated)updated.scrollLeft=x;
+  window.scrollTo(0,y);
+  root.querySelector('[data-product-month="'+month+'"][data-monthly-product-sort="'+key+'"]')?.focus({preventScroll:true});
+ });
 }
 const previousMonthlyInventoryCards=dayBusinessMonthCards;
 dayBusinessMonthCards=function(rows,data,keys,icon,month){
  const original=previousMonthlyInventoryCards(rows,data,keys,icon,month);
- return keys.includes('products')?monthlyInventoryProductCard(original,month):original;
+ return keys.includes('products')?monthlyInventoryProductCard(original,month,data):original;
 };
 const previousMonthlyInventoryRender=renderDayBusiness;
-renderDayBusiness=function(...args){loadMonthlyInventory();return previousMonthlyInventoryRender.apply(this,args);};
+renderDayBusiness=function(...args){loadMonthlyInventory();const result=previousMonthlyInventoryRender.apply(this,args);bindMonthlyProductTables();return result;};
+dayBusinessCards.products=['Product Analysis','shopify'];
 Object.assign(weeklyProductFields,monthlyInventoryFields);
 const previousMonthlyInventoryValue=weeklyProductValue;
 weeklyProductValue=function(item,key){
@@ -101,6 +147,8 @@ renderProductAnalysis=function(...args){
   if(dashboard&&originals)dashboard.monthlyProducts=originals;
  }
 };
+
+
 
 
 

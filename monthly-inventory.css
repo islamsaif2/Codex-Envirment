@@ -7,3 +7,21 @@
 .db-v7-products ol>li{flex-wrap:wrap}
 .monthly-inventory-confidence{font-size:9px!important;flex-basis:100%;color:var(--muted,#687989)}
 .monthly-inventory-notes span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-month .db-month-card.db-v7-products{height:300px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:4px;min-width:0}
+.db-v7-products h4{display:flex;align-items:center;gap:4px;margin:0!important}
+.db-v7-products h4 small{margin-left:auto;font-size:9px}
+.monthly-product-scroll{min-height:0;overflow:auto;overscroll-behavior:contain}
+.db-month .monthly-product-scroll table{width:100%;min-width:520px;border-collapse:separate;border-spacing:0;line-height:1.2}
+.db-month .monthly-product-scroll thead th{position:sticky;top:0;z-index:2;background:var(--card,#f3f6fa);border-bottom:1px solid var(--line,#dce3ed);padding:3px}
+.db-month .monthly-product-scroll th button{font:inherit;font-size:9px;line-height:1.2;border:0;background:none;color:inherit;padding:2px;cursor:pointer;white-space:normal}
+.db-month .monthly-product-scroll td,.db-month .monthly-product-scroll tbody th{font-size:10px;padding:4px;border-bottom:1px solid var(--line,#e7ecf2);text-align:center;height:29px;min-width:0}
+.db-month .monthly-product-scroll tbody th{background:transparent;color:inherit;font-weight:600;text-align:left;border-right:0}
+.monthly-product-name{display:flex;align-items:center;gap:5px;width:130px;white-space:normal}
+.monthly-product-name img{width:22px;height:25px;object-fit:cover;border-radius:3px;flex:none}
+.monthly-product-name>span{font-size:9px;line-height:1.2}
+.db-v7-products .monthly-inventory-notes{font-size:9px;margin:0;line-height:1.2}
+.db-month .monthly-product-scroll table{min-width:0;table-layout:auto}
+.monthly-product-name{width:110px;max-width:100%}
+.monthly-product-name small{display:block;font-size:8px!important;color:var(--muted,#687989)}
+.monthly-product-subsort{display:block;font-size:8px;white-space:nowrap}
+.db-month .monthly-product-subsort button{font-size:8px;padding:1px}

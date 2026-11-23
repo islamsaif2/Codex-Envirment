@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 let source=fs.readFileSync('worker.mjs','utf8');
+const productSource="products:top(m.products,'orders').map";
+if(!source.includes(productSource))throw Error('Monthly product source anchor missing');
+source=source.replace(productSource,"products:[...m.products.values()].sort((a,b)=>b.orders-a.orders||a.name.localeCompare(b.name)).map");
+source=source.replace('dashboard-cache:v22:','dashboard-cache:v23:');
 const engine=fs.readFileSync('monthly-inventory-engine.js','utf8');
 new vm.Script(engine);
 source=source.replace('async function buildDashboard(',()=>engine+'\nasync function buildDashboard(');
