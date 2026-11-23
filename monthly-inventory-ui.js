@@ -84,13 +84,13 @@ function monthlyInventoryProductCard(markup,month,data){
  const headers=monthlyProductColumns.map(([key,label])=>{
   const active=sort.key===key,order=active?(sort.asc?'ascending':'descending'):'none';
   const extras=key==='name'?'<span class="monthly-product-subsort">'+[['sessions','Sessions'],['cr','CR']].map(([field,text])=>'<button type="button" data-monthly-product-sort="'+field+'" data-product-month="'+month+'">'+text+(sort.key===field?(sort.asc?' ↑':' ↓'):' ↕')+'</button>').join(' · ')+'</span>':'';
-  return '<th scope="col" aria-sort="'+order+'"><button type="button" data-monthly-product-sort="'+key+'" data-product-month="'+month+'" title="'+esc(key==='stockHealth'?'Stock Health uses Demand-Weighted Availability: Very bad below 20%; Bad 20–under 40%; Average 40–under 60%; Good 60–under 80%; Perfect 80–100%.':monthlyInventoryDescriptions[key]||label)+'">'+label+(active?(sort.asc?' ↑':' ↓') :' ↕')+'</button>'+extras+'</th>';
+  return '<th scope="col" aria-sort="'+order+'"><button type="button" data-monthly-product-sort="'+key+'" data-product-month="'+month+'" title="'+esc(key==='stockHealth'?'Stock Health uses Demand-Weighted Availability: Very bad below 50%; Bad 50–under 70%; Average 70–under 80%; Good 80–under 90%; Perfect 90–100%.':monthlyInventoryDescriptions[key]||label)+'">'+label+(active?(sort.asc?' ↑':' ↓') :' ↕')+'</button>'+extras+'</th>';
  }).join('');
  const value=(row,key)=>{
   if(key==='stockHealth'){
    if(!Number.isFinite(row.availability))return '<span class="stock-health-badge unknown">Insufficient Data</span>';
    const value=row.availability;
-   const [label,tone]=value<.2?['Very bad','very-bad']:value<.4?['Bad','bad']:value<.6?['Average','average']:value<.8?['Good','good']:['Perfect','perfect'];
+   const [label,tone]=value<.5?['Very bad','very-bad']:value<.7?['Bad','bad']:value<.8?['Average','average']:value<.9?['Good','good']:['Perfect','perfect'];
    return '<span class="stock-health-badge '+tone+'" title="'+pct(value)+' demand-weighted availability">'+label+'</span>';
   }
   if(Object.hasOwn(monthlyInventoryFields,key))return monthlyInventoryDisplay(row,key);
@@ -162,6 +162,7 @@ renderProductAnalysis=function(...args){
   if(dashboard&&originals)dashboard.monthlyProducts=originals;
  }
 };
+
 
 
 
