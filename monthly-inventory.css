@@ -87,3 +87,10 @@ body.theme-dark .db-month .monthly-product-scroll thead th{
 }
 .monthly-product-notes>.monthly-inventory-notes span+span{margin-top:6px}
 body.theme-dark .db-v7-products .monthly-product-notes>.monthly-inventory-notes{background:var(--card,#172033)}
+.stock-health-badge{display:inline-block;max-width:100%;padding:3px 5px;border:1px solid transparent;border-radius:5px;font-size:9px;font-weight:700;line-height:1.2;white-space:normal}
+.stock-health-badge.very-bad{background:#ffe1e4;color:#a51e35;border-color:#f8b8c1}
+.stock-health-badge.bad{background:#ffebd5;color:#9a4610;border-color:#f5c69b}
+.stock-health-badge.average{background:#fff3c7;color:#805a00;border-color:#ebd58b}
+.stock-health-badge.good{background:#e2f4dc;color:#376b1f;border-color:#bddba9}
+.stock-health-badge.perfect{background:#d2f1e5;color:#096145;border-color:#9ed8c1}
+.stock-health-badge.unknown{background:#edf0f5;color:#5e6a7a;border-color:#d6dde6;font-size:8px}
