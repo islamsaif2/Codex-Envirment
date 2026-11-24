@@ -13,3 +13,4 @@ await import('./enhance-daily-performance-v7.mjs');
 await import('./enhance-daily-performance-v8.mjs');
 
 await import('./enhance-monthly-inventory.mjs');
+await import('./enhance-price-analysis.mjs');

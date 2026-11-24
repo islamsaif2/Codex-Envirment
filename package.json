@@ -10,6 +10,7 @@
   "scripts": {
     "build": "node assemble.mjs",
     "start": "node server.mjs",
-    "dev": "npm run build && npm start"
+    "dev": "npm run build && npm start",
+    "test:price-analysis": "node tests/price-analysis.test.cjs"
   }
 }

@@ -1,0 +1,20 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
+const context={console,Date,Map,Set,Intl};vm.createContext(context);
+vm.runInContext(fs.readFileSync('price-analysis-core.js','utf8')+'\n'+fs.readFileSync('price-analysis-data.js','utf8')+'\nglobalThis.C=PriceChangeCore;',context);
+const C=context.C;
+const product={id:'p',name:'P',daily:C.days('2026-01-01','2026-02-15').map(date=>({date,price:date<'2026-01-20'?100:date<'2026-02-05'?90:80,orders:date<'2026-01-20'?1:2,sessions:10,revenue:date<'2026-01-20'?100:180,revenueExact:true,units:1,unitsExact:true,deliveredOrders:0,returnedOrders:0,deliveredRevenue:0}))};
+const e=C.events(product,14,'2026-02-15')[0];
+assert.equal(e.days,14);assert.equal(e.before.orders,14);assert.equal(e.before.cr,.1);assert.equal(e.after.cr,.2);assert.equal(e.crChange,1);assert.equal(e.priceChange,-.1);assert.equal(e.afterFrom,'2026-01-21');assert.equal(e.afterTo,'2026-02-03');
+assert(C.events(product,14,'2026-01-20')[0].days===0);
+assert.equal(C.change(1,0),null);
+assert.equal(C.aggregate([{orders:9,sessions:null,units:0,revenue:0,deliveredOrders:0,returnedOrders:0,deliveredRevenue:0},{orders:1,sessions:10,units:1,revenue:1,deliveredOrders:0,returnedOrders:0,deliveredRevenue:0}]).cr,.1);
+const orderHeader=Array(39).fill('');for(const [i,v]of [[0,'Day'],[1,'Order'],[11,'Sales (Product title, Unit price)'],[19,'Total shipping charges'],[20,'Discounts'],[24,'Items quantity in cart'],[33,'Shipping price after discount'],[38,'Order Status']])orderHeader[i]=v;
+const order=(id,text,q=1)=>{const r=Array(39).fill('');r[0]='2026-01-02';r[1]=id;r[11]=text;r[24]=q;r[38]='Delivered';return r;};
+const r=order('#1','P, EGP 100\nP, EGP 100',2);r[19]=20;r[33]=0;r[20]=40;
+const pages=[['Day','Page title','Sessions',null,null,null,null,null,null,'Page path'],['2026-01-02','P – Ultramedix',10,null,null,null,null,null,null,'/products/p']];
+const data=context.buildPriceAnalysisData(['Product','2026-01-01','2026-01-02'],[['P',100,90],['Other',100,90]],[orderHeader,r,r,order('#2','P, EGP 100\nOther, EGP 100',3)],pages,{today:'2026-01-03'});
+const day=data.products.find(p=>p.name==='P').daily[1];assert.equal(day.orders,2);assert.equal(day.sessions,10);assert.equal(day.unitsExact,false);assert.equal(day.revenueExact,false);assert.equal(day.deliveredOrders,2);
+const clean=context.buildPriceAnalysisData(['Product','2026-01-02'],[['P',90]],[orderHeader,r],pages,{today:'2026-01-03'}).products[0].daily[0];assert.equal(clean.revenue,180);assert.equal(clean.units,2);
+assert.equal(data.products[0].daily[0].sessions,null);assert.equal(data.stockAdjusted,false);
+console.log('PASS: balanced windows, transition exclusion, next-change limits, weighted CR, missing sessions, zero baseline, order deduplication, quantity ambiguity and discounts.');
+
