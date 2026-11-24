@@ -40,6 +40,7 @@ function buildPriceAnalysisData(headers,priceRows,orderRows,pageRows,config={}){
     for(const id of ids){
       const item=table.get(id);if(!item)continue;
       const value=item.map.get(date)||blank(date),own=lines.filter(l=>l.id===id);
+      if(value.price>0&&own.some(l=>Math.abs(l.price-value.price)>.011))value.priceComparable=false;
       value.orders++;value.units+=own.length*multiplier;value.unitsExact=value.unitsExact&&exact;
       value.revenue+=own.reduce((s,l)=>s+l.price*multiplier*adjustment,0);value.revenueExact=value.revenueExact&&exact;
       if(status==='delivered'){value.deliveredOrders++;value.deliveredRevenue+=own.reduce((s,l)=>s+l.price*multiplier*adjustment,0);}
@@ -63,7 +64,7 @@ function buildPriceAnalysisData(headers,priceRows,orderRows,pageRows,config={}){
   const end=[...dates,...pageDays,...orderDays].filter(d=>d<today).sort().at(-1)||dates.at(-1);
   const start=dates[0];
   const allDays=C.days(start,end);
-  const products=[...table.values()].map(item=>({id:item.id,name:item.name,image:item.image,
+  const products=[...table.values()].map(item=>({id:item.id,name:item.name,image:item.image,checkedTransitions:true,
     daily:allDays.map(date=>{const d=item.map.get(date)||blank(date);if(d.sessions===null&&pageDays.has(date))d.sessions=0;return d;})}));
   return {products,start,end,generatedAt:new Date().toISOString(),stockAdjusted:false,
     sources:{prices:config.priceSheet||'Price History',orders:config.orderSheet||'Order Tracking Details',sessions:config.pageSheet||'D by D Pages Analysis'},
@@ -80,11 +81,10 @@ async function readPriceAnalysis(env,business){
     ]);
     const mapping=parseWebsiteMapping(mappingRows),orders=mapRange(mapping,'orders.range'),pages=mapRange(mapping,'pages.range');
     const priceSheet=String(location[0]?.[0]||'Price History'),headerRow=Number(positions[0]?.[0])||1,firstRow=Number(positions[1]?.[0])||headerRow+1;
-    const [headerRaw,orderRows,pageRows,imageRows,metaRows]=await Promise.all([
+    const [headerRaw,orderRows,pageRows,imageRows]=await Promise.all([
       read(priceSheet,'A'+headerRow+':ZZZ'+headerRow),
       read(orders.sheet,orders.sheet==='Order Tracking Details'?'A1:BA':orders.value),read(pages.sheet,pages.value),
-      mapping.has('inventoryImages.range')?read(mapRange(mapping,'inventoryImages.range').sheet,mapRange(mapping,'inventoryImages.range').value).catch(()=>[]):Promise.resolve([]),
-      mapping.has('marketing.adSource')?read(mapRange(mapping,'marketing.adSource').sheet,mapRange(mapping,'marketing.adSource').value).catch(()=>[]):Promise.resolve([])
+      mapping.has('inventoryImages.range')?read(mapRange(mapping,'inventoryImages.range').sheet,mapRange(mapping,'inventoryImages.range').value).catch(()=>[]):Promise.resolve([])
     ]);
     const header=headerRaw[0]||[];let last=header.length-1;while(last>0&&!PriceChangeCore.date(header[last]))last--;
     let col='',n=last+1;while(n){n--;col=String.fromCharCode(65+n%26)+col;n=Math.floor(n/26);}
@@ -101,10 +101,6 @@ async function readPriceAnalysis(env,business){
     });
     const images=new Map();for(const row of imageRows)if(row[1]&&/^https?:\/\//.test(String(row[14]||'')))images.set(PriceChangeCore.key(row[1]),String(row[14]));
     for(const product of result.products)product.image=images.get(product.id)||'';
-    const adDays=new Map(),adRecords=new Map();
-    for(const row of metaRows){const date=PriceChangeCore.date(row[0]),spend=PriceChangeCore.number(row[7]);if(!date||spend===null)continue;const id=String(row[6]||'').trim();if(!id)continue;adRecords.set(date+'|'+id,{date,spend});}
-    for(const row of adRecords.values())adDays.set(row.date,(adDays.get(row.date)||0)+row.spend);
-    result.metaDaily=[...adDays].map(([date,spend])=>({date,spend}));
     return result;
   })();
   priceAnalysisCache.set(id,{pending,until:Date.now()+300000});

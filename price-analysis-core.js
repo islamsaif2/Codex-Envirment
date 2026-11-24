@@ -43,7 +43,8 @@ const PriceChangeCore = (() => {
     return ep.slice(1).flatMap((current,i)=>{
       const previous=ep[i];
       if(shift(previous.to,1)!==current.from||current.price===previous.price||current.from>through)return [];
-      const before=days(shift(previous.from,1),previous.to),after=days(shift(current.from,1),current.to<through?current.to:through);
+      const available=(period,end)=>days(product.checkedTransitions?period.from:shift(period.from,1),end).filter(d=>index.get(d)?.priceComparable!==false);
+      const before=available(previous,previous.to),after=available(current,current.to<through?current.to:through);
       let count=Math.min(window,before.length,after.length);
       // Full weeks contain the same weekday mix. Short regimes remain visible.
       if(count>=7)count=Math.floor(count/7)*7;
@@ -56,6 +57,7 @@ const PriceChangeCore = (() => {
         ordersChange:change(a.ordersPerDay,b.ordersPerDay),revenueChange:change(a.revenuePerDay,b.revenuePerDay),
         sensitivity:Number.isFinite(change(a.cr,b.cr))?change(a.cr,b.cr)/change(current.price,previous.price):null,
         requiredVolumeChange:previous.price/current.price-1,
+        normalizedResponse:change(a.cr,b.cr)!==null?change(a.cr,b.cr)/Math.abs(change(current.price,previous.price))*.1:null,
         status:!count?'Awaiting comparable days':a.cr===null||b.cr===null?'Sessions unavailable':count<7?'Short price period':a.trafficDays<count||b.trafficDays<count?'Partial sessions':'Comparable periods'}];
     });
   }
@@ -64,5 +66,36 @@ const PriceChangeCore = (() => {
     for(const r of product.daily)if(r.date>=from&&r.date<=to&&r.price>0){if(!map.has(r.price))map.set(r.price,[]);map.get(r.price).push(r);}
     return [...map].sort((a,b)=>a[0]-b[0]).map(([price,rows])=>({price,...aggregate(rows)}));
   }
-  return {key,date,number,shift,days,change,aggregate,episodes,events,priceLevels};
+  function combineEvents(events){
+    const groups=new Map();
+    for(const e of events){
+      if(!e.days||e.before.trafficDays<e.days*.7||e.after.trafficDays<e.days*.7)continue;
+      const k=[e.date,e.priceChange.toFixed(6),e.beforeFrom,e.beforeTo,e.afterFrom,e.afterTo,e.days].join('|');
+      if(!groups.has(k))groups.set(k,[]);groups.get(k).push(e);
+    }
+    const pool=items=>{
+      const sum=k=>items.reduce((n,x)=>n+(Number.isFinite(x[k])?x[k]:0),0);
+      const sessions=sum('sessions'),orders=items.reduce((n,x)=>n+(x.cr!==null&&x.sessions>0?x.cr*x.sessions:0),0);
+      return {sessions,orders,cr:sessions>0?orders/sessions:null,ordersPerDay:sum('ordersPerDay'),days:items[0].days};
+    };
+    return [...groups].map(([id,members])=>{
+      const base=members[0],before=pool(members.map(e=>e.before)),after=pool(members.map(e=>e.after)),crChange=change(after.cr,before.cr);
+      return {...base,id:'group|'+id,name:members.length===1?base.name:members.length+' products',image:members.length===1?base.image:'',
+        members,productCount:members.length,before,after,crChange,
+        normalizedResponse:crChange!==null?crChange/Math.abs(base.priceChange)*.1:null,
+        ordersChange:change(after.ordersPerDay,before.ordersPerDay)};
+    });
+  }
+  const usable=e=>Math.abs(e.priceChange)>=.01&&e.days>=1&&e.before.sessions>=20&&e.after.sessions>=20&&e.before.cr>0&&Number.isFinite(e.after.cr)&&Number.isFinite(e.normalizedResponse)&&e.before.trafficDays!==0&&e.after.trafficDays!==0;
+  function responseSummary(events,direction='down'){
+    const selected=events.filter(usable).filter(e=>direction==='up'?e.priceChange>0:e.priceChange<0);
+    let numerator=0,denominator=0;
+    // Weighted slope through the origin. Weighting also by squared price move
+    // avoids allowing a one-pound rounding change to dominate a 10% response.
+    for(const e of selected){const traffic=2*e.before.sessions*e.after.sessions/(e.before.sessions+e.after.sessions),w=traffic*e.priceChange*e.priceChange;numerator+=e.normalizedResponse*w;denominator+=w;}
+    return {response:denominator?numerator/denominator:null,comparisons:selected.length,
+      products:new Set(selected.flatMap(e=>e.members?e.members.map(x=>x.productId):[e.productId])).size,
+      sessions:selected.reduce((n,e)=>n+e.before.sessions+e.after.sessions,0)};
+  }
+  return {key,date,number,shift,days,change,aggregate,episodes,events,priceLevels,combineEvents,usable,responseSummary};
 })();

@@ -42,10 +42,16 @@ No reconstructed prices or product-specific pricing rules are embedded in code.
 
 Conversion is unique Shopify product orders divided by GA4 product-page sessions,
 summed before division. Missing traffic remains unknown. Comparisons use equally
-long stable-price windows, exclude transition days, and stop before another price
-change. Whole weeks preserve weekday mix; shorter regimes remain labelled.
-Stock availability is deliberately not included. Meta spend shown as context is
-store-wide. Revenue is not profit; ambiguous mixed-order quantities are unavailable.
+long available-price windows and stop before another price change. Days with
+order prices inconsistent with the daily price are excluded. Whole-week windows
+contain seven available days; shorter comparisons remain labelled.
+The simplified page pools the same products before/after shared price changes,
+and shows a conversion response normalized to a 10% price change, fitted with
+weights based on sessions and squared price-change magnitude. Price changes
+below 1% are excluded from this scaled metric to avoid rounding noise.
+Unusable comparisons are omitted from the main table, never filled with zeros.
+Stock availability is deliberately not included. The simplified page focuses on
+conversion comparisons and removes revenue, break-even and advertising panels.
 
 Price analysis source modules are `price-analysis-core.js`,
 `price-analysis-data.js`, `price-analysis-ui.js` and `price-analysis.css`, installed

@@ -17,4 +17,17 @@ const day=data.products.find(p=>p.name==='P').daily[1];assert.equal(day.orders,2
 const clean=context.buildPriceAnalysisData(['Product','2026-01-02'],[['P',90]],[orderHeader,r],pages,{today:'2026-01-03'}).products[0].daily[0];assert.equal(clean.revenue,180);assert.equal(clean.units,2);
 assert.equal(data.products[0].daily[0].sessions,null);assert.equal(data.stockAdjusted,false);
 console.log('PASS: balanced windows, transition exclusion, next-change limits, weighted CR, missing sessions, zero baseline, order deduplication, quantity ambiguity and discounts.');
+const checked={...product,checkedTransitions:true,daily:product.daily.map(r=>({...r}))};
+const checkedEvent=C.events(checked,14,'2026-02-15')[0];assert.equal(checkedEvent.afterFrom,'2026-01-20');
+checked.daily.find(r=>r.date==='2026-01-20').priceComparable=false;
+assert.equal(C.events(checked,14,'2026-02-15')[0].afterFrom,'2026-01-21');
+const synthetic={...e,id:'one',productId:'one',date:'2026-01-20',priceChange:-.2,days:7,before:{days:7,trafficDays:7,sessions:1000,orders:100,ordersPerDay:100/7,cr:.1},after:{days:7,trafficDays:7,sessions:1000,orders:140,ordersPerDay:20,cr:.14},crChange:.4,normalizedResponse:.2};
+assert(Math.abs(C.responseSummary([synthetic],'down').response-.2)<1e-10);
+const zero={...synthetic,id:'two',productId:'two',before:{...synthetic.before,orders:0,ordersPerDay:0,cr:0},after:{...synthetic.after,orders:20,ordersPerDay:20/7,cr:.02}};
+const pooled=C.combineEvents([synthetic,zero])[0];assert.equal(pooled.productCount,2);assert.equal(pooled.before.cr,.05);assert.equal(pooled.after.cr,.08);assert(C.usable(pooled));
+assert.equal(C.responseSummary([pooled],'down').products,2);
+assert.equal(C.usable({...synthetic,days:0}),false);
+assert.equal(C.usable({...synthetic,priceChange:-1/900}),false);
+assert.equal(C.usable({...synthetic,before:{...synthetic.before,cr:0}}),false);
+console.log('PASS: checked transition days, 10%-normalized conversion response, pooled All products including zero-baseline members, and unusable-row exclusion.');
 
