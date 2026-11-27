@@ -66,9 +66,49 @@ function buildPriceAnalysisData(headers,priceRows,orderRows,pageRows,config={}){
   const allDays=C.days(start,end);
   const products=[...table.values()].map(item=>({id:item.id,name:item.name,image:item.image,checkedTransitions:true,
     daily:allDays.map(date=>{const d=item.map.get(date)||blank(date);if(d.sessions===null&&pageDays.has(date))d.sessions=0;return d;})}));
-  return {products,start,end,generatedAt:new Date().toISOString(),stockAdjusted:false,
+  // Historical inventory: consolidate duplicate variant rows by normalized size.
+  // Blank cells are unknown, never zero. Only sizes with actual snapshots enter
+  // the catalog; conflicting populated duplicate records make a size unknown.
+  const inventory=config.inventoryRows||[],ih=inventory[0]||[],inventoryDates=ih.map(C.date),stock=new Map();
+  const sizeKey=v=>{const k=C.key(v);return ({xsmall:'xs','extra small':'xs',small:'s',medium:'m',large:'l',xlarge:'xl','extra large':'xl',xxlarge:'xxl','2xl':'xxl','3xl':'xxxl'})[k]||k;};
+  for(const row of inventory.slice(1)){
+    const id=C.key(row[2]),size=sizeKey(row[3]);if(!table.has(id)||!size)continue;
+    const vals=new Map();
+    for(let j=5;j<inventoryDates.length;j++){const d=inventoryDates[j],v=C.number(row[j]);if(d&&v!==null)vals.set(d,Math.max(0,v));}
+    if(!vals.size)continue;
+    if(!stock.has(id))stock.set(id,new Map());const sizes=stock.get(id);
+    if(!sizes.has(size))sizes.set(size,new Map());const series=sizes.get(size);
+    for(const [d,v] of vals){if(!series.has(d))series.set(d,v);else if(series.get(d)!==v)series.set(d,null);}
+  }
+  // Derive variant demand only from explicitly paired product/size lines.
+  // If no reliable pairing exists, equal-size availability is exposed as fallback.
+  const variantCol=find(oh,['product variant only','variant only','product variant'],32),demand=new Map(),seenVariants=new Set();
+  for(const row of orderRows.slice(1)){
+    const d=C.date(row[ix.date]),oid=String(row[ix.order]??'').trim();if(!d||!oid||seenVariants.has(d+'|'+oid))continue;seenVariants.add(d+'|'+oid);
+    const lines=String(row[ix.products]??'').split(/\n/).filter(Boolean),variants=String(row[variantCol]??'').split(/\n/).filter(Boolean);
+    if(lines.length!==variants.length)continue;
+    for(let i=0;i<lines.length;i++){const m=lines[i].match(/^(.*),\s*EGP\s*[\d,.]+\s*$/i);if(!m)continue;const id=C.key(m[1]),size=sizeKey(variants[i]);if(!stock.get(id)?.has(size))continue;if(!demand.has(id))demand.set(id,[]);demand.get(id).push({date:d,size});}
+  }
+  for(const p of products){
+    const sizes=stock.get(p.id);if(!sizes)continue;
+    const entries=demand.get(p.id)||[];
+    for(const day of p.daily){
+      const known=[...sizes].filter(([k,m])=>Number.isFinite(m.get(day.date)));
+      day.stockCoverage=known.length/sizes.size;
+      if(!known.length)continue;
+      const prior=entries.filter(r=>r.date<day.date&&r.date>=C.shift(day.date,-28)),weights=new Map();
+      for(const r of prior)weights.set(r.size,(weights.get(r.size)||0)+1);
+      // All-zero evidence applies only to the populated size set, with full coverage.
+      day.stockUnits=known.reduce((n,[k,m])=>n+m.get(day.date),0);
+      if(known.length!==sizes.size)continue;
+      const weighted=prior.length>0,den=weighted?prior.length:sizes.size;
+      day.availability=known.reduce((n,[k,m])=>n+(m.get(day.date)>0?(weighted?(weights.get(k)||0):1):0),0)/den;
+      day.availabilityMethod=weighted?'prior 28-day matched variant order lines':'equal size weights';
+    }
+  }
+  return {products,start,end,generatedAt:new Date().toISOString(),stockAdjusted:stock.size>0,
     sources:{prices:config.priceSheet||'Price History',orders:config.orderSheet||'Order Tracking Details',sessions:config.pageSheet||'D by D Pages Analysis'},
-    definitions:{conversion:'Unique Shopify orders containing a product / GA4 product-page sessions. Not session-attributed purchases.',note:'This analysis does not account for stock availability.'}};
+    definitions:{conversion:'Unique Shopify orders containing a product / GA4 product-page sessions. Not session-attributed purchases.',note:'Inventory snapshots joined by product and size; missing or conflicting stock remains unknown.'}};
 }
 async function readPriceAnalysis(env,business){
   const id=business.spreadsheetId,existing=priceAnalysisCache.get(id);
@@ -81,10 +121,11 @@ async function readPriceAnalysis(env,business){
     ]);
     const mapping=parseWebsiteMapping(mappingRows),orders=mapRange(mapping,'orders.range'),pages=mapRange(mapping,'pages.range');
     const priceSheet=String(location[0]?.[0]||'Price History'),headerRow=Number(positions[0]?.[0])||1,firstRow=Number(positions[1]?.[0])||headerRow+1;
-    const [headerRaw,orderRows,pageRows,imageRows]=await Promise.all([
+    const [headerRaw,orderRows,pageRows,imageRows,inventoryRows]=await Promise.all([
       read(priceSheet,'A'+headerRow+':ZZZ'+headerRow),
       read(orders.sheet,orders.sheet==='Order Tracking Details'?'A1:BA':orders.value),read(pages.sheet,pages.value),
-      mapping.has('inventoryImages.range')?read(mapRange(mapping,'inventoryImages.range').sheet,mapRange(mapping,'inventoryImages.range').value).catch(()=>[]):Promise.resolve([])
+      mapping.has('inventoryImages.range')?read(mapRange(mapping,'inventoryImages.range').sheet,mapRange(mapping,'inventoryImages.range').value).catch(()=>[]):Promise.resolve([]),
+      read('Inventory History','A1:ZZ1000').catch(()=>[])
     ]);
     const header=headerRaw[0]||[];let last=header.length-1;while(last>0&&!PriceChangeCore.date(header[last]))last--;
     let col='',n=last+1;while(n){n--;col=String.fromCharCode(65+n%26)+col;n=Math.floor(n/26);}
@@ -92,7 +133,7 @@ async function readPriceAnalysis(env,business){
     const index=(k,r,rows,fallback)=>mapping.has(k)?mapCol(mapping,k,r,rows):fallback;
     const normalizedPages=pages.headerRow===Number(pages.value.match(/\d+/)?.[0])?pageRows:[[],...pageRows];
     const result=buildPriceAnalysisData(header,priceRows,orderRows,normalizedPages,{
-      priceSheet,orderSheet:orders.sheet,pageSheet:pages.sheet,
+      priceSheet,orderSheet:orders.sheet,pageSheet:pages.sheet,inventoryRows,
       orderDate:index('orders.date','orders.range',orderRows,0),orderId:index('orders.order','orders.range',orderRows,1),
       orderProducts:index('orders.products','orders.range',orderRows,11),orderQuantity:index('orders.itemsQuantity','orders.range',orderRows,24),
       orderDiscount:index('orders.discount','orders.range',orderRows,20),
