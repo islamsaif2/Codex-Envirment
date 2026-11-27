@@ -6,6 +6,8 @@ const PriceChangeCore = (() => {
     if(typeof v==='number'&&v>20000&&v<100000)return new Date((Math.floor(v)-25569)*dayMs).toISOString().slice(0,10);
     const s=String(v??'').trim(),m=s.match(/^Date\((\d+),(\d+),(\d+)/);
     if(m)return [m[1],String(+m[2]+1).padStart(2,'0'),String(+m[3]).padStart(2,'0')].join('-');
+    const us=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s.*)?$/);
+    if(us){const mm=+us[1],dd=+us[2],yy=+us[3],d=new Date(Date.UTC(yy,mm-1,dd));if(d.getUTCMonth()===mm-1&&d.getUTCDate()===dd)return d.toISOString().slice(0,10);return null;}
     return /^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(0,10):null;
   };
   const number=v=>{if(v===null||v===undefined||String(v).trim()==='')return null;const n=Number(String(v).replace(/,/g,'').replace(/[^\d.()-]/g,'').replace(/[()]/g,''));return Number.isFinite(n)?n:null;};
