@@ -56,7 +56,8 @@ function formulas(s,r){
  if(s.kind==='attributionSync'){d=latest(col(s.sheet,'N',2));c=latest(col(s.sheet,'A',2));e=count(`${days(col(s.sheet,'N',2))}=B${r}`);f=e;g=`IF(D${r}="","UNVERIFIED",IF(INT(D${r})>$B$3,"FUTURE DATE",IF(INT(D${r})<B${r},"BEHIND / NO ACTIVITY","SYNC OBSERVED")))`;}
  if(s.kind==='duration'){const eligible=`(${days(oa)}>=$B$3-29)*(${days(oa)}<=$B$3)*(LOWER(TRIM(TO_TEXT(${os})))="delivered")`,field=col(order,s.field,2),valid=`((ISNUMBER(${field})+REGEXMATCH(LOWER(TRIM(TO_TEXT(${field}))),"^([0-9]+(\\.[0-9]+)? (day|hour|minute|second)s?(, )?)+$"))>0)`;c=latest(oa,eligible);e=count(eligible);f=count(`(${eligible})*(${valid})`);g=status(r,true);}
  if(s.kind==='reference'){c='"Not date-based"';e='"n/a"';f='"n/a"';g='"REFERENCE"';}
- return [s.kind==='reference'?'="Not required"':'='+target,'='+c,'='+d,'='+e,'='+f,'='+(g??status(r))];
+ const rule=g??status(r),binary=`IFERROR(LET(checkResult,${rule},IF(OR(checkResult="DATE PRESENT",checkResult="CURRENT",checkResult="SYNC OBSERVED",checkResult="COVERAGE OK",checkResult="REFERENCE"),"Up to date","Not up to date")),"Not up to date")`;
+ return [s.kind==='reference'?'="Not required"':'='+target,'='+c,'='+d,'='+e,'='+f,'='+binary];
 }
 export function buildCheckerRows(){return specs.map((s,i)=>({id:s.id,row:i+8,cells:[s.name,...formulas(s,i+8),s.sheet,s.note,s.action]}));}
 export function buildCheckerRequests(oldRules=0){
@@ -65,10 +66,10 @@ export function buildCheckerRequests(oldRules=0){
  const values=Array.from({length:end},()=>Array(10).fill(''));
  values[0][0]='ULTRAMEDIX / DATA HEALTH';values[1][0]='Activity dates, sync evidence and field coverage are separate checks. Today is partial; presence does not prove a complete import.';
  values[2][0]='Today (Africa/Cairo)';values[2][1]='=TODAY()';values[2][3]='Reference policy';values[2][4]='Today; inventory history through yesterday';
- values[3][0]='Needs review';values[3][1]=`=COUNTIF(G8:G${end},"BEHIND*")+COUNTIF(G8:G${end},"NO DATA")+COUNTIF(G8:G${end},"INCOMPLETE")+COUNTIF(G8:G${end},"FUTURE DATE")+COUNTIF(G8:G${end},"CHECK DATA")`;
- values[3][3]='Unverified sync';values[3][4]=`=COUNTIF(G8:G${end},"UNVERIFIED")`;
- values[4][0]='How to read';values[4][1]='DATE PRESENT = some target-day data. CURRENT = target snapshot coverage. SYNC OBSERVED = timestamp seen, not proof of full completeness.';
- values[5][0]='No false freshness';values[5][1]='Bosta and customer freshness stay UNVERIFIED until their importers supply successful-sync timestamps. Missing activity can also mean no events.';
+ values[3][0]='Not up to date';values[3][1]=`=COUNTIF(G8:G${end},"Not up to date")`;
+ values[3][3]='Up to date';values[3][4]=`=COUNTIF(G8:G${end},"Up to date")`;
+ values[4][0]='How to read';values[4][1]='Up to date = meets this check\'s date or coverage rule. Not up to date = behind, missing, incomplete, invalid or not verifiable. Today may still be partial.';
+ values[5][0]='No false freshness';values[5][1]='Bosta and customer sync freshness are Not up to date until their importers provide successful-sync evidence. Reference tabs have no scheduled daily refresh; no daily update is due.';
  values[6]=['Dataset / check','Expected through','Latest activity / header','Last sync evidence','Eligible / target rows','Rows with required data','Status','Source sheet','What this proves / limitation','Next action'];
  for(const row of rows)values[row.row-1]=row.cells;
  const requests=[{unmergeCells:{range:{sheetId:sid,startRowIndex:0,endRowIndex:7,startColumnIndex:0,endColumnIndex:10}}}];for(let i=oldRules-1;i>=0;i--)requests.push({deleteConditionalFormatRule:{sheetId:sid,index:i}});
@@ -77,8 +78,8 @@ export function buildCheckerRequests(oldRules=0){
  for(const r of [0,6])requests.push({repeatCell:{range:{...grid,startRowIndex:r,endRowIndex:r+1},cell:{userEnteredFormat:{backgroundColor:{red:.92,green:.94,blue:.96},textFormat:{fontFamily:'Arial',fontSize:r===0?15:10,bold:true}}},fields:'userEnteredFormat(backgroundColor,textFormat)'}});
  requests.push({repeatCell:{range:{sheetId:sid,startRowIndex:7,endRowIndex:end,startColumnIndex:1,endColumnIndex:3},cell:{userEnteredFormat:{numberFormat:{type:'DATE',pattern:'yyyy-mm-dd'}}},fields:'userEnteredFormat.numberFormat'}},{repeatCell:{range:{sheetId:sid,startRowIndex:7,endRowIndex:end,startColumnIndex:3,endColumnIndex:4},cell:{userEnteredFormat:{numberFormat:{type:'DATE_TIME',pattern:'yyyy-mm-dd hh:mm'}}},fields:'userEnteredFormat.numberFormat'}},{repeatCell:{range:{sheetId:sid,startRowIndex:2,endRowIndex:3,startColumnIndex:1,endColumnIndex:2},cell:{userEnteredFormat:{numberFormat:{type:'DATE',pattern:'yyyy-mm-dd'}}},fields:'userEnteredFormat.numberFormat'}});
  const attributionSyncRow=rows.find(r=>r.id==='attribution_sync').row;requests.push({repeatCell:{range:{sheetId:sid,startRowIndex:attributionSyncRow-1,endRowIndex:attributionSyncRow,startColumnIndex:3,endColumnIndex:4},cell:{userEnteredFormat:{numberFormat:{type:'DATE',pattern:'yyyy-mm-dd'}}},fields:'userEnteredFormat.numberFormat'}});
- const colors=[['BEHIND|NO DATA|INCOMPLETE|FUTURE DATE|CHECK DATA',{red:1,green:.89,blue:.89}],['UNVERIFIED|NO ELIGIBLE ROWS',{red:1,green:.95,blue:.8}],['DATE PRESENT|SYNC OBSERVED',{red:.88,green:.94,blue:1}],['CURRENT|COVERAGE OK',{red:.86,green:.96,blue:.89}],['REFERENCE',{red:.94,green:.94,blue:.94}]];
- colors.forEach(([pattern,color],index)=>requests.push({addConditionalFormatRule:{index,rule:{ranges:[{sheetId:sid,startRowIndex:7,endRowIndex:end,startColumnIndex:6,endColumnIndex:7}],booleanRule:{condition:{type:'CUSTOM_FORMULA',values:[{userEnteredValue:`=REGEXMATCH($G8,"${pattern}")`}]},format:{backgroundColor:color,textFormat:{bold:true}}}}}}));
+ const colors=[['Not up to date',{red:1,green:.89,blue:.89}],['Up to date',{red:.86,green:.96,blue:.89}]];
+ colors.forEach(([label,color],index)=>requests.push({addConditionalFormatRule:{index,rule:{ranges:[{sheetId:sid,startRowIndex:7,endRowIndex:end,startColumnIndex:6,endColumnIndex:7}],booleanRule:{condition:{type:'TEXT_EQ',values:[{userEnteredValue:label}]},format:{backgroundColor:color,textFormat:{bold:true}}}}}}));
  const widths=[250,120,135,150,110,125,190,230,420,330];widths.forEach((width,i)=>requests.push({updateDimensionProperties:{range:{sheetId:sid,dimension:'COLUMNS',startIndex:i,endIndex:i+1},properties:{pixelSize:width},fields:'pixelSize'}}));
  requests.push({updateDimensionProperties:{range:{sheetId:sid,dimension:'ROWS',startIndex:7,endIndex:end},properties:{pixelSize:100},fields:'pixelSize'}});
  for(const [r,c] of [[0,0],[1,0],[4,1],[5,1]])requests.push({mergeCells:{range:{sheetId:sid,startRowIndex:r,endRowIndex:r+1,startColumnIndex:c,endColumnIndex:10},mergeType:'MERGE_ALL'}});

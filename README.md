@@ -45,14 +45,14 @@ attribution model and its sync timestamps, catalog prices, CRO events, and deliv
 duration coverage. Configuration/manual tabs have no invented daily deadline.
 
 All dated feeds are checked against today in Africa/Cairo, except inventory history
-and its ledger, which are due through yesterday. **DATE PRESENT** means target-day
-activity exists and can still be partial. **CURRENT** checks snapshot field/variant
-coverage. **COVERAGE OK** checks required fields; it does not establish sync freshness.
-**SYNC OBSERVED** means a source timestamp exists, not that every record is complete.
-Bosta status freshness and customer-profile sync remain **UNVERIFIED** until the
-importers expose successful-sync timestamps. A missing activity date can also mean
-no events, so the checker does not claim a failed job without evidence.
-
+and its ledger, which are due through yesterday. Every check uses the same two
+labels: **Up to date** or **Not up to date**. Each dataset retains its own activity,
+snapshot, sync-date or field-coverage rule. Missing or unverified freshness evidence
+is **Not up to date**, with the reason in the details. Today-dated activity can still
+be partial; the label does not certify a complete daily import. Reference/manual
+tabs have no scheduled daily refresh and therefore no overdue daily update.
+Bosta status sync and customer profile sync need importer timestamps before their
+freshness checks can be Up to date.
 `GET /api/data-health` reads only the checker tab. It bypasses the reporting cache's
 12-hour stale fallback, coalesces concurrent reads, and reuses a read for at most one
 minute. `?refresh=1` forces a source read. Network fallback results and a Sheet
