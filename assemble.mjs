@@ -13,7 +13,9 @@ await import('./enhance-daily-performance-v7.mjs');
 await import('./enhance-daily-performance-v8.mjs');
 
 await import('./enhance-monthly-inventory.mjs');
-await import('./enhance-price-analysis.mjs');
+// Pricing analysis paused: current historical data does not support validated price-effect forecasts.
+// Retain the implementation and source data for future evaluation; do not install the tab or API route.
+// await import('./enhance-price-analysis.mjs');
 await import('./enhance-decision-intelligence.mjs');
 await import('./enhance-repeat-purchases.mjs');
 await import('./enhance-data-health.mjs');
