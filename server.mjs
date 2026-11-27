@@ -4,11 +4,13 @@ import worker from "./worker.mjs";
 import {readLocalOrders} from "./order-read-fallback.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
 import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
+import {createHealthReader,serveHealthAsset} from './data-health.mjs';
 installGoogleSheetResponseCache();
 
 const PORT = Number(process.env.PORT || 10000);
 const HOST = process.env.ULTRAMEDIX_HOST || "0.0.0.0";
 const DEFAULT_SHEET = "1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E";
+const readHealth=createHealthReader({spreadsheetId:process.env.SPREADSHEET_ID||DEFAULT_SHEET});
 
 const kvData = new Map();
 const kv = {
@@ -321,6 +323,11 @@ const server = http.createServer(async (req, res) => {
   const started = Date.now();
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost:" + PORT}`);
+    if(req.method==='GET'&&url.pathname==='/api/data-health'){
+      try{const result=await readHealth({refresh:url.searchParams.get('refresh')==='1'});res.writeHead(200,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});res.end(JSON.stringify(result));}
+      catch{res.writeHead(503,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});res.end(JSON.stringify({error:'The live Sheet data checker could not be read. Check network access and the Data Up to Date Check tab.'}));}return;
+    }
+    if(req.method==='GET'&&await serveHealthAsset(url.pathname,res))return;
     if(url.pathname==='/decision-intelligence'||url.pathname.startsWith('/decision-intelligence/')){
       req.diBasePath='/decision-intelligence';
       req.url=(url.pathname.slice('/decision-intelligence'.length)||'/')+url.search;

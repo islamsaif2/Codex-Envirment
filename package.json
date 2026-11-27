@@ -13,6 +13,7 @@
     "dev": "npm run build && npm start",
     "test:price-analysis": "node tests/price-analysis.test.cjs",
     "test:repeat-purchases": "node tests/repeat-purchases.test.cjs",
-    "test:decision-intelligence": "npm --prefix decision-intelligence test"
+    "test:decision-intelligence": "npm --prefix decision-intelligence test",
+    "test:data-health": "node --test tests/data-health.test.mjs"
   }
 }

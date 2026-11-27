@@ -33,6 +33,34 @@ The server listens on `0.0.0.0` and `process.env.PORT || 10000`. The default spr
 
 ## Deploy
 
+## Data Health
+
+Open **http://localhost:10000/#data-health** or select **Data Health** in the
+dashboard. The dashboard reads the same 30 formula-driven checks as the existing
+**Data Up to Date Check** Sheet tab. It covers order creation, tracked Bosta status
+coverage, GA4, Meta ads and platforms (including Facebook and Instagram separately),
+the reporting blocks actually used by the website, pages, regions, current stock,
+closing-stock history, the inventory sync ledger, customer activity, every Shopify
+attribution model and its sync timestamps, catalog prices, CRO events, and delivery
+duration coverage. Configuration/manual tabs have no invented daily deadline.
+
+All dated feeds are checked against today in Africa/Cairo, except inventory history
+and its ledger, which are due through yesterday. **DATE PRESENT** means target-day
+activity exists and can still be partial. **CURRENT** checks snapshot field/variant
+coverage. **COVERAGE OK** checks required fields; it does not establish sync freshness.
+**SYNC OBSERVED** means a source timestamp exists, not that every record is complete.
+Bosta status freshness and customer-profile sync remain **UNVERIFIED** until the
+importers expose successful-sync timestamps. A missing activity date can also mean
+no events, so the checker does not claim a failed job without evidence.
+
+`GET /api/data-health` reads only the checker tab. It bypasses the reporting cache's
+12-hour stale fallback, coalesces concurrent reads, and reuses a read for at most one
+minute. `?refresh=1` forces a source read. Network fallback results and a Sheet
+reference date that differs from the current Cairo date are visibly marked as
+unverified. No import jobs, Google Sheets writes, or commercial actions are triggered.
+The formulas use complete source columns rather than fixed imported-row limits.
+Run `npm run test:data-health` for parser, cache, outage and coverage-contract tests.
+
 ## Decision Intelligence and browser chat
 
 Open **http://127.0.0.1:10000/#decision-intelligence** after `npm run dev`.

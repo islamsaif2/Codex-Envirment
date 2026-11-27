@@ -16,3 +16,4 @@ await import('./enhance-monthly-inventory.mjs');
 await import('./enhance-price-analysis.mjs');
 await import('./enhance-decision-intelligence.mjs');
 await import('./enhance-repeat-purchases.mjs');
+await import('./enhance-data-health.mjs');
