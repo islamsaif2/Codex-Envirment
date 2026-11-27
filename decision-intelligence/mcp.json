@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "ultramedix-decision-intelligence": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:10000/decision-intelligence/mcp"
+    }
+  }
+}

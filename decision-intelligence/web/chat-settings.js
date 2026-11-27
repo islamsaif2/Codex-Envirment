@@ -1,0 +1,6 @@
+const base=location.pathname.startsWith('/decision-intelligence')?'/decision-intelligence':'',status=document.getElementById('connection-status'),error=document.getElementById('setup-error');
+async function request(path,body){const r=await fetch(base+path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{}),data=await r.json();if(!r.ok)throw Error(data.error);return data;}
+function show(s){status.textContent=s.configured?'Connected · '+s.model+' · '+s.storage:'Not connected. Enter an API key below.';document.getElementById('model').value=s.model;}
+request('/api/chat/status').then(show).catch(e=>error.textContent=e.message);
+document.getElementById('connection-form').onsubmit=async e=>{e.preventDefault();const button=document.getElementById('save'),input=document.getElementById('api-key');button.disabled=true;error.textContent='';const apiKey=input.value;input.value='';try{show(await request('/api/chat/settings',{apiKey,model:document.getElementById('model').value}));}catch(e){error.textContent=e.message;}finally{button.disabled=false;}};
+document.getElementById('disconnect').onclick=async()=>{try{show(await request('/api/chat/disconnect',{}));}catch(e){error.textContent=e.message;}};

@@ -1,0 +1,10 @@
+{
+  "audience": "internal_owner_and_team",
+  "confirmedByOwnerOn": "2026-11-26",
+  "onboardingScope": "Business-specific facts and preferences only. Ask system-wide architecture questions in chat.",
+  "commercialExecution": false,
+  "sharedEngine": true,
+  "businessIsolation": "Allowlisted independent business configuration, observations and evidence paths. No arbitrary client file paths.",
+  "authentication": "Owner requested open local team access: no account, access key or business-specific role restrictions. Bind to 127.0.0.1; public deployment is not configured.",
+  "chatgpt": "MCP adapters implemented and tested locally. No account registration or public deployment yet."
+}

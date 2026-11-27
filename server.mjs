@@ -1,4 +1,5 @@
 import http from "node:http";
+import {createServer as createDecisionServer} from './decision-intelligence/src/server.mjs';
 import worker from "./worker.mjs";
 import {readLocalOrders} from "./order-read-fallback.mjs";
 import {gzipSync, gunzipSync} from "node:zlib";
@@ -6,7 +7,7 @@ import {installGoogleSheetResponseCache} from "./sheet-response-cache.mjs";
 installGoogleSheetResponseCache();
 
 const PORT = Number(process.env.PORT || 10000);
-const HOST = "0.0.0.0";
+const HOST = process.env.ULTRAMEDIX_HOST || "0.0.0.0";
 const DEFAULT_SHEET = "1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E";
 
 const kvData = new Map();
@@ -315,10 +316,16 @@ async function creativeThumbnailResponse(source){
   return new Response(body,{status:200,headers:{"Content-Type":type,"Cache-Control":"public,max-age=3600","X-Ultramedix-Image-Cache":"MISS"}});
 }
 
+const decisionHandler=createDecisionServer().listeners('request')[0];
 const server = http.createServer(async (req, res) => {
   const started = Date.now();
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost:" + PORT}`);
+    if(url.pathname==='/decision-intelligence'||url.pathname.startsWith('/decision-intelligence/')){
+      req.diBasePath='/decision-intelligence';
+      req.url=(url.pathname.slice('/decision-intelligence'.length)||'/')+url.search;
+      return decisionHandler(req,res);
+    }
     if(req.method==="GET"&&url.pathname==="/api/creative-thumbnail"){
       const response=await creativeThumbnailResponse(url.searchParams.get("url")||"");
       res.writeHead(response.status,Object.fromEntries(response.headers.entries()));

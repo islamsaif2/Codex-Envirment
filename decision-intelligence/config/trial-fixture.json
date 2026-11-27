@@ -1,0 +1,10 @@
+{
+  "mode": "synthetic_demo_only",
+  "openingCash": 10000,
+  "settlementLagDays": 5,
+  "fulfillmentCapacity": 10,
+  "fulfillmentCostPerDelivered": 80,
+  "failedDeliveryCost": 60,
+  "deliveryProbability": 0.8,
+  "note": "These amounts are fabricated for the simulation engine test. The owner does not know real cash or refund dates. They are never recorded as live business facts."
+}

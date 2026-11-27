@@ -1,0 +1,11 @@
+{
+  "ultramedix": {
+    "snapshot": "data/business-snapshot.json",
+    "config": "config/business.json",
+    "catalog": "config/business-model.json",
+    "audit": "audit/live-data-audit.json",
+    "observations": "data/daily-observations.json",
+    "verifiedSeries": "data/verified-series.json",
+    "approvedScenario": "data/approved-scenario.json"
+  }
+}

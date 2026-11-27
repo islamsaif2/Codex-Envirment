@@ -33,6 +33,31 @@ The server listens on `0.0.0.0` and `process.env.PORT || 10000`. The default spr
 
 ## Deploy
 
+## Decision Intelligence and browser chat
+
+Open **http://127.0.0.1:10000/#decision-intelligence** after `npm run dev`.
+The separate advisory layer ranks a top-30 review queue in six collapsed groups,
+uses 180-day stock context, and reports source dates and model limitations.
+It cannot execute commercial decisions. The original dashboard metrics and
+startup defaults remain in place, apart from the requested repeat-purchase timing
+correction (placed orders excluding cancellations, with an end-date cutoff).
+
+ChatGPT runs beside the site through the browser/desktop account. The tab includes
+a copyable analysis prompt and a read-only decision-context page. API chat is
+disabled by default; no API key is needed for browser-account mode. Chrome/Edge
+extension installation is separate, and localhost was verified with ChatGPT's
+built-in browser. See [the official browser guide](https://learn.chatgpt.com/docs/chrome-extension).
+
+Local source snapshots, generated reports, logs and encrypted credentials are
+excluded from Git. On a fresh checkout, use **Recalculate decisions** to collect
+the Sheet data, then **Read updated business inputs** to sync onboarding answers.
+The decision API accepts localhost hosts by default; publishing it requires an
+explicit authenticated origin rather than changing existing deployment settings.
+
+Validate with `npm run test:price-analysis`, `npm run test:repeat-purchases`, and
+`npm run test:decision-intelligence`. More model details are in
+[the decision-layer documentation](decision-intelligence/README.md).
+
 ## Price Change Analysis
 
 The assembled dashboard includes `/api/price-analysis`. It reads the selected

@@ -1,0 +1,4366 @@
+{
+  "version": "0.1.0",
+  "reviewDate": "2026-11-26",
+  "audience": "Internal owner and team; shared engine with isolated business configurations",
+  "onboardingScope": "Marketing-only business inputs. Cash, refunds, manufacturing details and fixed system rules are not required onboarding questions.",
+  "priorOnboarding": "VOID: owner explicitly discarded all prior answers. None are carried forward.",
+  "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit",
+  "alphabet": [
+    {
+      "letter": "A",
+      "domain": "Accountability",
+      "definition": "Owner, reviewer, approval boundaries",
+      "status": "review_required"
+    },
+    {
+      "letter": "B",
+      "domain": "Business objectives",
+      "definition": "Explicit objective, horizon and secondary constraints",
+      "status": "review_required"
+    },
+    {
+      "letter": "C",
+      "domain": "Cash",
+      "definition": "Available balance, liabilities and settlement lag",
+      "status": "review_required"
+    },
+    {
+      "letter": "D",
+      "domain": "Demand",
+      "definition": "Observed orders versus latent stock-censored demand",
+      "status": "review_required"
+    },
+    {
+      "letter": "E",
+      "domain": "Entities",
+      "definition": "Stable store, order, line, variant and campaign identities",
+      "status": "review_required"
+    },
+    {
+      "letter": "F",
+      "domain": "Fulfillment",
+      "definition": "Capacity, shipment lifecycle and mature cohorts",
+      "status": "review_required"
+    },
+    {
+      "letter": "G",
+      "domain": "Governance",
+      "definition": "Definition versions and human review",
+      "status": "review_required"
+    },
+    {
+      "letter": "H",
+      "domain": "History",
+      "definition": "Source provenance, snapshots, gaps and migrations",
+      "status": "review_required"
+    },
+    {
+      "letter": "I",
+      "domain": "Inventory",
+      "definition": "Sellable units, history, reserved units and safety stock",
+      "status": "review_required"
+    },
+    {
+      "letter": "J",
+      "domain": "Joins",
+      "definition": "Canonical ID crosswalks, cardinality and reconciliation",
+      "status": "review_required"
+    },
+    {
+      "letter": "K",
+      "domain": "KPIs",
+      "definition": "Numerator, denominator, grain, units and missing-data policy",
+      "status": "review_required"
+    },
+    {
+      "letter": "L",
+      "domain": "Lead times",
+      "definition": "Production, replenishment, shipping and cash delays",
+      "status": "review_required"
+    },
+    {
+      "letter": "M",
+      "domain": "Marketing",
+      "definition": "Spend, attribution, creative and campaign-to-SKU mapping",
+      "status": "review_required"
+    },
+    {
+      "letter": "N",
+      "domain": "Net economics",
+      "definition": "Contribution, variable cost, refunds and fixed costs",
+      "status": "review_required"
+    },
+    {
+      "letter": "O",
+      "domain": "Optimization",
+      "definition": "Discrete options under explicit objective and constraints",
+      "status": "review_required"
+    },
+    {
+      "letter": "P",
+      "domain": "Production",
+      "definition": "BOM, resource calendars, batches and QC",
+      "status": "review_required"
+    },
+    {
+      "letter": "Q",
+      "domain": "Quality",
+      "definition": "Completeness, freshness, duplicates and reliability gates",
+      "status": "review_required"
+    },
+    {
+      "letter": "R",
+      "domain": "Risk",
+      "definition": "Downside limits, scenario sensitivity and model error",
+      "status": "review_required"
+    },
+    {
+      "letter": "S",
+      "domain": "Seasonality",
+      "definition": "Weekday, promotions, business events and regime changes",
+      "status": "review_required"
+    },
+    {
+      "letter": "T",
+      "domain": "Timing",
+      "definition": "Cairo dates, completed days and cohort maturity",
+      "status": "review_required"
+    },
+    {
+      "letter": "U",
+      "domain": "Uncertainty",
+      "definition": "Empirical error bands and unverified assumptions",
+      "status": "review_required"
+    },
+    {
+      "letter": "V",
+      "domain": "Validation",
+      "definition": "Time-ordered backtests, benchmarks and acceptance thresholds",
+      "status": "review_required"
+    },
+    {
+      "letter": "W",
+      "domain": "Website",
+      "definition": "Funnels at a consistent source and dimension scope",
+      "status": "review_required"
+    },
+    {
+      "letter": "X",
+      "domain": "Experiments",
+      "definition": "Holdouts, effect estimation and intervention logs",
+      "status": "review_required"
+    },
+    {
+      "letter": "Y",
+      "domain": "Yield",
+      "definition": "Delivered contribution and manufacturing yield",
+      "status": "review_required"
+    },
+    {
+      "letter": "Z",
+      "domain": "Zero and missing",
+      "definition": "True zero preserved; blanks unavailable; division by zero unavailable",
+      "status": "review_required"
+    }
+  ],
+  "entities": [
+    {
+      "name": "Store",
+      "key": "store_domain",
+      "definition": "Store owns platform IDs; old/new store are separate namespaces"
+    },
+    {
+      "name": "Product",
+      "key": "store_domain + product_id",
+      "definition": "Stable product mapping required; product title is a label"
+    },
+    {
+      "name": "Variant",
+      "key": "store_domain + variant_id",
+      "definition": "Maps to a reviewed canonical SKU; size aliases require approval"
+    },
+    {
+      "name": "InventorySnapshot",
+      "key": "store_domain + variant_id + observed_at + measurement",
+      "definition": "Sellable-online snapshot differs from ending inventory"
+    },
+    {
+      "name": "InventoryHistory",
+      "key": "store_domain + variant_id + local_date",
+      "definition": "Wide date columns unpivot to daily units; blank != zero"
+    },
+    {
+      "name": "Order",
+      "key": "original_store + original_order_id",
+      "definition": "Original created_at preserved across store migrations"
+    },
+    {
+      "name": "OrderLine",
+      "key": "canonical_order_id + line_item_id",
+      "definition": "Quantity and price required; title/price text cannot establish units"
+    },
+    {
+      "name": "Customer",
+      "key": "store_domain + customer_id",
+      "definition": "PII excluded from decision layer; no automatic person matching"
+    },
+    {
+      "name": "Campaign",
+      "key": "ad_account_id + campaign_id",
+      "definition": "Name is mutable; map campaigns to promoted SKUs"
+    },
+    {
+      "name": "AdSet",
+      "key": "ad_account_id + adset_id",
+      "definition": "Campaign parent must be stable over report date"
+    },
+    {
+      "name": "Ad",
+      "key": "ad_account_id + ad_id + date + attribution_window",
+      "definition": "Daily snapshot revisions need deduplication"
+    },
+    {
+      "name": "Attribution",
+      "key": "store + date + channel + traffic_type + model",
+      "definition": "Models are alternative allocations, not additive tables"
+    },
+    {
+      "name": "SessionAggregate",
+      "key": "source + date + dimension_grain",
+      "definition": "Do not combine duplicate exports or incompatible scopes"
+    },
+    {
+      "name": "Shipment",
+      "key": "carrier + tracking_id",
+      "definition": "Status observations need updated_at; not a monetary refund"
+    },
+    {
+      "name": "Refund",
+      "key": "refund_id + order_id",
+      "definition": "Processed amount/date/currency not verified in current source"
+    },
+    {
+      "name": "ProductionOrder",
+      "key": "production_order_id",
+      "definition": "SKU quantities, resource capacity, BOM, due dates and payments missing"
+    },
+    {
+      "name": "CashMovement",
+      "key": "movement_id",
+      "definition": "Collections and expenditures use settlement dates"
+    },
+    {
+      "name": "Decision",
+      "key": "decision_id + version",
+      "definition": "Input hash, evidence, options, constraints, human decision and outcome"
+    }
+  ],
+  "fields": [
+    {
+      "source": "Shopify Attribution Data",
+      "column": "A",
+      "headerRow": 1,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "B",
+      "headerRow": 1,
+      "label": "Source Store",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "C",
+      "headerRow": 1,
+      "label": "Marketing Channel",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "D",
+      "headerRow": 1,
+      "label": "Traffic Type",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "E",
+      "headerRow": 1,
+      "label": "Attribution Model",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "F",
+      "headerRow": 1,
+      "label": "Sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "G",
+      "headerRow": 1,
+      "label": "Sessions That Completed Checkout",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "H",
+      "headerRow": 1,
+      "label": "Shopify Native Conversion Rate",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "I",
+      "headerRow": 1,
+      "label": "Orders (Attributed)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "J",
+      "headerRow": 1,
+      "label": "Total Sales (Attributed)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "K",
+      "headerRow": 1,
+      "label": "Model Key",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "L",
+      "headerRow": 1,
+      "label": "Traffic Filter Category",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "M",
+      "headerRow": 1,
+      "label": "Data Status",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Shopify Attribution Data",
+      "column": "N",
+      "headerRow": 1,
+      "label": "Last Synced At",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "A",
+      "headerRow": 1,
+      "label": "Shopify Variant ID",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "B",
+      "headerRow": 1,
+      "label": "Product name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "C",
+      "headerRow": 1,
+      "label": "Size or variant",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "D",
+      "headerRow": 1,
+      "label": "SKU (product code)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "E",
+      "headerRow": 1,
+      "label": "Product status in Shopify",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "F",
+      "headerRow": 1,
+      "label": "Does Shopify track stock?",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "G",
+      "headerRow": 1,
+      "label": "Current stock available to sell",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "H",
+      "headerRow": 1,
+      "label": "Units ordered in the last 7 days",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "I",
+      "headerRow": 1,
+      "label": "Units ordered in the last 28 days",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory Tracking",
+      "column": "J",
+      "headerRow": 1,
+      "label": "Last Shopify update",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "A",
+      "headerRow": 1,
+      "label": "Source store",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "B",
+      "headerRow": 1,
+      "label": "Shopify Variant ID",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "C",
+      "headerRow": 1,
+      "label": "Product name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "D",
+      "headerRow": 1,
+      "label": "Variant",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "E",
+      "headerRow": 1,
+      "label": "SKU",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "F",
+      "headerRow": 1,
+      "label": "2026-01-28",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "G",
+      "headerRow": 1,
+      "label": "2026-01-29",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "H",
+      "headerRow": 1,
+      "label": "2026-01-30",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "I",
+      "headerRow": 1,
+      "label": "2026-01-31",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Inventory History",
+      "column": "J",
+      "headerRow": 1,
+      "label": "2026-02-01",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "A",
+      "headerRow": 2,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "B",
+      "headerRow": 2,
+      "label": "Campaign name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "C",
+      "headerRow": 2,
+      "label": "Campaign ID",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "D",
+      "headerRow": 2,
+      "label": "Adset Name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "E",
+      "headerRow": 2,
+      "label": "Adset Id",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "F",
+      "headerRow": 2,
+      "label": "Ad Name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "G",
+      "headerRow": 2,
+      "label": "Ad Id",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "H",
+      "headerRow": 2,
+      "label": "Amount spent",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "I",
+      "headerRow": 2,
+      "label": "CPM (cost per 1,000 impressions)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "J",
+      "headerRow": 2,
+      "label": "CTR (link click-through rate)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "K",
+      "headerRow": 2,
+      "label": "Outbound clicks",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "L",
+      "headerRow": 2,
+      "label": "Landing page views",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "M",
+      "headerRow": 2,
+      "label": "Adds to cart",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "N",
+      "headerRow": 2,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "O",
+      "headerRow": 2,
+      "label": "Checkouts Initiated",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "P",
+      "headerRow": 2,
+      "label": "Objective",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "Q",
+      "headerRow": 2,
+      "label": "Creative thumbnail URL",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "R",
+      "headerRow": 2,
+      "label": "Creative Facebook URL",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "S",
+      "headerRow": 2,
+      "label": "Campaign delivery",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "T",
+      "headerRow": 2,
+      "label": "Ad set delivery",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "U",
+      "headerRow": 2,
+      "label": "Ad delivery",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "V",
+      "headerRow": 2,
+      "label": "Messaging conversations started",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "W",
+      "headerRow": 2,
+      "label": "3-second video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "X",
+      "headerRow": 2,
+      "label": "Video plays at 25%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "Y",
+      "headerRow": 2,
+      "label": "Video plays at 50%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "Z",
+      "headerRow": 2,
+      "label": "Video plays at 75%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AA",
+      "headerRow": 2,
+      "label": "Video plays at 100%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AB",
+      "headerRow": 2,
+      "label": "Video average play time",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AC",
+      "headerRow": 2,
+      "label": "Video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AD",
+      "headerRow": 2,
+      "label": "Post engagements",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AM",
+      "headerRow": 2,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AN",
+      "headerRow": 2,
+      "label": "Amount spent",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AO",
+      "headerRow": 2,
+      "label": "CTR (link click-through rate)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AP",
+      "headerRow": 2,
+      "label": "Landing page views",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AQ",
+      "headerRow": 2,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AR",
+      "headerRow": 2,
+      "label": "Platform",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AS",
+      "headerRow": 2,
+      "label": "Placement",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AX",
+      "headerRow": 2,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AY",
+      "headerRow": 2,
+      "label": "Sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "AZ",
+      "headerRow": 2,
+      "label": "Engaged sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BA",
+      "headerRow": 2,
+      "label": "Add to carts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BB",
+      "headerRow": 2,
+      "label": "Checkouts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BC",
+      "headerRow": 2,
+      "label": "Average session duration",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BD",
+      "headerRow": 2,
+      "label": "Views per session",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BE",
+      "headerRow": 2,
+      "label": "User engagement",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BF",
+      "headerRow": 2,
+      "label": "Bounce rate",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BG",
+      "headerRow": 2,
+      "label": "Region",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BH",
+      "headerRow": 2,
+      "label": "Average Engaged time per session",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "BI",
+      "headerRow": 2,
+      "label": "Unify GA4 and Bosta Region Naming",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "CA",
+      "headerRow": 2,
+      "label": "Count as ",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Raw Ga4 & Meta Ads Data",
+      "column": "CB",
+      "headerRow": 2,
+      "label": "if medium is",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "A",
+      "headerRow": 8,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "B",
+      "headerRow": 8,
+      "label": "Spend (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "C",
+      "headerRow": 8,
+      "label": "Outbound clicks",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "D",
+      "headerRow": 8,
+      "label": "Landing views",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "E",
+      "headerRow": 8,
+      "label": "Add to cart",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "F",
+      "headerRow": 8,
+      "label": "Checkouts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "G",
+      "headerRow": 8,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "H",
+      "headerRow": 8,
+      "label": "Messages",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "I",
+      "headerRow": 8,
+      "label": "3s video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "J",
+      "headerRow": 8,
+      "label": "Video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "K",
+      "headerRow": 8,
+      "label": "Post engagements",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "L",
+      "headerRow": 8,
+      "label": "Link CTR (est.)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "M",
+      "headerRow": 8,
+      "label": "CPM (est.)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "O",
+      "headerRow": 8,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "P",
+      "headerRow": 8,
+      "label": "Campaign",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "Q",
+      "headerRow": 8,
+      "label": "Campaign ID",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "R",
+      "headerRow": 8,
+      "label": "Spend (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "S",
+      "headerRow": 8,
+      "label": "Outbound clicks",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "T",
+      "headerRow": 8,
+      "label": "Landing views",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "U",
+      "headerRow": 8,
+      "label": "Add to cart",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "V",
+      "headerRow": 8,
+      "label": "Checkouts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "W",
+      "headerRow": 8,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "X",
+      "headerRow": 8,
+      "label": "Messages",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "Y",
+      "headerRow": 8,
+      "label": "3s video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "Z",
+      "headerRow": 8,
+      "label": "Video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AA",
+      "headerRow": 8,
+      "label": "Post engagements",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AB",
+      "headerRow": 8,
+      "label": "Link CTR (est.)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AC",
+      "headerRow": 8,
+      "label": "CPM (est.)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AE",
+      "headerRow": 8,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AF",
+      "headerRow": 8,
+      "label": "Platform",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AG",
+      "headerRow": 8,
+      "label": "Placement",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AH",
+      "headerRow": 8,
+      "label": "Spend (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AI",
+      "headerRow": 8,
+      "label": "Landing views",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AJ",
+      "headerRow": 8,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AU",
+      "headerRow": 8,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AV",
+      "headerRow": 8,
+      "label": "Ad set",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AW",
+      "headerRow": 8,
+      "label": "Ad",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AX",
+      "headerRow": 8,
+      "label": "Ad ID",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AY",
+      "headerRow": 8,
+      "label": "Spend (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "AZ",
+      "headerRow": 8,
+      "label": "Outbound clicks",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BA",
+      "headerRow": 8,
+      "label": "Landing views",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BB",
+      "headerRow": 8,
+      "label": "Add to cart",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BC",
+      "headerRow": 8,
+      "label": "Checkouts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BD",
+      "headerRow": 8,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BE",
+      "headerRow": 8,
+      "label": "Messages",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BF",
+      "headerRow": 8,
+      "label": "3s video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BG",
+      "headerRow": 8,
+      "label": "Video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BH",
+      "headerRow": 8,
+      "label": "Post engagements",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BI",
+      "headerRow": 8,
+      "label": "Link CTR (est.)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BJ",
+      "headerRow": 8,
+      "label": "CPM (est.)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BK",
+      "headerRow": 8,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BL",
+      "headerRow": 8,
+      "label": "Sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BM",
+      "headerRow": 8,
+      "label": "Engaged sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BN",
+      "headerRow": 8,
+      "label": "Add to cart",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BO",
+      "headerRow": 8,
+      "label": "Checkouts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BP",
+      "headerRow": 8,
+      "label": "User engagement (s)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BQ",
+      "headerRow": 8,
+      "label": "Avg session (s)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BR",
+      "headerRow": 8,
+      "label": "Views / session",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BS",
+      "headerRow": 8,
+      "label": "Bounce rate",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BT",
+      "headerRow": 8,
+      "label": "Avg engaged time (s)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BW",
+      "headerRow": 8,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BX",
+      "headerRow": 8,
+      "label": "Region",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BY",
+      "headerRow": 8,
+      "label": "Sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "BZ",
+      "headerRow": 8,
+      "label": "Engaged sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CA",
+      "headerRow": 8,
+      "label": "Add to cart",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CB",
+      "headerRow": 8,
+      "label": "Checkouts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CC",
+      "headerRow": 8,
+      "label": "User engagement (s)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CD",
+      "headerRow": 8,
+      "label": "Avg session (s)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CE",
+      "headerRow": 8,
+      "label": "Views / session",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CF",
+      "headerRow": 8,
+      "label": "Bounce rate",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CG",
+      "headerRow": 8,
+      "label": "Avg engaged time (s)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CL",
+      "headerRow": 8,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CM",
+      "headerRow": 8,
+      "label": "Ad export spend (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CN",
+      "headerRow": 8,
+      "label": "Placement export spend (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CO",
+      "headerRow": 8,
+      "label": "Difference (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CQ",
+      "headerRow": 8,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CR",
+      "headerRow": 8,
+      "label": "Ad Name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CS",
+      "headerRow": 8,
+      "label": "Ad Id",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CT",
+      "headerRow": 8,
+      "label": "Amount spent",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CU",
+      "headerRow": 8,
+      "label": "CPM (estimated)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CV",
+      "headerRow": 8,
+      "label": "CTR (link, estimated)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CW",
+      "headerRow": 8,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CX",
+      "headerRow": 8,
+      "label": "Latest creative thumbnail URL",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "CZ",
+      "headerRow": 8,
+      "label": "Messaging conversations started",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DA",
+      "headerRow": 8,
+      "label": "3-second video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DB",
+      "headerRow": 8,
+      "label": "Video plays at 25%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DC",
+      "headerRow": 8,
+      "label": "Video plays at 50%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DD",
+      "headerRow": 8,
+      "label": "Video plays at 75%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DE",
+      "headerRow": 8,
+      "label": "Video plays at 100%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DF",
+      "headerRow": 8,
+      "label": "Video average play time",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DG",
+      "headerRow": 8,
+      "label": "Video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DI",
+      "headerRow": 8,
+      "label": "Post engagements",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DJ",
+      "headerRow": 8,
+      "label": "Creative Facebook URL",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DK",
+      "headerRow": 8,
+      "label": "Campaign",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DL",
+      "headerRow": 8,
+      "label": "Ad set",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DM",
+      "headerRow": 8,
+      "label": "Outbound clicks",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DN",
+      "headerRow": 8,
+      "label": "Estimated impressions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DO",
+      "headerRow": 8,
+      "label": "Estimated link clicks",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DQ",
+      "headerRow": 8,
+      "label": "Video time weighting plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DR",
+      "headerRow": 8,
+      "label": "CTR weighting impressions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DS",
+      "headerRow": 8,
+      "label": "Contribution % to Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DT",
+      "headerRow": 8,
+      "label": "Campaign objective",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DU",
+      "headerRow": 8,
+      "label": "Ad delivery",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DW",
+      "headerRow": 8,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DX",
+      "headerRow": 8,
+      "label": "Campaign name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DY",
+      "headerRow": 8,
+      "label": "Campaign ID",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "DZ",
+      "headerRow": 8,
+      "label": "Adset Name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EA",
+      "headerRow": 8,
+      "label": "Adset Id",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EB",
+      "headerRow": 8,
+      "label": "Ad Name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EC",
+      "headerRow": 8,
+      "label": "Ad Id",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "ED",
+      "headerRow": 8,
+      "label": "Amount spent",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EE",
+      "headerRow": 8,
+      "label": "CPM (cost per 1,000 impressions)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EF",
+      "headerRow": 8,
+      "label": "CTR (link click-through rate)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EG",
+      "headerRow": 8,
+      "label": "Outbound clicks",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EH",
+      "headerRow": 8,
+      "label": "Landing page views",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EI",
+      "headerRow": 8,
+      "label": "Adds to cart",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EJ",
+      "headerRow": 8,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EK",
+      "headerRow": 8,
+      "label": "Checkouts Initiated",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EL",
+      "headerRow": 8,
+      "label": "Objective",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EM",
+      "headerRow": 8,
+      "label": "Creative image url",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EN",
+      "headerRow": 8,
+      "label": "Creative Facebook URL",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EO",
+      "headerRow": 8,
+      "label": "Campaign delivery",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EP",
+      "headerRow": 8,
+      "label": "Ad set delivery",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EQ",
+      "headerRow": 8,
+      "label": "Ad delivery",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "ER",
+      "headerRow": 8,
+      "label": "Messaging conversations started",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "ES",
+      "headerRow": 8,
+      "label": "3-second video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "ET",
+      "headerRow": 8,
+      "label": "Video plays at 25%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EU",
+      "headerRow": 8,
+      "label": "Video plays at 50%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EV",
+      "headerRow": 8,
+      "label": "Video plays at 75%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EW",
+      "headerRow": 8,
+      "label": "Video plays at 100%",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EX",
+      "headerRow": 8,
+      "label": "Video average play time",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EY",
+      "headerRow": 8,
+      "label": "Video plays",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "EZ",
+      "headerRow": 8,
+      "label": "Post engagements",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FB",
+      "headerRow": 8,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FC",
+      "headerRow": 8,
+      "label": "Amount spent",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FD",
+      "headerRow": 8,
+      "label": "CTR (link click-through rate)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FE",
+      "headerRow": 8,
+      "label": "Landing page views",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FF",
+      "headerRow": 8,
+      "label": "Purchases",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FG",
+      "headerRow": 8,
+      "label": "Platform",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FH",
+      "headerRow": 8,
+      "label": "Placement",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FJ",
+      "headerRow": 8,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FK",
+      "headerRow": 8,
+      "label": "Sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FL",
+      "headerRow": 8,
+      "label": "Engaged sessions",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FM",
+      "headerRow": 8,
+      "label": "Add to carts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FN",
+      "headerRow": 8,
+      "label": "Checkouts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FO",
+      "headerRow": 8,
+      "label": "Average session duration",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FP",
+      "headerRow": 8,
+      "label": "Views per session",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FQ",
+      "headerRow": 8,
+      "label": "User engagement",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FR",
+      "headerRow": 8,
+      "label": "Bounce rate",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FS",
+      "headerRow": 8,
+      "label": "Region",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FT",
+      "headerRow": 8,
+      "label": "Average Engaged time per session",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Meta & GA4 Reporting",
+      "column": "FU",
+      "headerRow": 8,
+      "label": "Unify GA4 and Bosta Region Naming",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "A",
+      "headerRow": 2,
+      "label": "Product",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "B",
+      "headerRow": 2,
+      "label": "2026-11-24",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "C",
+      "headerRow": 2,
+      "label": "2026-11-23",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "D",
+      "headerRow": 2,
+      "label": "2026-11-22",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "E",
+      "headerRow": 2,
+      "label": "2026-11-21",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "F",
+      "headerRow": 2,
+      "label": "2026-11-20",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "G",
+      "headerRow": 2,
+      "label": "2026-11-19",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "H",
+      "headerRow": 2,
+      "label": "2026-11-18",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "I",
+      "headerRow": 2,
+      "label": "2026-11-17",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Price History",
+      "column": "J",
+      "headerRow": 2,
+      "label": "2026-11-16",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "A",
+      "headerRow": 1,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "B",
+      "headerRow": 1,
+      "label": "Order",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "C",
+      "headerRow": 1,
+      "label": "UTM medium",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "D",
+      "headerRow": 1,
+      "label": "UTM campaign name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "E",
+      "headerRow": 1,
+      "label": "Content source (last visit)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "F",
+      "headerRow": 1,
+      "label": "Content source (first visit)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "G",
+      "headerRow": 1,
+      "label": "UTM content (last visit)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "H",
+      "headerRow": 1,
+      "label": "Order referrer URL",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "I",
+      "headerRow": 1,
+      "label": "Customer name",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "J",
+      "headerRow": 1,
+      "label": "Customer ID",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "K",
+      "headerRow": 1,
+      "label": "Total sales",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "L",
+      "headerRow": 1,
+      "label": "Sales (Product title, Unit price)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "M",
+      "headerRow": 1,
+      "label": "Tracking number",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "N",
+      "headerRow": 1,
+      "label": "Payment status",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "O",
+      "headerRow": 1,
+      "label": "Order fulfillment status",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "P",
+      "headerRow": 1,
+      "label": "UTM content (first visit)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "Q",
+      "headerRow": 1,
+      "label": "Customer email",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "R",
+      "headerRow": 1,
+      "label": "Shipping phone number",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "S",
+      "headerRow": 1,
+      "label": "Shipping address 1",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "T",
+      "headerRow": 1,
+      "label": "Total shipping charges",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "U",
+      "headerRow": 1,
+      "label": "Discounts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "V",
+      "headerRow": 1,
+      "label": "Shipping region",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "W",
+      "headerRow": 1,
+      "label": "Status",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "X",
+      "headerRow": 1,
+      "label": "Day with hour",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "Y",
+      "headerRow": 1,
+      "label": "Items quantity in cart",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "Z",
+      "headerRow": 1,
+      "label": "Days to conversion",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AA",
+      "headerRow": 1,
+      "label": "Sessions to convert",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AB",
+      "headerRow": 1,
+      "label": "First-visit landing page",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AC",
+      "headerRow": 1,
+      "label": "Last-visit landing page",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AD",
+      "headerRow": 1,
+      "label": "First-visit UTM source",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AE",
+      "headerRow": 1,
+      "label": "Last-visit UTM source",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AF",
+      "headerRow": 1,
+      "label": "Discount code",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AG",
+      "headerRow": 1,
+      "label": "Product variant only",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AH",
+      "headerRow": 1,
+      "label": "Shipping price after discount",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AI",
+      "headerRow": 1,
+      "label": "Shipping Discounts",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AL",
+      "headerRow": 1,
+      "label": "Gender Identifier",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AM",
+      "headerRow": 1,
+      "label": "Order Status",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AN",
+      "headerRow": 1,
+      "label": "Cancellation Reason",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AP",
+      "headerRow": 1,
+      "label": "GPS (latitude,longitude)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AQ",
+      "headerRow": 1,
+      "label": "Creation → Delivery duration",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AR",
+      "headerRow": 1,
+      "label": "Pickup → Delivery duration",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AS",
+      "headerRow": 1,
+      "label": "District Identification Tool",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AY",
+      "headerRow": 1,
+      "label": "Cleaned Version\nContent source (last visit)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "AZ",
+      "headerRow": 1,
+      "label": "Cleaned Version\nContent source (First visit)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BB",
+      "headerRow": 1,
+      "label": "Product 1",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BC",
+      "headerRow": 1,
+      "label": "Product 1 unit price (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BD",
+      "headerRow": 1,
+      "label": "Product 2",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BE",
+      "headerRow": 1,
+      "label": "Product 2 unit price (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BF",
+      "headerRow": 1,
+      "label": "Product 3",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BG",
+      "headerRow": 1,
+      "label": "Product 3 unit price (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BH",
+      "headerRow": 1,
+      "label": "Product 4",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BI",
+      "headerRow": 1,
+      "label": "Product 4 unit price (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BJ",
+      "headerRow": 1,
+      "label": "Product 5",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BK",
+      "headerRow": 1,
+      "label": "Product 5 unit price (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BL",
+      "headerRow": 1,
+      "label": "Product 6",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BM",
+      "headerRow": 1,
+      "label": "Product 6 unit price (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BN",
+      "headerRow": 1,
+      "label": "Product 7",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Order Tracking Details",
+      "column": "BO",
+      "headerRow": 1,
+      "label": "Product 7 unit price (EGP)",
+      "status": "observed_header",
+      "definition": "Source label only. Business eligibility and reconciliation require review.",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "A",
+      "headerRow": 1,
+      "label": "Date",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "B",
+      "headerRow": 1,
+      "label": "Region",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "C",
+      "headerRow": 1,
+      "label": "Sessions",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "D",
+      "headerRow": 1,
+      "label": "Engaged sessions",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "E",
+      "headerRow": 1,
+      "label": "Add to carts",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "F",
+      "headerRow": 1,
+      "label": "Checkouts",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "G",
+      "headerRow": 1,
+      "label": "Avg session duration (sec)",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "H",
+      "headerRow": 1,
+      "label": "Views per session",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "I",
+      "headerRow": 1,
+      "label": "User engagement",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "J",
+      "headerRow": 1,
+      "label": "Bounce rate",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "K",
+      "headerRow": 1,
+      "label": "Avg engaged time per session",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "L",
+      "headerRow": 1,
+      "label": "Unify GA4 and Bosta Region Naming",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "M",
+      "headerRow": 1,
+      "label": "Orders",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "N",
+      "headerRow": 1,
+      "label": "Conversion rate",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "O",
+      "headerRow": 1,
+      "label": "Avg days to convert",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "P",
+      "headerRow": 1,
+      "label": "Avg sessions to convert",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "Q",
+      "headerRow": 1,
+      "label": "Avg creation → delivery (min)",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "R",
+      "headerRow": 1,
+      "label": "Orders with days",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "S",
+      "headerRow": 1,
+      "label": "Orders with journey interactions",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "T",
+      "headerRow": 1,
+      "label": "Sessions with duration",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "U",
+      "headerRow": 1,
+      "label": "Delivered orders with duration",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "X",
+      "headerRow": 1,
+      "label": "Order date",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "Y",
+      "headerRow": 1,
+      "label": "Matched region",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "Z",
+      "headerRow": 1,
+      "label": "Order count",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AA",
+      "headerRow": 1,
+      "label": "Days sum",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AB",
+      "headerRow": 1,
+      "label": "Days sample",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AC",
+      "headerRow": 1,
+      "label": "Interactions sum",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AD",
+      "headerRow": 1,
+      "label": "Interactions sample",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AE",
+      "headerRow": 1,
+      "label": "Delivery minutes sum",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AF",
+      "headerRow": 1,
+      "label": "Delivery sample",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AG",
+      "headerRow": 1,
+      "label": "Delivered orders count",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AH",
+      "headerRow": 1,
+      "label": "Returned orders count",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AJ",
+      "headerRow": 1,
+      "label": "Delivered orders",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AK",
+      "headerRow": 1,
+      "label": "Delivery rate",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AL",
+      "headerRow": 1,
+      "label": "Bounce rate",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AM",
+      "headerRow": 1,
+      "label": "New customers",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AN",
+      "headerRow": 1,
+      "label": "Returning customers",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AO",
+      "headerRow": 1,
+      "label": "Sessions with bounce data",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AP",
+      "headerRow": 1,
+      "label": "Order date",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AQ",
+      "headerRow": 1,
+      "label": "Standardized region",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AR",
+      "headerRow": 1,
+      "label": "Shopify customer ID",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AS",
+      "headerRow": 1,
+      "label": "First order date",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Regions Analysis",
+      "column": "AT",
+      "headerRow": 1,
+      "label": "Daily orders",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "A",
+      "headerRow": 2,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "B",
+      "headerRow": 2,
+      "label": "Page title",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "C",
+      "headerRow": 2,
+      "label": "Sessions",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "D",
+      "headerRow": 2,
+      "label": "Engaged sessions",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "E",
+      "headerRow": 2,
+      "label": "Engagement rate",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "F",
+      "headerRow": 2,
+      "label": "Bounce rate",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "G",
+      "headerRow": 2,
+      "label": "Average session duration",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "H",
+      "headerRow": 2,
+      "label": "Total users",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "I",
+      "headerRow": 2,
+      "label": "New users",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "J",
+      "headerRow": 2,
+      "label": "Page path",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "D by D Pages Analysis",
+      "column": "K",
+      "headerRow": 2,
+      "label": "Old Users",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Custom Events tracking (for CRO)",
+      "column": "A",
+      "headerRow": 2,
+      "label": "Day",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Custom Events tracking (for CRO)",
+      "column": "B",
+      "headerRow": 2,
+      "label": "Page title",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Custom Events tracking (for CRO)",
+      "column": "C",
+      "headerRow": 2,
+      "label": "Sessions",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    },
+    {
+      "source": "Custom Events tracking (for CRO)",
+      "column": "D",
+      "headerRow": 2,
+      "label": "Count See how it looks on you",
+      "status": "observed_header",
+      "definition": "Source label; metric grain and eligibility require review",
+      "sourceUrl": "https://docs.google.com/spreadsheets/d/1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E/edit"
+    }
+  ],
+  "metrics": [
+    {
+      "key": "metrics.conversionRate",
+      "formula": "totalOrders / sessions",
+      "unit": "ratio",
+      "definition": "Orders divided by sessions for the same period and scope.\n\nUse placed orders for this conversion metric. Do not substitute delivered orders because the revenue policy is Delivered only. Zero or missing sessions gives an unavailable rate.\n\nUses totalOrders and sessions",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.revenueAfterDeliveryAndAdCosts",
+      "formula": "deliveredRevenue - advertisingSpend - totalShippingCosts",
+      "unit": "EGP",
+      "definition": "Delivered revenue less advertising spend and the mapped shipping expense.\n\nThis excludes any costs not in the formula and must not be labelled net profit. Verify that shipping is a merchant expense, not shipping charges collected from customers; verify refunds and product costs separately.\n\nUses deliveredRevenue, advertisingSpend, totalShippingCosts",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.metaCpa",
+      "formula": "advertisingSpend / metaPurchases",
+      "unit": "EGP/event",
+      "definition": "Advertising spend per Meta-attributed purchase event.\n\nDivide total spend by total Meta purchase events for the same period. Meta events are not delivered Shopify orders. Zero denominator is unavailable.\n\nMeta purchase events",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.metaPurchaseRate",
+      "formula": "metaPurchases / metaCheckouts",
+      "unit": "ratio",
+      "definition": "Meta purchase events divided by Meta checkout events.\n\nUse totals for the same period and attribution scope. Zero or missing checkouts gives an unavailable rate.\n\nFormula recorded, but existing ad funnel rate still uses built-in calculation",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Not connected",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.metaCheckoutRate",
+      "formula": "metaCheckouts / metaAddsToCart",
+      "unit": "ratio",
+      "definition": "Meta checkout events divided by Meta add-to-cart events.\n\nRatio of totals for the same period and attribution scope. Zero denominator is unavailable.\n\nEvaluated by website formula engine; safe zero-denominator fallback",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.metaAddToCartRate",
+      "formula": "metaAddsToCart / metaLandingPageViews",
+      "unit": "ratio",
+      "definition": "Meta add-to-cart events divided by Meta landing-page views.\n\nRatio of totals for the same period and attribution scope. Zero denominator is unavailable.\n\nEvaluated by website formula engine; safe zero-denominator fallback",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.metaLandingPageViewRate",
+      "formula": "metaLandingPageViews / metaLinkClicks",
+      "unit": "ratio",
+      "definition": "Meta landing-page views divided by Meta outbound/link clicks.\n\nVerify the selected click field matches the label. Ratio of totals; zero denominator is unavailable.\n\nEvaluated by website formula engine; safe zero-denominator fallback",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.metaAdsOrders",
+      "formula": "qualifyingMetaOrders",
+      "unit": "orders",
+      "definition": "Shopify orders matching the existing Meta first-visit attribution rules.\n\nUse attribution.metaSources and attribution.excludedContent. This is a first-visit metric; it does not become linear attribution merely because the Decision Intelligence setting is linear.\n\nShopify orders matching mapped first-visit source and UTM content in selected date range",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.dailyAov",
+      "formula": "dailyOrderRevenue / dailyOrderCount",
+      "unit": "EGP/order",
+      "definition": "Revenue divided by order count within each day.\n\nNumerator and denominator must use exactly the same order eligibility. For a whole period divide total revenue by total qualifying orders, not the average of daily AOVs.\n\nWebsite daily AOV calculation; not configurable through mapping yet",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.dailyAvgDaysToConvert",
+      "formula": "sumDaysToConvert / countValidDaysToConvert",
+      "unit": "days",
+      "definition": "Mean days to convert over orders with valid conversion durations.\n\nExclude unavailable durations, not real zero-day conversions. Existing mapping points to Customer Extra Data, which is absent from current workbook metadata.\n\nWebsite currently computes directly from Customer Extra Data",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Tab reference needs updating",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.dailyAvgSessionsToConvert",
+      "formula": "sumSessionsToConvert / countValidSessionsToConvert",
+      "unit": "count",
+      "definition": "Mean Shopify journey moments used as a sessions-to-conversion proxy.\n\nKeep the proxy label. Exclude unavailable counts, not genuine zeros. Existing mapping points to the absent Customer Extra Data tab.\n\nWebsite currently computes directly from Customer Extra Data",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Tab reference needs updating",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.dailyColorBand",
+      "formula": "dailyValue / selectedPeriodAverage",
+      "unit": "ratio",
+      "definition": "Daily value relative to the selected-period average.\n\nExisting thresholds: above 1.10, between 0.90 and 1.10, below 0.90. Cost metrics reverse the good/bad direction. This is a display rule, not a business KPI.\n\nGreen above 1.10, orange 0.90–1.10, red below 0.90; reversed for cost metrics",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.deliveredMetaAdsOrders",
+      "formula": "qualifyingDeliveredMetaOrders",
+      "unit": "orders",
+      "definition": "Qualifying first-visit Meta orders whose mapped delivery status is Delivered.\n\nUse the same attribution rules as metrics.metaAdsOrders and the mapped delivered status. The mapped date is the order date, not necessarily the delivery date.\n\nQualifying Shopify orders with the mapped delivery status",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.costPerOrderAds",
+      "formula": "advertisingSpend / metaAdsOrders",
+      "unit": "EGP/order",
+      "definition": "Meta advertising spend per qualifying Shopify Meta order.\n\nDivide period spend by qualifying orders for that same period. Do not average daily CPAs; zero denominator is unavailable.\n\nMeta spend and Shopify orders for the same date range",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "metrics.actualCostPerOrderAds",
+      "formula": "advertisingSpend / deliveredMetaAdsOrders",
+      "unit": "EGP/order",
+      "definition": "Meta advertising spend per delivered qualifying Shopify Meta order.\n\nUse the same attribution and date rules as deliveredMetaAdsOrders. Not the same as Meta purchase-event CPA. Zero denominator is unavailable.\n\nMeta spend and delivered Shopify orders for the same date range",
+      "source": "Website Mapping and Metrics",
+      "recordedStatus": "Dashboard not checked",
+      "status": "recorded_definition_not_owner_approved",
+      "zeroDenominator": "unavailable",
+      "aggregation": "ratio_of_matching_totals_unless_otherwise_defined"
+    },
+    {
+      "key": "placedOrders",
+      "formula": "count(distinct canonical order ID)",
+      "unit": "orders",
+      "definition": "Order creation cohort; original store-aware identity required; cancellation policy explicit",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "deliveredOrders",
+      "formula": "count(orders with verified final delivered status)",
+      "unit": "orders",
+      "definition": "Order creation date cohort differs from delivery-date revenue",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "deliveredOrderAmount",
+      "formula": "sum(order K for delivered eligible orders)",
+      "unit": "currency",
+      "definition": "Observed order amount; tax, shipping and refunds treatment unverified",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "netDeliveredRevenue",
+      "formula": "delivered merchandise amount - monetary refunds under approved date basis",
+      "unit": "currency",
+      "definition": "Missing refund source makes net revenue unavailable",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "aovPlaced",
+      "formula": "sum(eligible placed amounts) / count(eligible placed orders)",
+      "unit": "currency/order",
+      "definition": "Same numerator and denominator eligibility; do not substitute delivered revenue",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "aovDelivered",
+      "formula": "sum(delivered eligible amounts) / count(delivered eligible orders)",
+      "unit": "currency/order",
+      "definition": "Use ratio of totals, not average daily AOV",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "deliveryRateMature",
+      "formula": "delivered / (delivered + returned) within mature creation cohort",
+      "unit": "ratio",
+      "definition": "Pending shipments excluded from resolved denominator; cohort maturity must be approved",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "shippingChargesCollected",
+      "formula": "sum(customer shipping charges after discounts)",
+      "unit": "currency",
+      "definition": "Revenue collected from customer; not the carrier expense",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "carrierExpense",
+      "formula": "sum(actual carrier invoices under approved allocation)",
+      "unit": "currency",
+      "definition": "Not mapped in the audited order source",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "refunds",
+      "formula": "sum(actual processed monetary refunds)",
+      "unit": "currency",
+      "definition": "A returned shipment does not establish a refund",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "contributionBeforeAds",
+      "formula": "netDeliveredRevenue - product COGS - variable fulfillment - failed delivery costs",
+      "unit": "currency",
+      "definition": "Cost and refund source coverage required; fixed costs excluded",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "contributionAfterAds",
+      "formula": "contributionBeforeAds - adSpend",
+      "unit": "currency",
+      "definition": "Not net profit unless fixed costs and all remaining costs are included",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "netProfit",
+      "formula": "contributionAfterAds - approved fixed and other operating expenses",
+      "unit": "currency",
+      "definition": "Unavailable until cost boundaries and time basis are verified",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "roasPlatform",
+      "formula": "platform attributed revenue / platform spend",
+      "unit": "ratio",
+      "definition": "Platform window/scope fixed; not causal incremental return",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "incrementalReturn",
+      "formula": "incremental contribution from tested intervention / incremental spend",
+      "unit": "ratio",
+      "definition": "Needs experimental or defensibly identified incremental effect",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "sellableStock",
+      "formula": "latest verified online-sellable quantity by store and variant",
+      "unit": "units",
+      "definition": "Blank unavailable; zero valid; do not add migrated store snapshots",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "endingInventory",
+      "formula": "reported ending_inventory_units by local day/store/variant",
+      "unit": "units",
+      "definition": "Different measurement from current sellable stock",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "observedUnitDemand",
+      "formula": "sum(verified line-item quantities by canonical SKU and original order date)",
+      "unit": "units/day",
+      "definition": "Source 7/28 day counters remain unverified; not inferred from stock deltas",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "daysOfCover",
+      "formula": "usableStock / uncensored expected daily unit demand",
+      "unit": "days",
+      "definition": "Zero demand gives unavailable coverage; inbound timing handled separately",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "projectedStock",
+      "formula": "opening + approved receipts + inspected returns - demand - adjustments",
+      "unit": "units/day",
+      "definition": "Variant and date reconciliation required; manufacturing lead time applies",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "reorderNeed",
+      "formula": "max(0, demand over lead time + safety stock - usable stock - approved inbound)",
+      "unit": "units",
+      "definition": "Compare daily stock path; an end-period total alone can hide earlier stockout",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "cashBalance",
+      "formula": "opening cash + settled receipts - actual timed cash out",
+      "unit": "currency/day",
+      "definition": "Sales and deliveries do not equal collections",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "productionLoad",
+      "formula": "sum(batch quantity * approved resource usage per unit)",
+      "unit": "resource/day",
+      "definition": "Integer MOQ, batch multiples, calendar and BOM required",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "forecastMAE",
+      "formula": "mean(abs(actual - prediction)) on time-ordered validation",
+      "unit": "units",
+      "definition": "No shuffled train/test split; maturity and gap exclusions enforced",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "forecastWAPE",
+      "formula": "sum(abs(actual - prediction)) / sum(actual)",
+      "unit": "ratio",
+      "definition": "Zero actual denominator unavailable; report MAE alongside",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "relativeConversionChange",
+      "formula": "(post conversion rate / pre conversion rate) - 1",
+      "unit": "ratio",
+      "definition": "Descriptive comparison; price/stock/channel changes confound causal interpretation",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "nativeShopifyConversion",
+      "formula": "sessions completing checkout / Shopify sessions",
+      "unit": "ratio",
+      "definition": "Different from attributed order count divided by sessions; one model view only",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    },
+    {
+      "key": "metaEstimatedImpressions",
+      "formula": "1000 * spend / CPM where CPM > 0",
+      "unit": "estimated count",
+      "definition": "Derived from reported CPM; not raw verified impressions; CTR uses consistent click basis",
+      "source": "Proposed canonical decision-layer definition",
+      "status": "review_required",
+      "zeroDenominator": "unavailable",
+      "aggregation": "matching_grain_and_period"
+    }
+  ],
+  "relationships": [
+    {
+      "from": "Store",
+      "to": "Order",
+      "cardinality": "1:N",
+      "type": "identity",
+      "notes": "Store-scoped IDs needed before deduplication"
+    },
+    {
+      "from": "Order",
+      "to": "OrderLine",
+      "cardinality": "1:N",
+      "type": "accounting",
+      "notes": "Line quantities reconcile to order quantities; not one row per title"
+    },
+    {
+      "from": "Variant",
+      "to": "OrderLine",
+      "cardinality": "1:N",
+      "type": "identity",
+      "notes": "Reviewed old/new SKU crosswalk required"
+    },
+    {
+      "from": "Variant",
+      "to": "InventorySnapshot",
+      "cardinality": "1:N",
+      "type": "measurement",
+      "notes": "Choose active store snapshot; do not add migrated old/new copies"
+    },
+    {
+      "from": "Variant",
+      "to": "InventoryHistory",
+      "cardinality": "1:N",
+      "type": "measurement",
+      "notes": "Daily ending units differ from current sellable inventory"
+    },
+    {
+      "from": "Campaign",
+      "to": "AdSet",
+      "cardinality": "1:N",
+      "type": "identity",
+      "notes": "Join on stable parent IDs"
+    },
+    {
+      "from": "AdSet",
+      "to": "Ad",
+      "cardinality": "1:N",
+      "type": "identity",
+      "notes": "Historical hierarchy may change"
+    },
+    {
+      "from": "Campaign",
+      "to": "Variant",
+      "cardinality": "N:M",
+      "type": "unknown",
+      "notes": "Campaign-product shares need observed mapping or approved assumptions"
+    },
+    {
+      "from": "Ad spend",
+      "to": "incremental demand",
+      "cardinality": "response",
+      "type": "hypothesis",
+      "notes": "Needs experiments or approved scenario curves; historical ROAS not marginal response"
+    },
+    {
+      "from": "Demand",
+      "to": "inventory",
+      "cardinality": "flow",
+      "type": "business_identity",
+      "notes": "closing = opening + approved receipts + inspected returns - demand - adjustments"
+    },
+    {
+      "from": "Production",
+      "to": "inventory",
+      "cardinality": "flow",
+      "type": "business_identity",
+      "notes": "Only usable units after lead time and QC become sellable"
+    },
+    {
+      "from": "Production",
+      "to": "materials",
+      "cardinality": "constraint",
+      "type": "business_identity",
+      "notes": "BOM consumption <= available materials by time"
+    },
+    {
+      "from": "Production",
+      "to": "capacity",
+      "cardinality": "constraint",
+      "type": "business_identity",
+      "notes": "Resource hours and working calendar constrain each stage"
+    },
+    {
+      "from": "Order",
+      "to": "Shipment",
+      "cardinality": "1:N",
+      "type": "unknown",
+      "notes": "Split shipments and repeated status observations require reconciliation"
+    },
+    {
+      "from": "Delivered order",
+      "to": "cash receipt",
+      "cardinality": "lag",
+      "type": "unknown",
+      "notes": "Use actual carrier settlement schedule"
+    },
+    {
+      "from": "Refund",
+      "to": "revenue and cash",
+      "cardinality": "flow",
+      "type": "accounting",
+      "notes": "Returned shipment alone is not refunded money"
+    },
+    {
+      "from": "Inventory availability",
+      "to": "observed sales",
+      "cardinality": "censoring",
+      "type": "measurement",
+      "notes": "Stockout limits observed sales; zero sales does not imply zero demand"
+    },
+    {
+      "from": "Price",
+      "to": "demand",
+      "cardinality": "response",
+      "type": "hypothesis",
+      "notes": "Control promotion, stock, channel, seasonality; estimated prices excluded"
+    },
+    {
+      "from": "Creative exposure",
+      "to": "CTR and purchases",
+      "cardinality": "response",
+      "type": "hypothesis",
+      "notes": "Frequency/reach data and controlled experiments needed for fatigue claim"
+    },
+    {
+      "from": "Website",
+      "to": "conversion",
+      "cardinality": "response",
+      "type": "hypothesis",
+      "notes": "Device/source/page mix and tracking outages can confound comparisons"
+    },
+    {
+      "from": "Attribution model",
+      "to": "attributed orders",
+      "cardinality": "allocation",
+      "type": "measurement",
+      "notes": "One model at a time; events, orders and checkout sessions remain separate"
+    },
+    {
+      "from": "Decision",
+      "to": "outcome",
+      "cardinality": "feedback",
+      "type": "measurement",
+      "notes": "Log actual human action and evaluate after outcome maturity"
+    }
+  ],
+  "questions": [
+    {
+      "id": "goal",
+      "section": "الهدف وحدود الإعلان",
+      "priority": "مؤثر في الحساب",
+      "question": "إيه أهم نتيجة تسويقية عايز تحسّنها؟",
+      "answer": "زيادة المبيعات المُسلَّمة",
+      "example": "توزيع ميزانية الإعلانات، أو كمية الإنتاج، أو ترتيب مشاكل الموقع",
+      "why": "نبدأ بقرار محدد نقدر نقيس نتيجته.",
+      "unit": "نص",
+      "scope": "كل الشركة",
+      "status": "trial_selection",
+      "authority": "owner_required"
+    },
+    {
+      "id": "horizon_days",
+      "section": "الهدف وحدود الإعلان",
+      "priority": "مؤثر في الحساب",
+      "question": "نقارن نتيجة القرار على مدة قد إيه؟",
+      "answer": "7 أيام",
+      "example": "اليوم، 7 أيام، 30 يومًا، أو 90 يومًا",
+      "why": "بيع الستوك بسرعة ممكن يختلف عن أفضل نتيجة للشهر.",
+      "unit": "عدد أيام",
+      "scope": "كل الشركة",
+      "status": "trial_selection",
+      "authority": "owner_required"
+    },
+    {
+      "id": "ad_budget",
+      "section": "الهدف وحدود الإعلان",
+      "priority": "مؤثر في الحساب",
+      "question": "أقصى صرف إعلاني مسموح يوميًا وخلال مدة الخطة؟",
+      "answer": "2,000 جنيه يوميًا — تجربة فقط",
+      "example": "3,000 جنيه يوميًا؛ 60,000 جنيه للشهر",
+      "why": "قيد ميزانية منفصل عن السيولة.",
+      "unit": "جنيه/يوم وفترة",
+      "scope": "كل الشركة",
+      "status": "trial_selection",
+      "authority": "owner_required"
+    },
+    {
+      "id": "budget_ramp",
+      "section": "الهدف وحدود الإعلان",
+      "priority": "مؤثر في الحساب",
+      "question": "مسموح نغيّر ميزانية الحملة قد إيه وفي مدة قد إيه؟",
+      "answer": "20% يوميًا — تجربة فقط",
+      "example": "بحد أقصى 15% في اليوم، ومراجعة بعد 3 أيام",
+      "why": "نولّد بدائل ضمن نطاق مسموح بدل زيادات غير محدودة.",
+      "unit": "نص",
+      "scope": "كل الشركة",
+      "status": "trial_selection",
+      "authority": "owner_required"
+    },
+    {
+      "id": "safety_stock",
+      "section": "الستوك وربطه بالحملات",
+      "priority": "مؤثر في الحساب",
+      "question": "نحافظ على حد أدنى من القطع الجاهزة لكل SKU؟",
+      "answer": "قطعتان لكل SKU — تجربة فقط",
+      "example": "5 قطع لمقاس M، أو تغطية 7 أيام لمنتجات محددة",
+      "why": "قيد توافر واضح يحدد هل نكمل حملة قبل نفاد الستوك.",
+      "unit": "قطع أو أيام",
+      "scope": "SKU",
+      "status": "trial_selection",
+      "authority": "owner_required"
+    },
+    {
+      "id": "campaign_limits",
+      "section": "الهدف وحدود الإعلان",
+      "priority": "مؤثر في الحساب",
+      "question": "في حملات لازم تفضل شغالة أو ممنوع نصرف عليها؟",
+      "answer": "بدون حد أدنى؛ حد أقصى حسب ميزانية اليوم",
+      "example": "حملة A حد أدنى 300؛ حملة B حد أقصى 1,000",
+      "why": "نحترم الالتزامات والاستراتيجية المقصودة.",
+      "unit": "حدود لكل Campaign ID",
+      "scope": "حملة",
+      "status": "trial_selection",
+      "authority": "owner_required"
+    },
+    {
+      "id": "attribution_basis",
+      "section": "طريقة مقارنة النتائج",
+      "priority": "مؤثر في الحساب",
+      "question": "عايز تنسب البيع للإعلانات بإيه في المقارنة؟",
+      "answer": "First click",
+      "example": "First click أو Last click أو Linear؛ ونحتفظ بقياس Meta منفصل",
+      "why": "المصدر فيه 5 نماذج. مينفعش نجمعها أو نخلطها بقياس Meta.",
+      "unit": "نص",
+      "scope": "كل الشركة",
+      "status": "trial_selection",
+      "authority": "owner_required"
+    },
+    {
+      "id": "return_cost",
+      "question": "تكلفة الاسترجاع الكاملة اللي بتتحملها للطلب المرتجع كام؟",
+      "example": "رقم بالجنيه لكل طلب مرتجع؛ يشمل شحن الرجوع وأي تكلفة إضافية. اتركه فاضي لو مش معروف.",
+      "why": "نحسب تكلفة الرجوع منفصلة عن المنتج والتوصيل؛ لا تُفترض صفرًا.",
+      "unit": "EGP/returned_order",
+      "inputKind": "money",
+      "answer": "80",
+      "status": "owner_supplied",
+      "section": "التكاليف",
+      "priority": "اختياري — يفعّل الحساب المالي"
+    },
+    {
+      "id": "variable_product_cost",
+      "question": "التكلفة المتغيرة الكاملة للقطعة كام؟",
+      "example": "رقم بالجنيه لو موحد لكل المنتجات، أو رابط جدول لكل SKU. وضّح لو شامل الشحن أو الإعلان أو الاسترجاع.",
+      "why": "نستخدم تكلفة كل SKU ونمنع تكرار تحميل نفس البند؛ غياب التكلفة يمنع الربح فقط.",
+      "unit": "EGP/unit_or_SKU_cost_source",
+      "inputKind": "money_or_source",
+      "answer": "700",
+      "status": "owner_supplied",
+      "section": "التكاليف",
+      "priority": "اختياري — يفعّل الحساب المالي"
+    },
+    {
+      "id": "fixed_costs_monthly",
+      "question": "إجمالي التكاليف الثابتة الشهرية بالكامل — غير الإنفاق الإعلاني فقط — كام؟",
+      "example": "جنيه/شهر: يشمل أي رواتب واشتراكات تسويق ثابتة؛ يستبعد الإنفاق الإعلاني فقط.",
+      "why": "نفصل هامش المساهمة عن النتيجة بعد التكاليف الثابتة. لو فاضي النتيجة غير متاحة.",
+      "unit": "EGP/month",
+      "inputKind": "money",
+      "excludesAdvertisingSpend": true,
+      "answer": "40000",
+      "status": "owner_supplied",
+      "section": "التكاليف",
+      "priority": "اختياري — يفعّل الحساب المالي"
+    }
+  ],
+  "decisionVariables": [
+    {
+      "name": "campaign_budget_path",
+      "unit": "EGP per campaign per day",
+      "needs": [
+        "response curves",
+        "budget bounds",
+        "ramp limits",
+        "campaign SKU mapping"
+      ]
+    },
+    {
+      "name": "production_batch_plan",
+      "unit": "integer units per SKU and start date",
+      "needs": [
+        "MOQ",
+        "BOM",
+        "capacity",
+        "lead time",
+        "cash"
+      ]
+    },
+    {
+      "name": "creative_test",
+      "unit": "experiment proposal",
+      "needs": [
+        "cost",
+        "production lead time",
+        "test approval"
+      ]
+    },
+    {
+      "name": "fulfillment_priority",
+      "unit": "ordered work queue proposal",
+      "needs": [
+        "capacity",
+        "service commitments",
+        "carrier costs"
+      ]
+    }
+  ],
+  "constraints": [
+    "daily and horizon advertising spend",
+    "cash balance before same-day collections",
+    "daily usable inventory by canonical SKU",
+    "minimum safety stock",
+    "approved inbound timing",
+    "campaign budget change bounds",
+    "fulfillment daily capacity",
+    "production resource capacity",
+    "BOM material availability",
+    "MOQ and batch multiples",
+    "experiment downside limit",
+    "delivery and cash collection maturity",
+    "human approval; no commercial execution"
+  ],
+  "knownIssues": [
+    {
+      "id": "ga4_map",
+      "finding": "Legacy map AR:BC conflicts with observed AX:BI. Reporting FJ:FU reads AX:BI.",
+      "impact": "Old mappings must not train models."
+    },
+    {
+      "id": "meta_revisions",
+      "finding": "16,184 duplicate day/ad rows in bounded analytical read. Reporting keeps last physical row.",
+      "impact": "Revision order needs validation; do not sum revisions."
+    },
+    {
+      "id": "prices",
+      "finding": "Price History row 1 describes pre-2026-11-24 prices as estimated.",
+      "impact": "Exclude estimates from causal price training."
+    },
+    {
+      "id": "shipping",
+      "finding": "Dashboard totalShippingCosts sums order T shipping charges, not verified carrier expense.",
+      "impact": "Do not call revenue-after-ad-and-shipping net profit."
+    },
+    {
+      "id": "orders",
+      "finding": "No verified original store-aware order identity or line-item quantities in audited order extract.",
+      "impact": "Demand and migration deduplication not certified."
+    },
+    {
+      "id": "setup",
+      "finding": "All previous DI settings discarded by owner.",
+      "impact": "No decision objective, revenue policy or attribution policy inherited."
+    }
+  ],
+  "policy": {
+    "mode": "advisory_only",
+    "commercialExecution": false,
+    "causalClaimsRequire": "approved experiment or defensible identification design",
+    "missingData": "unavailable; never implicit zero",
+    "training": "verified complete days only; exclude outages and estimated data",
+    "approval": "All business answers are blank until supplied and reviewed"
+  },
+  "confirmedFacts": {
+    "userRole": "marketing",
+    "inventoryMeaning": "ready_available_to_sell",
+    "inventoryMeaningConfirmedByOwnerOn": "2026-11-26",
+    "localAccess": "open_to_internal_team",
+    "adDestination": "home_page",
+    "campaignToSkuMapping": "unknown_not_manually_available",
+    "stockPlanningScope": "sitewide_SKU_demand; campaign-specific stock effects are not established"
+  },
+  "onboardingReadAt": "2026-11-26T15:17:40.334Z"
+}

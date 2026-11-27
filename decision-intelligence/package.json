@@ -1,0 +1,13 @@
+{
+  "name": "ultramedix-decision-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test/*.test.mjs",
+    "start": "node src/server.mjs",
+    "refresh": "node scripts/collect-business.mjs",
+    "sync-onboarding": "node scripts/sync-onboarding.mjs"
+  }
+}

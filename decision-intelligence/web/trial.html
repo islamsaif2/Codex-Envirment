@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ultramedix — تجربة القرارات</title><link rel="stylesheet" href="/style.css"></head>
+<body><main><header><span>ULTRAMEDIX</span><h1>جرّب القرار قبل ما تنفّذه</h1><p>زيادة المبيعات المُسلَّمة، مع مراعاة كل جوانب البزنس اللي بياناتها متاحة.</p></header>
+<aside><strong>وضع تجربة</strong> — نتائج المحاكاة تستخدم طلبًا ومزيج منتجات وأسعارًا مولّدة. لا توجد تغييرات فعلية في الحملات أو المتجر.</aside>
+<p id="error" role="alert"></p>
+<section><h2>مقارنة توزيع الميزانية</h2><p>كل الحملات تفتح الصفحة الرئيسية. المثال يستخدم مزيجًا مشتركًا افتراضيًا: 40% من SKU A و60% من SKU B، ولا يفترض منتجًا خاصًا لكل حملة.</p>
+<div class="grid"><label>حد الإعلان اليومي (جنيه)<select id="budget"><option value="1000">1,000</option><option value="500">500</option><option value="2000">2,000</option></select></label><label>حد الستوك اللي يفضل متاحًا<select id="safety"><option value="2">قطعتان</option><option value="0">بدون حد أمان</option><option value="5">5 قطع</option></select></label><label>هدف التجربة<select id="objective"><option value="revenue">أعلى مبيعات مُسلَّمة</option><option value="contribution">أعلى هامش مساهمة تجريبي</option></select></label></div>
+<button id="run">احسب المقارنة</button><button id="refresh" class="secondary">تحديث اختيارات الشيت</button>
+<p id="resultStatus"></p><div id="summary" class="grid"></div><h3>البديل الأفضل داخل المثال</h3><div id="choices"></div><div class="table-wrap"><table><thead><tr><th>اليوم</th><th>الصرف (جنيه)</th><th>ستوك SKU A المتبقي</th><th>ستوك SKU B المتبقي</th></tr></thead><tbody id="days"></tbody></table></div>
+<p>السيولة وتكاليف الاسترجاع الفعلية غير معروفة. القيم المالية المستخدمة في المثال لا تصف Ultramedix. النموذج يقارن مسارات صرف محددة، وليس كل القرارات الممكنة.</p>
+</section>
+<section><h2>الناقص لا يوقف كل النظام</h2><ul><li>من غير بيانات التكلفة والاسترجاع: تحليل التسويق متاح بحدود المصدر؛ صافي الربح غير متاح.</li><li>من غير السيولة: مقارنة الإعلان ضمن الميزانية ممكنة؛ فحص القدرة المالية غير متاح.</li><li>من غير ربط حملة بمنتج: نعرض خطر الستوك على مستوى الموقع، ولا ننسب نفاد SKU لحملة بعينها.</li><li>غياب أو تأخر البيانات يمنع توصيات فعلية تعتمد عليها. الأيام الناقصة لا تُحسب صفرًا.</li></ul></section>
+<section><h2>إجابات الشيت بتتحول لإيه؟</h2><p>كل اختيار مرتبط بقيمة محددة. الكود يراجع القيمة ويستخدم المدخلات المناسبة للمثال. الاختيارات الأخرى تظل محفوظة ولا تؤثر على ميزة لم تُفعّل بعد.</p><div id="answers"></div><a id="onboarding" target="_blank" rel="noopener">فتح الاختيارات في Google Sheets</a></section>
+<section><h2>البيانات الحقيقية — للمراجعة</h2><div id="freshness" class="grid"></div><p id="realState"></p><a href="/report">فتح نموذج البزنس وقاموس البيانات</a></section>
+<details><summary>افتراضات المثال والتحقق</summary><pre id="details" dir="ltr"></pre></details>
+</main><script type="module" src="/trial.js"></script></body></html>

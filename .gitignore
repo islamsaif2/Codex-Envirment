@@ -1,0 +1,5 @@
+worker.mjs
+node_modules/
+.env
+.env.*
+*.log

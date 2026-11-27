@@ -1,0 +1,255 @@
+{
+  "mode": "demo",
+  "businessId": "ultramedix",
+  "disclaimer": "All selected answers are trial presets chosen at the owner’s request. They are not verified facts about Ultramedix.",
+  "questions": [
+    {
+      "id": "goal",
+      "question": "إيه أهم نتيجة تسويقية عايز تحسّنها؟",
+      "options": [
+        {
+          "key": "sales",
+          "label": "زيادة المبيعات المُسلَّمة",
+          "value": "delivered_sales"
+        },
+        {
+          "key": "cpa",
+          "label": "خفض تكلفة الطلب المُسلَّم",
+          "value": "delivered_cpa"
+        },
+        {
+          "key": "diagnose",
+          "label": "تشخيص مشاكل الأداء قبل تغيير الصرف",
+          "value": "diagnostics"
+        }
+      ],
+      "selectedKey": "sales",
+      "selectedLabel": "زيادة المبيعات المُسلَّمة",
+      "status": "trial_selected",
+      "inputKind": "choice"
+    },
+    {
+      "id": "horizon_days",
+      "question": "نقارن نتيجة القرار على مدة قد إيه؟",
+      "options": [
+        {
+          "key": "7",
+          "label": "7 أيام",
+          "value": 7
+        },
+        {
+          "key": "30",
+          "label": "30 يومًا",
+          "value": 30
+        },
+        {
+          "key": "90",
+          "label": "90 يومًا",
+          "value": 90
+        }
+      ],
+      "selectedKey": "7",
+      "selectedLabel": "7 أيام",
+      "status": "trial_selected",
+      "inputKind": "choice"
+    },
+    {
+      "id": "ad_budget",
+      "question": "أقصى صرف إعلاني مسموح يوميًا وخلال مدة الخطة؟",
+      "options": [
+        {
+          "key": "1k",
+          "label": "1,000 جنيه يوميًا — تجربة فقط",
+          "value": {
+            "daily": 1000,
+            "horizon": 7000
+          }
+        },
+        {
+          "key": "500",
+          "label": "500 جنيه يوميًا — تجربة فقط",
+          "value": {
+            "daily": 500,
+            "horizon": 3500
+          }
+        },
+        {
+          "key": "2k",
+          "label": "2,000 جنيه يوميًا — تجربة فقط",
+          "value": {
+            "daily": 2000,
+            "horizon": 14000
+          }
+        }
+      ],
+      "selectedKey": "2k",
+      "selectedLabel": "2,000 جنيه يوميًا — تجربة فقط",
+      "status": "trial_selected",
+      "inputKind": "choice"
+    },
+    {
+      "id": "budget_ramp",
+      "question": "مسموح نغيّر ميزانية الحملة قد إيه وفي مدة قد إيه؟",
+      "options": [
+        {
+          "key": "20",
+          "label": "20% يوميًا — تجربة فقط",
+          "value": 0.2
+        },
+        {
+          "key": "10",
+          "label": "10% يوميًا — تجربة فقط",
+          "value": 0.1
+        },
+        {
+          "key": "50",
+          "label": "50% يوميًا — تجربة فقط",
+          "value": 0.5
+        },
+        {
+          "key": "unlimited",
+          "label": "بدون حد لتغيير ميزانية الحملة",
+          "value": {
+            "mode": "unbounded"
+          }
+        }
+      ],
+      "selectedKey": "20",
+      "selectedLabel": "20% يوميًا — تجربة فقط",
+      "status": "trial_selected",
+      "inputKind": "choice"
+    },
+    {
+      "id": "safety_stock",
+      "question": "نحافظ على حد أدنى من القطع الجاهزة لكل SKU؟",
+      "options": [
+        {
+          "key": "2",
+          "label": "قطعتان لكل SKU — تجربة فقط",
+          "value": 2
+        },
+        {
+          "key": "0",
+          "label": "بدون حد أمان — تجربة فقط",
+          "value": 0
+        },
+        {
+          "key": "5",
+          "label": "5 قطع لكل SKU — تجربة فقط",
+          "value": 5
+        }
+      ],
+      "selectedKey": "2",
+      "selectedLabel": "قطعتان لكل SKU — تجربة فقط",
+      "status": "trial_selected",
+      "inputKind": "choice"
+    },
+    {
+      "id": "campaign_limits",
+      "question": "في حملات لازم تفضل شغالة أو ممنوع نصرف عليها؟",
+      "options": [
+        {
+          "key": "free",
+          "label": "بدون حد أدنى؛ حد أقصى حسب ميزانية اليوم",
+          "value": {
+            "min": 0,
+            "max": "daily_budget"
+          }
+        },
+        {
+          "key": "hold",
+          "label": "التزم بميزانيات السيناريو المحددة",
+          "value": "scenario_only"
+        }
+      ],
+      "selectedKey": "free",
+      "selectedLabel": "بدون حد أدنى؛ حد أقصى حسب ميزانية اليوم",
+      "status": "trial_selected",
+      "inputKind": "choice"
+    },
+    {
+      "id": "attribution_basis",
+      "question": "عايز تنسب البيع للإعلانات بإيه في المقارنة؟",
+      "options": [
+        {
+          "key": "first",
+          "label": "First click",
+          "value": "first_click"
+        },
+        {
+          "key": "last",
+          "label": "Last click",
+          "value": "last_click"
+        },
+        {
+          "key": "linear",
+          "label": "Linear",
+          "value": "linear"
+        }
+      ],
+      "selectedKey": "first",
+      "selectedLabel": "First click",
+      "status": "trial_selected",
+      "inputKind": "choice"
+    },
+    {
+      "id": "return_cost",
+      "question": "تكلفة الاسترجاع الكاملة اللي بتتحملها للطلب المرتجع كام؟",
+      "example": "رقم بالجنيه لكل طلب مرتجع؛ يشمل شحن الرجوع وأي تكلفة إضافية. اتركه فاضي لو مش معروف.",
+      "why": "نحسب تكلفة الرجوع منفصلة عن المنتج والتوصيل؛ لا تُفترض صفرًا.",
+      "unit": "EGP/returned_order",
+      "inputKind": "money",
+      "options": [],
+      "selectedKey": null,
+      "selectedLabel": "80",
+      "typedAnswer": {
+        "status": "owner_supplied",
+        "value": 80,
+        "currency": "EGP",
+        "unit": "returned_order",
+        "scope": null,
+        "excludesAdvertisingSpend": false
+      }
+    },
+    {
+      "id": "variable_product_cost",
+      "question": "التكلفة المتغيرة الكاملة للقطعة كام؟",
+      "example": "رقم بالجنيه لو موحد لكل المنتجات، أو رابط جدول لكل SKU. وضّح لو شامل الشحن أو الإعلان أو الاسترجاع.",
+      "why": "نستخدم تكلفة كل SKU ونمنع تكرار تحميل نفس البند؛ غياب التكلفة يمنع الربح فقط.",
+      "unit": "EGP/unit_or_SKU_cost_source",
+      "inputKind": "money_or_source",
+      "options": [],
+      "selectedKey": null,
+      "selectedLabel": "700",
+      "typedAnswer": {
+        "status": "owner_supplied",
+        "value": 700,
+        "currency": "EGP",
+        "unit": "unit",
+        "scope": "uniform_per_unit_as_entered",
+        "excludesAdvertisingSpend": false
+      }
+    },
+    {
+      "id": "fixed_costs_monthly",
+      "question": "إجمالي التكاليف الثابتة الشهرية بالكامل — غير الإنفاق الإعلاني فقط — كام؟",
+      "example": "جنيه/شهر: يشمل أي رواتب واشتراكات تسويق ثابتة؛ يستبعد الإنفاق الإعلاني فقط.",
+      "why": "نفصل هامش المساهمة عن النتيجة بعد التكاليف الثابتة. لو فاضي النتيجة غير متاحة.",
+      "unit": "EGP/month",
+      "inputKind": "money",
+      "excludesAdvertisingSpend": true,
+      "options": [],
+      "selectedKey": null,
+      "selectedLabel": "40000",
+      "typedAnswer": {
+        "status": "owner_supplied",
+        "value": 40000,
+        "currency": "EGP",
+        "unit": "month",
+        "scope": null,
+        "excludesAdvertisingSpend": true
+      }
+    }
+  ],
+  "scope": "Sales decision trial using every available business domain. The owner’s marketing role limits questions, not analytical scope. Missing domains degrade only dependent capabilities."
+}

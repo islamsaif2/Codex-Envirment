@@ -1,0 +1,4 @@
+data/
+outputs/
+audit/live-data-audit.json
+*.log
