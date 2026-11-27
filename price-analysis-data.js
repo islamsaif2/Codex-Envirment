@@ -100,10 +100,10 @@ function buildPriceAnalysisData(headers,priceRows,orderRows,pageRows,config={}){
       for(const r of prior)weights.set(r.size,(weights.get(r.size)||0)+1);
       // All-zero evidence applies only to the populated size set, with full coverage.
       day.stockUnits=known.reduce((n,[k,m])=>n+m.get(day.date),0);
-      if(known.length!==sizes.size)continue;
-      const weighted=prior.length>0,den=weighted?prior.length:sizes.size;
-      day.availability=known.reduce((n,[k,m])=>n+(m.get(day.date)>0?(weighted?(weights.get(k)||0):1):0),0)/den;
-      day.availabilityMethod=weighted?'prior 28-day matched variant order lines':'equal size weights';
+      if(!known.length)continue;
+      const weighted=prior.length>0,knownDemand=known.reduce((n,[k])=>n+(weights.get(k)||0),0),den=weighted&&knownDemand>0?knownDemand:known.length;
+      day.availability=known.reduce((n,[k,m])=>n+(m.get(day.date)>0?(weighted&&knownDemand>0?(weights.get(k)||0):1):0),0)/den;
+      day.availabilityMethod=weighted&&knownDemand>0?'prior 28-day matched variant order lines':'equal size weights';
     }
   }
   return {products,start,end,generatedAt:new Date().toISOString(),stockAdjusted:stock.size>0,
@@ -125,7 +125,7 @@ async function readPriceAnalysis(env,business){
       read(priceSheet,'A'+headerRow+':ZZZ'+headerRow),
       read(orders.sheet,orders.sheet==='Order Tracking Details'?'A1:BA':orders.value),read(pages.sheet,pages.value),
       mapping.has('inventoryImages.range')?read(mapRange(mapping,'inventoryImages.range').sheet,mapRange(mapping,'inventoryImages.range').value).catch(()=>[]):Promise.resolve([]),
-      read('Inventory History','A1:ZZ1000').catch(()=>[])
+      read('Inventory History','A1:KV1000').catch(()=>[])
     ]);
     const header=headerRaw[0]||[];let last=header.length-1;while(last>0&&!PriceChangeCore.date(header[last]))last--;
     let col='',n=last+1;while(n){n--;col=String.fromCharCode(65+n%26)+col;n=Math.floor(n/26);}
