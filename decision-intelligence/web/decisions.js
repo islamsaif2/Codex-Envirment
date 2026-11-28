@@ -16,7 +16,7 @@ const decisionGroups=[
 const decisionGroup=d=>decisionGroups.find(g=>g.domains.includes(d.domain));
 function renderDecisionList(){
  if(!currentBoard)return;
- const query=productKeyForSearch($('product-search').value),matches=currentBoard.decisions.filter(d=>productKeyForSearch(d.title+' '+d.domain+' '+(decisionGroup(d)?.name??'')+' '+(d.evidence.product??'')).includes(query)),visible=showAll?matches:matches.slice(0,currentBoard.defaultVisible??30);
+ const matches=currentBoard.decisions,visible=showAll?matches:matches.slice(0,currentBoard.defaultVisible??30);
  const sections=decisionGroups.map(g=>{
   const rows=visible.filter(d=>g.domains.includes(d.domain)),total=matches.filter(d=>g.domains.includes(d.domain)).length,section=element('details',undefined,'decision-group'),heading=element('summary',undefined,'decision-group-heading'),title=element('div',undefined,'decision-group-title'),content=element('div',undefined,'decision-group-content');
   title.append(element('h2',g.name),element('span',rows.length+' of '+total+' decisions','decision-group-count'));heading.append(title,element('span','+','decision-group-toggle'));section.append(heading);
@@ -25,10 +25,9 @@ function renderDecisionList(){
   return section;
  });
  const unassigned=visible.filter(d=>!decisionGroup(d));if(unassigned.length){const section=element('section',undefined,'decision-group');section.append(element('h2','Other decisions'),...unassigned.map(card));sections.push(section);}
- $('decisions').replaceChildren(...sections);$('decision-count').textContent='Showing '+visible.length+' of '+matches.length+' matching decisions across 6 groups. Open a group, then expand a decision. Original review priorities are retained.';$('show-all').hidden=matches.length<=visible.length;
+ $('decisions').replaceChildren(...sections);$('show-all').hidden=matches.length<=visible.length;
 }
-const productKeyForSearch=v=>String(v??'').trim().toLowerCase();
-$('product-search').oninput=()=>{showAll=false;renderDecisionList();};$('show-all').onclick=()=>{showAll=true;renderDecisionList();};
+$('show-all').onclick=()=>{showAll=true;renderDecisionList();};
 function historyExplanation(d){const f=d.explanation?.facts.find(f=>f.type==='product_history');if(!f)return null;const box=element('div',undefined,'history-explanation');box.append(element('p',f.from+' to '+f.priorThrough+': '+format(f.priorOrders)+' orders containing this product ('+percent(f.priorShare)+' of all orders). '+f.recentFrom+' to '+f.through+': '+format(f.recentOrders)+' ('+percent(f.recentShare)+').'),element('p','Total site orders: '+format(f.priorAllOrders)+' → '+format(f.recentAllOrders)+'. After adjusting for this sitewide volume change, the descriptive product-share shortfall is '+format(f.shareAdjustedShortfall)+' orders over 30 days. This does not prove lost sales or causation.'));if(f.stockKnownDays)box.append(element('p','Historical stock: all sizes were zero on '+format(f.allSizesZeroDays)+' of '+format(f.stockKnownDays)+' fully observed days. Last complete stock observation: '+f.stockThrough+'. Closing snapshots do not prove all-day availability.'));return box;}
 function list(title,rows){const box=element('div'),h=element('h3',title),ul=element('ul');for(const row of rows)ul.append(element('li',row));box.append(h,ul);return box;}
 function renderEvidence(d){const table=element('table',undefined,'evidence-table');const values=Object.entries(d.evidence??{});for(const [key,value] of values){if(Array.isArray(value)||value&&typeof value==='object')continue;const row=element('tr');row.append(element('th',key.replace(/([a-z])([A-Z])/g,'$1 $2')),element('td',typeof value==='number'?format(value):String(value??'Unavailable')));table.append(row);}if(Array.isArray(d.evidence)){for(const value of d.evidence){const row=element('tr');row.append(element('th',value.campaign??'Observed alternative'),element('td','Spend: '+format(value.spend)+'; observed purchases: at least '+format(value.purchasesObservedAtLeast)));table.append(row);}}if(d.evidence?.variants){for(const v of d.evidence.variants){const row=element('tr');row.append(element('th','Size '+v.size),element('td','Available: '+format(v.available)+'; source orders, 7d: '+format(v.sourceOrdered7)+'; 28d: '+format(v.sourceOrdered28)));table.append(row);}}return table;}
