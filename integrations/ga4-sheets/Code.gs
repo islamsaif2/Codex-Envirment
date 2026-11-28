@@ -4,7 +4,7 @@ var GA4_ = Object.freeze({
   handler: 'syncGA4', marker: 'ULTRAMEDIX_GA4_IMPORTER', pageSize: 1000,
   budgetMs: 240000, refreshDays: 7, scheduleHours: 12,
   destinationSpreadsheetId: '1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E',
-  setupKey: 'GA4_EGYPT_SETUP_V1',
+  setupKey: 'GA4_EGYPT_SETUP_V1', setupRetryKey: 'GA4_EGYPT_SETUP_RETRY_V1',
   headers: ['Day', 'Sessions', 'Engaged sessions', 'Add to carts', 'Checkouts',
     'Average session duration', 'Views per session', 'User engagement',
     'Bounce rate', 'Region', 'Average Engaged time per session'],
@@ -14,22 +14,27 @@ var GA4_ = Object.freeze({
 
 /** The only public entry point: setup, manual refresh, scheduled refresh and resume. */
 function syncGA4(event) {
+  var props = PropertiesService.getUserProperties();
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) {
     var busyMessage = 'Another project automation is holding the lock. No GA4 data was changed; run syncGA4 again shortly.';
+    if (props.getProperty(GA4_.setupKey) || props.getProperty(GA4_.configKey)) {
+      ga4SetupRetry_(props, 120000);
+      busyMessage = 'Another project automation is holding the lock. GA4 will retry automatically in approximately 2 minutes.';
+    }
     console.log(busyMessage);
     return {message: busyMessage};
   }
-  var props = PropertiesService.getUserProperties();
   var config;
   try {
+    ga4ClearSetupRetry_(props);
     config = ga4ReadJson_(props, GA4_.configKey);
     if (event && event.action === 'connect') {
       if (config) throw Error('Already connected. Run syncGA4 to refresh or continue.');
       config = ga4Connect_(event, props);
     }
     if (!config) {
-      if (event && event.triggerUid) throw Error('Setup is incomplete. Run syncGA4 manually in the bound spreadsheet.');
+      if (event && event.triggerUid && !props.getProperty(GA4_.setupKey)) throw Error('Setup is incomplete. Run syncGA4 manually first.');
       var setup = ga4ShowSetup_(props);
       if (!setup.config) return setup;
       config = setup.config;
@@ -39,17 +44,32 @@ function syncGA4(event) {
     return {message: outcome.pending ? 'Import is continuing automatically. Run syncGA4 anytime to continue manually.' : 'Import complete. Automatic refresh is scheduled every 12 hours.', sheetName: config.sheetName};
   } catch (error) {
     var message = String(error && error.message || error);
+    var kind = ga4ErrorKind_(message);
     if (config) {
-      var kind = ga4ErrorKind_(message);
       ga4LogFailure_(config, message, kind);
       if (kind === 'temporary') ga4SetContinuation_(config, props, 10 * 60000);
       else ga4RemoveContinuation_(config, props);
+    } else if (kind === 'temporary' && props.getProperty(GA4_.setupKey)) {
+      ga4SetupRetry_(props, 60000);
+      console.log('Setup is continuing automatically in approximately 1 minute. ' + message);
+      return {message: 'Setup is continuing automatically. Your property selection is saved.'};
     }
     console.error(message);
     throw error;
   } finally {
     lock.releaseLock();
   }
+}
+function ga4ClearSetupRetry_(props) {
+  var id = props.getProperty(GA4_.setupRetryKey);
+  if (!id) return;
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getUniqueId() === id) ScriptApp.deleteTrigger(t); });
+  props.deleteProperty(GA4_.setupRetryKey);
+}
+function ga4SetupRetry_(props, delay) {
+  ga4ClearSetupRetry_(props);
+  var trigger = ScriptApp.newTrigger(GA4_.handler).timeBased().after(delay).create();
+  props.setProperty(GA4_.setupRetryKey, trigger.getUniqueId());
 }
 
 function ga4ReadJson_(props, key) {

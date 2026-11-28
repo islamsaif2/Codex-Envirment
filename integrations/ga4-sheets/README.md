@@ -22,6 +22,8 @@ The existing Ultramedix Dashboard project is standalone, so `SpreadsheetApp.getU
 
 Tab creation and its ownership marker are committed atomically through the Sheets API. A timed-out creation is read back before retrying, preventing duplicate tabs. The empty field-catalogue tab left by the earlier non-atomic version can be recovered; populated unowned tabs are refused. Shared project locks wait up to 20 seconds for existing automations, then log a clear retry message rather than silently skipping work.
 
+Once the setup tab exists, temporary setup errors and newly created tabs missing from Apps Script's per-execution spreadsheet cache schedule another `syncGA4` execution automatically. It resumes using the saved property selection. Only the importer's known setup-retry trigger is replaced; other project triggers remain unchanged.
+
 Run `syncGA4`, open the **GA4 Import Setup** tab, select the accessible GA4 property in **B3**, optionally set a history start in **B4**, then run `syncGA4` again. Later manual and scheduled runs do not need a spreadsheet UI or property selection. No recurring trigger is installed until a property has been selected and validated.
 
 ## Output

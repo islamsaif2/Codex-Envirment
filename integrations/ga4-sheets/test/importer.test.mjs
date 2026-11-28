@@ -241,3 +241,31 @@ test('compatibility response does not reject a valid report because unrelated op
   response.metricCompatibilities.push({metricMetadata: {apiName: 'addToCarts'}, compatibility: 'INCOMPATIBLE'});
   assert.deepEqual(plain(c.ga4IncompatibleRequested_(response, query)), ['addToCarts']);
 });
+
+test('temporary setup failure queues the same function automatically after authorization and property selection', () => {
+  const c = context(), p = props({GA4_EGYPT_SETUP_V1: '{}'}); let released = false, delay;
+  c.PropertiesService = {getUserProperties: () => p};
+  c.LockService = {getScriptLock: () => ({tryLock: () => true, releaseLock() {released = true;}})};
+  c.ga4ClearSetupRetry_ = () => {};
+  c.ga4ShowSetup_ = () => {throw Error('Service unavailable: newly created tab is not visible yet.');};
+  c.ga4SetupRetry_ = (store, ms) => {assert.equal(store, p); delay = ms;};
+  assert.match(c.syncGA4({triggerUid: 'setup-retry'}).message, /continuing automatically/);
+  assert.equal(delay, 60000); assert.equal(released, true);
+});
+
+test('busy shared project lock schedules recovery without changing existing GA4 data', () => {
+  const c = context(), p = props({GA4_EGYPT_CONFIG_V1: '{}'}); let delay;
+  c.PropertiesService = {getUserProperties: () => p};
+  c.LockService = {getScriptLock: () => ({tryLock(ms) {assert.equal(ms, 20000); return false;}})};
+  c.ga4SetupRetry_ = (store, ms) => {assert.equal(store, p); delay = ms;};
+  c.ga4Run_ = () => {throw Error('must not write while locked');};
+  assert.match(c.syncGA4().message, /retry automatically/);
+  assert.equal(delay, 120000);
+});
+
+test('support-tab compaction refuses to truncate values outside the generated layout', () => {
+  const c = context(); let wrote = false;
+  c.Sheets = {Spreadsheets: {batchUpdate() {wrote = true;}}};
+  c.ga4CompactOwned_({getId: () => 'book'}, {getLastRow: () => 8, getLastColumn: () => 7}, 100, 2);
+  assert.equal(wrote, false);
+});
