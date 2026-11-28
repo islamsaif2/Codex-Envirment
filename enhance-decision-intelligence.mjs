@@ -2,16 +2,17 @@ import fs from 'node:fs';import vm from 'node:vm';
 let worker=fs.readFileSync(new URL('./worker.mjs',import.meta.url),'utf8');const match=worker.match(/const APP_HTML_B64 = "([^"]+)"/);if(!match)throw Error('Dashboard HTML missing');let html=Buffer.from(match[1],'base64').toString();
 if(!html.includes('nav-decision-intelligence')){
  const replace=(before,after)=>{if(!html.includes(before))throw Error('Decision Intelligence anchor missing: '+before);html=html.replace(before,after);};
- replace('<button id="nav-price-analysis">','<button id="nav-decision-intelligence">Decision Intelligence</button><button id="nav-price-analysis">');
+ const navAnchor='<button id="nav-products">';
+ replace(navAnchor,'<button id="nav-decision-intelligence">Decision Intelligence</button>'+navAnchor);
  replace(' page=p; const needsTabData='," $('nav-decision-intelligence')?.classList.toggle('active',p==='Decision Intelligence');\n page=p; const needsTabData=");
- replace(" if(p==='Price Change Analysis'){",` if(p==='Decision Intelligence'){
+ replace(" if(p==='Creative Analysis')return;",` if(p==='Decision Intelligence'){
   $('page-sub').textContent='Real source evidence, forecasts and decision reviews across the available business data.';
   $('content').innerHTML='<iframe title="Ultramedix Decision Intelligence" src="/decision-intelligence/" style="display:block;width:100%;height:calc(100vh - 165px);min-height:700px;border:0;border-radius:12px;background:#f4f6f8"></iframe>';
   return;
  }
- if(p==='Price Change Analysis'){
+ if(p==='Creative Analysis')return;
 `);
- replace("return page!=='Price Change Analysis'", "return page!=='Decision Intelligence'&&page!=='Price Change Analysis'");
+ replace("return page!=='Businesses'&&page!=='Creative Analysis'", "return page!=='Decision Intelligence'&&page!=='Businesses'&&page!=='Creative Analysis'");
  replace("if(page===dayBusinessTitle)setPage(page);else await loadDashboard()", "if(page==='Decision Intelligence'||page===dayBusinessTitle)setPage(page);else await loadDashboard()");
  html=html.replace('</body>',`<script>
  $('nav-decision-intelligence').onclick=()=>{location.hash='decision-intelligence';setPage('Decision Intelligence');};
