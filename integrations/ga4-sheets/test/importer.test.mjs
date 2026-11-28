@@ -200,7 +200,7 @@ test('standalone destination uses the configured spreadsheet; a bound project ke
 test('setup property dropdown validates actual accessible choices and connects on the same entry flow', () => {
   const c = context(), p = props({GA4_EGYPT_SETUP_V1: JSON.stringify({spreadsheetId: 'destination', sheetId: 77})});
   const writes = []; let options;
-  const sheet = {getSheetId: () => 77, getRange(a1) {return {setDataValidation() {}, getValue: () => a1 === 'B3' ? 'Ultramedix [123] / Main' : '', setValue(v) {writes.push([a1, v]);}};}};
+  const sheet = {getSheetId: () => 77, getLastRow: () => 8, getLastColumn: () => 2, getMaxRows: () => 100, getMaxColumns: () => 2, getRange(a1) {return {setDataValidation() {}, getValue: () => a1 === 'B3' ? 'Ultramedix [123] / Main' : '', setValue(v) {writes.push([a1, v]);}};}};
   c.ga4Destination_ = () => ({getId: () => 'destination', getSheetById: () => sheet});
   c.SpreadsheetApp = {newDataValidation() {const b = {requireValueInList(values) {options = plain(values); return b;}, setAllowInvalid() {return b;}, build() {return b;}}; return b;}};
   c.ga4Connect_ = event => {assert.equal(event.propertyId, '123'); return {sheetName: 'GA4 Egypt - 123'};};

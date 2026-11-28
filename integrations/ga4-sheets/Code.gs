@@ -125,6 +125,7 @@ function ga4SetupTab_(properties, props) {
     sheet.getRange('A1:B8').setWrap(true);
     props.setProperty(GA4_.setupKey, JSON.stringify({spreadsheetId: ss.getId(), sheetId: sheet.getSheetId()}));
   }
+  ga4CompactOwned_(ss, sheet, 100, 2);
   var options = properties.map(function (p) { return p.name + ' [' + p.id + '] / ' + p.account; });
   sheet.getRange('B3').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(options, true).setAllowInvalid(false).build());
   var selected = String(sheet.getRange('B3').getValue() || '');
@@ -200,7 +201,7 @@ function ga4OwnedSheet_(ss, name, propertyId, isData) {
     var id = Math.floor(Math.random() * 2000000000) + 1;
     // Creation and ownership are atomic, avoiding an orphan if a request times out.
     Sheets.Spreadsheets.batchUpdate({requests: [
-      {addSheet: {properties: {sheetId: id, title: name, gridProperties: {rowCount: isData ? 20000 : 1000, columnCount: isData ? 12 : 26}}}},
+      {addSheet: {properties: {sheetId: id, title: name, gridProperties: {rowCount: isData ? 1000 : (name === 'GA4 Import Setup' ? 100 : 1000), columnCount: isData ? 12 : (name === 'GA4 Import Setup' ? 2 : (name.indexOf('GA4 Fields - ') === 0 ? 4 : 5))}}}},
       {createDeveloperMetadata: {developerMetadata: {metadataKey: GA4_.marker, metadataValue: propertyId, visibility: 'DOCUMENT', location: {sheetId: id}}}}
     ]}, ss.getId());
     return id;
@@ -210,6 +211,12 @@ function ga4OwnedSheet_(ss, name, propertyId, isData) {
     if (!sheet) throw Error('Service unavailable: newly created tab is not visible yet.');
     return sheet;
   }, started);
+}
+function ga4CompactOwned_(ss, sheet, rows, columns) {
+  // Only trim unused grid in importer-owned support tabs, never the business tabs.
+  if (sheet.getLastRow() > rows || sheet.getLastColumn() > columns) return;
+  if (sheet.getMaxRows() === rows && sheet.getMaxColumns() === columns) return;
+  ga4Call_(function () { return Sheets.Spreadsheets.batchUpdate({requests: [{updateSheetProperties: {properties: {sheetId: sheet.getSheetId(), gridProperties: {rowCount: rows, columnCount: columns}}, fields: 'gridProperties.rowCount,gridProperties.columnCount'}}]}, ss.getId()); }, Date.now());
 }
 function ga4Connect_(event, props) {
   var id = String(event.propertyId || '');
@@ -229,6 +236,7 @@ function ga4Connect_(event, props) {
   (metadata.dimensions || []).forEach(function (x) { catalogue.push(['Dimension', x.apiName, x.uiName || '', x.description || '']); });
   (metadata.metrics || []).forEach(function (x) { catalogue.push(['Metric', x.apiName, x.uiName || '', x.description || '']); });
   var fields = ga4OwnedSheet_(ss, config.catalogueName, id);
+  ga4CompactOwned_(ss, fields, Math.max(catalogue.length, 100), 4);
   if (fields.getMaxRows() < catalogue.length) fields.insertRowsAfter(fields.getMaxRows(), catalogue.length - fields.getMaxRows());
   Sheets.Spreadsheets.batchUpdate({requests: [{updateCells: {range: {sheetId: fields.getSheetId(), startRowIndex: 0, endRowIndex: Math.max(catalogue.length, fields.getLastRow()), startColumnIndex: 0, endColumnIndex: 4}, rows: catalogue.map(ga4Cells_), fields: 'userEnteredValue'}}]}, ss.getId());
   fields.setFrozenRows(1);

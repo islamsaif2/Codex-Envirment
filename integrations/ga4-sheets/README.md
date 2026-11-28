@@ -28,7 +28,7 @@ Run `syncGA4`, open the **GA4 Import Setup** tab, select the accessible GA4 prop
 
 Creates separate tabs with the selected property ID in their names:
 
-- **GA4 Egypt - PROPERTY_ID**: headers **B2:L2**, newest data **B3:L**. Columns A, row 1 and columns beyond L are not written by the importer. Initial setup reserves 20,000 rows in this new tab. Every refresh shifts older data down by rewriting only the owned B3:L range, without inserting entire spreadsheet rows. If capacity is exhausted it stops safely and asks you to increase the tab's capacity.
+- **GA4 Egypt - PROPERTY_ID**: headers **B2:L2**, newest data **B3:L**. Columns A, row 1 and columns beyond L are not written by the importer. Initial setup reserves 1,000 rows in this new tab to limit workbook cell usage. Every refresh shifts older data down by rewriting only the owned B3:L range, without inserting entire spreadsheet rows. If capacity is exhausted it stops safely and asks you to increase the tab's capacity. Importer-owned setup and field-catalogue tabs trim unused grid only when it contains no values outside their support layout. Existing business tabs are never compacted.
 - **GA4 Sync - PROPERTY_ID**: current status, timezone, last completed cycle and a per-day completion ledger. Successful empty days are recorded distinctly from failed requests. Check the quality notes for thresholding, sampling or data loss.
 - **GA4 Fields - PROPERTY_ID**: actual dimension/metric catalogue returned by your property's metadata endpoint. Setup verifies the requested fields and checks compatibility before scheduling imports. Missing fields stop setup; nothing is silently substituted.
 
