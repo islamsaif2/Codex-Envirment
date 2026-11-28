@@ -20,6 +20,8 @@ There is no Web App deployment step. No paid Cloud product, billing account or l
 
 The existing Ultramedix Dashboard project is standalone, so `SpreadsheetApp.getUi()` is unavailable there. This version supports that context automatically. The default `destinationSpreadsheetId` at the top of `Code.gs` points to the existing Ultramedix workbook. Change that setting before installing a standalone copy for a different business. A bound project uses its own spreadsheet instead.
 
+Tab creation and its ownership marker are committed atomically through the Sheets API. A timed-out creation is read back before retrying, preventing duplicate tabs. The empty field-catalogue tab left by the earlier non-atomic version can be recovered; populated unowned tabs are refused. Shared project locks wait up to 20 seconds for existing automations, then log a clear retry message rather than silently skipping work.
+
 Run `syncGA4`, open the **GA4 Import Setup** tab, select the accessible GA4 property in **B3**, optionally set a history start in **B4**, then run `syncGA4` again. Later manual and scheduled runs do not need a spreadsheet UI or property selection. No recurring trigger is installed until a property has been selected and validated.
 
 ## Output

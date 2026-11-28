@@ -207,3 +207,37 @@ test('setup property dropdown validates actual accessible choices and connects o
   assert.equal(c.ga4SetupTab_([{id: '123', name: 'Ultramedix', account: 'Main'}], p).config.sheetName, 'GA4 Egypt - 123');
   assert.deepEqual(options, ['Ultramedix [123] / Main']); assert.equal(writes.at(-1)[0], 'B8');
 });
+
+test('a timed-out sheet creation is recovered by readback without creating a duplicate', () => {
+  const c = context(); let created, creates = 0, reads = 0;
+  c.Sheets = {Spreadsheets: {
+    get() {reads++; return {sheets: created ? [created] : []};},
+    batchUpdate(body) {
+      creates++; const add = body.requests[0].addSheet.properties, marker = body.requests[1].createDeveloperMetadata.developerMetadata;
+      created = {properties: add, developerMetadata: [marker]};
+      throw Error('Service Spreadsheets timed out while accessing document');
+    }
+  }};
+  const sheet = {id: 'recovered'};
+  c.SpreadsheetApp = {openById: () => ({getSheetById: id => {assert.equal(id, created.properties.sheetId); return sheet;}})};
+  assert.equal(c.ga4OwnedSheet_({getId: () => 'book'}, 'GA4 Egypt - 123', '123', true), sheet);
+  assert.equal(creates, 1); assert.equal(reads, 2);
+});
+
+test('recovers only an empty legacy field catalogue and rejects unrelated existing tabs', () => {
+  const c = context(); let marked = 0;
+  c.Sheets = {Spreadsheets: {get: () => ({sheets: [{properties: {sheetId: 7, title: 'GA4 Fields - 123'}}]}), Values: {get: () => ({values: []})}, batchUpdate(body) {assert.ok(body.requests[0].createDeveloperMetadata); marked++;}}};
+  c.SpreadsheetApp = {openById: () => ({getSheetById: () => 'recovered'})};
+  assert.equal(c.ga4OwnedSheet_({getId: () => 'book'}, 'GA4 Fields - 123', '123'), 'recovered');
+  assert.equal(marked, 1);
+  c.Sheets.Spreadsheets.Values.get = () => ({values: [['Existing data']]});
+  assert.throws(() => c.ga4OwnedSheet_({getId: () => 'book'}, 'GA4 Fields - 123', '123'), /not owned/);
+});
+
+test('compatibility response does not reject a valid report because unrelated optional fields are incompatible', () => {
+  const c = context(), query = c.ga4Request_('2026-11-28', 0);
+  const response = {dimensionCompatibilities: [{dimensionMetadata: {apiName: 'date'}, compatibility: 'COMPATIBLE'}, {dimensionMetadata: {apiName: 'unrelatedAudienceField'}, compatibility: 'INCOMPATIBLE'}], metricCompatibilities: [{metricMetadata: {apiName: 'sessions'}, compatibility: 'COMPATIBLE'}]};
+  assert.deepEqual(plain(c.ga4IncompatibleRequested_(response, query)), []);
+  response.metricCompatibilities.push({metricMetadata: {apiName: 'addToCarts'}, compatibility: 'INCOMPATIBLE'});
+  assert.deepEqual(plain(c.ga4IncompatibleRequested_(response, query)), ['addToCarts']);
+});

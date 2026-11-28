@@ -15,7 +15,11 @@ var GA4_ = Object.freeze({
 /** The only public entry point: setup, manual refresh, scheduled refresh and resume. */
 function syncGA4(event) {
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(1000)) return {message: 'Another GA4 import is running. Try again shortly.'};
+  if (!lock.tryLock(20000)) {
+    var busyMessage = 'Another project automation is holding the lock. No GA4 data was changed; run syncGA4 again shortly.';
+    console.log(busyMessage);
+    return {message: busyMessage};
+  }
   var props = PropertiesService.getUserProperties();
   var config;
   try {
@@ -175,18 +179,37 @@ function ga4Request_(day, offset) {
   };
 }
 function ga4OwnedSheet_(ss, name, propertyId, isData) {
-  var sheet = ss.getSheetByName(name);
-  if (sheet) {
-    var owned = sheet.getDeveloperMetadata().some(function (m) { return m.getKey() === GA4_.marker && m.getValue() === propertyId; });
-    if (!owned) throw Error('A tab named "' + name + '" already exists and is not owned by this importer. Rename it before setup.');
+  var started = Date.now();
+  var sheetId = ga4Call_(function () {
+    // Read back on every retry: a timed-out create may already have committed.
+    var metadata = Sheets.Spreadsheets.get(ss.getId(), {fields: 'sheets(properties(sheetId,title),developerMetadata(metadataKey,metadataValue))'});
+    var found = (metadata.sheets || []).filter(function (s) { return s.properties.title === name; })[0];
+    if (found) {
+      var owned = (found.developerMetadata || []).some(function (m) { return m.metadataKey === GA4_.marker && m.metadataValue === propertyId; });
+      if (!owned && name === 'GA4 Fields - ' + propertyId) {
+        // Compatibility with the previous version's interrupted create: only an empty field catalogue can be recovered.
+        var contents = Sheets.Spreadsheets.Values.get(ss.getId(), "'" + name.replace(/'/g, "''") + "'!A:D");
+        if (!(contents.values || []).some(function (r) { return r.some(function (v) { return v !== ''; }); })) {
+          Sheets.Spreadsheets.batchUpdate({requests: [{createDeveloperMetadata: {developerMetadata: {metadataKey: GA4_.marker, metadataValue: propertyId, visibility: 'DOCUMENT', location: {sheetId: found.properties.sheetId}}}}]}, ss.getId());
+          owned = true;
+        }
+      }
+      if (!owned) throw Error('A tab named "' + name + '" already exists and is not owned by this importer. Rename it before setup.');
+      return found.properties.sheetId;
+    }
+    var id = Math.floor(Math.random() * 2000000000) + 1;
+    // Creation and ownership are atomic, avoiding an orphan if a request times out.
+    Sheets.Spreadsheets.batchUpdate({requests: [
+      {addSheet: {properties: {sheetId: id, title: name, gridProperties: {rowCount: isData ? 20000 : 1000, columnCount: isData ? 12 : 26}}}},
+      {createDeveloperMetadata: {developerMetadata: {metadataKey: GA4_.marker, metadataValue: propertyId, visibility: 'DOCUMENT', location: {sheetId: id}}}}
+    ]}, ss.getId());
+    return id;
+  }, started);
+  return ga4Call_(function () {
+    var sheet = SpreadsheetApp.openById(ss.getId()).getSheetById(sheetId);
+    if (!sheet) throw Error('Service unavailable: newly created tab is not visible yet.');
     return sheet;
-  }
-  if (isData) {
-    var added = Sheets.Spreadsheets.batchUpdate({requests: [{addSheet: {properties: {title: name, gridProperties: {rowCount: 20000, columnCount: 12}}}}]}, ss.getId());
-    sheet = ss.getSheetById(added.replies[0].addSheet.properties.sheetId);
-  } else sheet = ss.insertSheet(name);
-  sheet.addDeveloperMetadata(GA4_.marker, propertyId);
-  return sheet;
+  }, started);
 }
 function ga4Connect_(event, props) {
   var id = String(event.propertyId || '');
@@ -213,15 +236,24 @@ function ga4Connect_(event, props) {
   var dimensionNames = (metadata.dimensions || []).map(function (x) { return x.apiName; });
   var missing = GA4_.metrics.filter(function (name) { return metricNames.indexOf(name) === -1; }).concat(['date', 'region', 'countryId'].filter(function (name) { return dimensionNames.indexOf(name) === -1; }));
   if (missing.length) throw Error('Missing GA4 fields: ' + missing.join(', ') + '. See the GA4 Fields tab for the property catalogue. No import schedule was created.');
-  var compatible = AnalyticsData.Properties.checkCompatibility({dimensions: [{name: 'date'}, {name: 'region'}, {name: 'countryId'}], metrics: GA4_.metrics.map(function (name) { return {name: name}; })}, 'properties/' + id);
-  var incompatible = (compatible.dimensionCompatibilities || []).concat(compatible.metricCompatibilities || []).filter(function (x) { return x.compatibility !== 'COMPATIBLE'; });
-  if (incompatible.length) throw Error('GA4 rejected this field combination. See the GA4 Fields tab; no import schedule was created.');
+  var query = ga4Request_(today, 0);
+  var compatible = AnalyticsData.Properties.checkCompatibility({dimensions: query.dimensions, metrics: query.metrics, dimensionFilter: query.dimensionFilter}, 'properties/' + id);
+  var incompatible = ga4IncompatibleRequested_(compatible, query);
+  if (incompatible.length) throw Error('GA4 rejected requested fields: ' + incompatible.join(', ') + '. See the GA4 Fields tab; no import schedule was created.');
   var dataSheet = ga4OwnedSheet_(ss, config.sheetName, id, true);
   var logSheet = ga4OwnedSheet_(ss, config.logName, id);
   config.sheetId = dataSheet.getSheetId(); config.logSheetId = logSheet.getSheetId();
   ga4InitializeSheets_(dataSheet, logSheet, config);
   ga4SaveConfig_(config, props);
   return config;
+}
+function ga4IncompatibleRequested_(response, query) {
+  var wanted = query.dimensions.concat(query.metrics).map(function (x) { return x.name; });
+  // checkCompatibility also lists other fields that could be added to a report.
+  return (response.dimensionCompatibilities || []).concat(response.metricCompatibilities || []).filter(function (x) {
+    var name = (x.dimensionMetadata || x.metricMetadata || {}).apiName;
+    return wanted.indexOf(name) !== -1 && x.compatibility === 'INCOMPATIBLE';
+  }).map(function (x) { return (x.dimensionMetadata || x.metricMetadata).apiName; });
 }
 function ga4InitializeSheets_(data, log, config) {
   data.getRange(2, 2, 1, GA4_.headers.length).setValues([GA4_.headers]);
