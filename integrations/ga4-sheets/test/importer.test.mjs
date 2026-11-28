@@ -178,3 +178,32 @@ test('manifest uses Google-managed read-only analytics authorization without API
   const publics = [...source.matchAll(/^function (\w+)\(/gm)].map(m => m[1]).filter(n => !n.endsWith('_'));
   assert.deepEqual(publics, ['syncGA4']);
 });
+
+test('standalone project without a spreadsheet UI falls back to the setup tab', () => {
+  const c = context(), p = props(); let fallback = 0;
+  c.ga4Properties_ = () => [{id: '123', name: 'Ultramedix', account: 'Account'}];
+  c.SpreadsheetApp = {getUi() {throw Error('Cannot call SpreadsheetApp.getUi() from this context.');}};
+  c.ga4SetupTab_ = (properties, store) => {fallback++; assert.equal(properties[0].id, '123'); assert.equal(store, p); return {message: 'Select B3'};};
+  assert.equal(c.ga4ShowSetup_(p).message, 'Select B3');
+  assert.equal(fallback, 1);
+});
+
+test('standalone destination uses the configured spreadsheet; a bound project keeps its own spreadsheet', () => {
+  const c = context(); let id;
+  c.SpreadsheetApp = {getActiveSpreadsheet: () => null, openById(value) {id = value; return 'standalone';}};
+  assert.equal(c.ga4Destination_(), 'standalone');
+  assert.equal(id, c.GA4_.destinationSpreadsheetId);
+  c.SpreadsheetApp.getActiveSpreadsheet = () => 'bound';
+  assert.equal(c.ga4Destination_(), 'bound');
+});
+
+test('setup property dropdown validates actual accessible choices and connects on the same entry flow', () => {
+  const c = context(), p = props({GA4_EGYPT_SETUP_V1: JSON.stringify({spreadsheetId: 'destination', sheetId: 77})});
+  const writes = []; let options;
+  const sheet = {getSheetId: () => 77, getRange(a1) {return {setDataValidation() {}, getValue: () => a1 === 'B3' ? 'Ultramedix [123] / Main' : '', setValue(v) {writes.push([a1, v]);}};}};
+  c.ga4Destination_ = () => ({getId: () => 'destination', getSheetById: () => sheet});
+  c.SpreadsheetApp = {newDataValidation() {const b = {requireValueInList(values) {options = plain(values); return b;}, setAllowInvalid() {return b;}, build() {return b;}}; return b;}};
+  c.ga4Connect_ = event => {assert.equal(event.propertyId, '123'); return {sheetName: 'GA4 Egypt - 123'};};
+  assert.equal(c.ga4SetupTab_([{id: '123', name: 'Ultramedix', account: 'Main'}], p).config.sheetName, 'GA4 Egypt - 123');
+  assert.deepEqual(options, ['Ultramedix [123] / Main']); assert.equal(writes.at(-1)[0], 'B8');
+});

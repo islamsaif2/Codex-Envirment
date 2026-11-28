@@ -3,6 +3,8 @@ var GA4_ = Object.freeze({
   version: 1, configKey: 'GA4_EGYPT_CONFIG_V1', stateKey: 'GA4_EGYPT_JOB_V1',
   handler: 'syncGA4', marker: 'ULTRAMEDIX_GA4_IMPORTER', pageSize: 1000,
   budgetMs: 240000, refreshDays: 7, scheduleHours: 12,
+  destinationSpreadsheetId: '1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E',
+  setupKey: 'GA4_EGYPT_SETUP_V1',
   headers: ['Day', 'Sessions', 'Engaged sessions', 'Add to carts', 'Checkouts',
     'Average session duration', 'Views per session', 'User engagement',
     'Bounce rate', 'Region', 'Average Engaged time per session'],
@@ -24,7 +26,9 @@ function syncGA4(event) {
     }
     if (!config) {
       if (event && event.triggerUid) throw Error('Setup is incomplete. Run syncGA4 manually in the bound spreadsheet.');
-      return ga4ShowSetup_();
+      var setup = ga4ShowSetup_(props);
+      if (!setup.config) return setup;
+      config = setup.config;
     }
     ga4EnsureSchedule_(config, props, event);
     var outcome = ga4Run_(config, props, Date.now());
@@ -90,9 +94,59 @@ function ga4Properties_() {
   } while (token);
   return rows.sort(function (a, b) { return (a.account + a.name).localeCompare(b.account + b.name); });
 }
-function ga4ShowSetup_() {
+function ga4Destination_() {
+  var active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
+  if (!GA4_.destinationSpreadsheetId) throw Error('Set destinationSpreadsheetId at the top of this script for a standalone project.');
+  return SpreadsheetApp.openById(GA4_.destinationSpreadsheetId);
+}
+function ga4SetupTab_(properties, props) {
+  var ss = ga4Destination_();
+  var saved = ga4ReadJson_(props, GA4_.setupKey);
+  var sheet = saved && saved.spreadsheetId === ss.getId() ? ss.getSheetById(saved.sheetId) : null;
+  if (!sheet) {
+    sheet = ga4OwnedSheet_(ss, 'GA4 Import Setup', 'setup');
+    sheet.getRange(1, 1, 8, 2).setValues([
+      ['GA4 Import Setup', 'Google authorization is already handled by Apps Script.'],
+      ['Instructions', 'Select your property in B3, then run syncGA4 again.'],
+      ['GA4 property', ''], ['Optional history start (YYYY-MM-DD)', ''],
+      ['Country', 'Egypt'], ['Schedule', 'Every 12 hours'],
+      ['Output layout', 'Headers B2:L2; newest data B3:L in a separate data tab.'],
+      ['Setup status', 'Waiting for your property selection.']
+    ]);
+    sheet.getRange('B4').setNumberFormat('@');
+    sheet.setColumnWidth(1, 260); sheet.setColumnWidth(2, 620);
+    sheet.getRange('A1:B1').setBackground('#174b6b').setFontColor('#ffffff').setFontWeight('bold');
+    sheet.getRange('B3:B4').setBackground('#fff2cc');
+    sheet.getRange('A1:B8').setWrap(true);
+    props.setProperty(GA4_.setupKey, JSON.stringify({spreadsheetId: ss.getId(), sheetId: sheet.getSheetId()}));
+  }
+  var options = properties.map(function (p) { return p.name + ' [' + p.id + '] / ' + p.account; });
+  sheet.getRange('B3').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(options, true).setAllowInvalid(false).build());
+  var selected = String(sheet.getRange('B3').getValue() || '');
+  var index = options.indexOf(selected);
+  if (index !== -1) {
+    var start = sheet.getRange('B4').getValue();
+    if (start instanceof Date) start = Utilities.formatDate(start, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+    sheet.getRange('B8').setValue('Connecting and importing selected property...');
+    var config = ga4Connect_({propertyId: properties[index].id, startDate: String(start || '')}, props);
+    sheet.getRange('B8').setValue('Connected. Data: ' + config.sheetName + '. Schedule is installed by syncGA4.');
+    return {config: config};
+  }
+  var message = 'Select your GA4 property in GA4 Import Setup!B3, then run syncGA4 again. ' + ss.getUrl() + '#gid=' + sheet.getSheetId();
+  console.log(message);
+  return {message: message};
+}
+function ga4ShowSetup_(props) {
   var properties = ga4Properties_();
   if (!properties.length) throw Error('This Google account has no accessible GA4 properties. Sign in with a Google account that has Viewer access to your GA4 property.');
+  if (props.getProperty(GA4_.setupKey)) return ga4SetupTab_(properties, props);
+  var ui;
+  try { ui = SpreadsheetApp.getUi(); }
+  catch (error) {
+    if (!/Cannot call SpreadsheetApp\.getUi\(\) from this context/i.test(String(error.message || error))) throw error;
+    return ga4SetupTab_(properties, props);
+  }
   var data = JSON.stringify(properties).replace(/</g, '\\u003c');
   var html = '<!doctype html><html><head><base target="_top"><style>' +
     'body{font:14px Arial,sans-serif;color:#163047;padding:18px}h2{font-size:20px}label{display:block;margin:18px 0 6px}select,input,button{box-sizing:border-box;width:100%;padding:10px}button{margin-top:20px;background:#145b8c;color:white;border:0;border-radius:5px;cursor:pointer}p{line-height:1.5}.note{color:#536574}#status{white-space:pre-wrap}</style></head><body>' +
@@ -106,7 +160,7 @@ function ga4ShowSetup_() {
     'document.getElementById("connect").onclick=function(){var b=this;b.disabled=true;document.getElementById("status").textContent="Checking property and starting import. You can leave this sidebar open.";' +
     'google.script.run.withSuccessHandler(function(r){document.getElementById("status").textContent=r.message+"\\nData tab: "+(r.sheetName||"");}).withFailureHandler(function(e){b.disabled=false;document.getElementById("status").textContent=e.message;}).syncGA4({action:"connect",propertyId:document.getElementById("property").value,startDate:document.getElementById("start").value});};' +
     '</script></body></html>';
-  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(html).setTitle('GA4 Egypt import'));
+  ui.showSidebar(HtmlService.createHtmlOutput(html).setTitle('GA4 Egypt import'));
   return {message: 'Choose your GA4 property in the sidebar.'};
 }
 
@@ -142,8 +196,7 @@ function ga4Connect_(event, props) {
   if (!zone) throw Error('GA4 property timezone is unavailable.');
   var today = ga4Day_(new Date(), zone), start = event.startDate || ga4ShiftDay_(today, -GA4_.refreshDays);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || isNaN(Date.parse(start + 'T12:00:00Z')) || ga4ShiftDay_(start, 0) !== start || start > today || start < '2005-01-01') throw Error('Choose a valid history date up to today.');
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) throw Error('Open Extensions > Apps Script from the destination Google Sheet, then run syncGA4.');
+  var ss = ga4Destination_();
   var prefix = 'GA4 Egypt - ' + id;
   var config = {version: GA4_.version, propertyId: id, propertyName: property.displayName, timeZone: zone,
     spreadsheetId: ss.getId(), startDate: start, sheetName: prefix, logName: 'GA4 Sync - ' + id, catalogueName: 'GA4 Fields - ' + id};

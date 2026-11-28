@@ -1,6 +1,6 @@
 # GA4 Egypt to Google Sheets
 
-Run **`syncGA4`**. This is the only public function. On first use, Google asks you to authorize the script with an account that has GA4 Viewer access. A sidebar lists the accounts/properties available to that Google account. Select a property and click **Connect and import**. No API key, pasted access token, service account or separate connector subscription is required. Google manages OAuth internally; authorization is not guaranteed forever if you revoke it, lose access or change permissions.
+Run **`syncGA4`**. This is the only public function. On first use, Google asks you to authorize the script with an account that has GA4 Viewer access. In a bound project a sidebar lists the accounts/properties available to that Google account. In a standalone project the script creates **GA4 Import Setup** in the configured destination spreadsheet: select the property in **B3**, then run **`syncGA4`** again. No API key, pasted access token, service account or separate connector subscription is required. Google manages OAuth internally; authorization is not guaranteed forever if you revoke it, lose access or change permissions.
 
 The importer uses the official GA4 APIs, not browser scraping. Your spreadsheet and computer can be closed while Google runs the scheduled import.
 
@@ -15,6 +15,12 @@ The importer uses the official GA4 APIs, not browser scraping. Your spreadsheet 
 `appsscript.json` is a complete manifest for a **new dedicated bound project**. **Do not replace the manifest of an existing automation project**: it may contain other services, scopes and settings. Add the services through the UI as above. If the existing project explicitly lists `oauthScopes`, preserve them and add any missing scopes from this package's manifest; if it has no explicit scope list, Apps Script infers them from code.
 
 There is no Web App deployment step. No paid Cloud product, billing account or local server is required by this importer. The spreadsheet account's Apps Script and GA4 API quotas still apply.
+
+## Standalone Apps Script projects
+
+The existing Ultramedix Dashboard project is standalone, so `SpreadsheetApp.getUi()` is unavailable there. This version supports that context automatically. The default `destinationSpreadsheetId` at the top of `Code.gs` points to the existing Ultramedix workbook. Change that setting before installing a standalone copy for a different business. A bound project uses its own spreadsheet instead.
+
+Run `syncGA4`, open the **GA4 Import Setup** tab, select the accessible GA4 property in **B3**, optionally set a history start in **B4**, then run `syncGA4` again. Later manual and scheduled runs do not need a spreadsheet UI or property selection. No recurring trigger is installed until a property has been selected and validated.
 
 ## Output
 
