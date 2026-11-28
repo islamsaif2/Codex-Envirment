@@ -5,6 +5,8 @@ var GA4_ = Object.freeze({
   budgetMs: 240000, refreshDays: 7, scheduleHours: 12,
   destinationSpreadsheetId: '1bWPoTD6FZ7vr2cfYcxxvXSbehhEwqWamao5Vgu5kR3E',
   setupKey: 'GA4_EGYPT_SETUP_V1', setupRetryKey: 'GA4_EGYPT_SETUP_RETRY_V1',
+  settingsSheetName: 'Automation Settings', exportSheetName: 'Raw Ga4 & Meta Ads Data',
+  exportStartColumnIndex: 49, exportEndColumnIndex: 60,
   headers: ['Day', 'Sessions', 'Engaged sessions', 'Add to carts', 'Checkouts',
     'Average session duration', 'Views per session', 'User engagement',
     'Bounce rate', 'Region', 'Average Engaged time per session'],
@@ -39,6 +41,7 @@ function syncGA4(event) {
       if (!setup.config) return setup;
       config = setup.config;
     }
+    config = ga4ApplyLayout_(config, props);
     ga4EnsureSchedule_(config, props, event);
     var outcome = ga4Run_(config, props, Date.now());
     return {message: outcome.pending ? 'Import is continuing automatically. Run syncGA4 anytime to continue manually.' : 'Import complete. Automatic refresh is scheduled every 12 hours.', sheetName: config.sheetName};
@@ -126,6 +129,15 @@ function ga4Destination_() {
 }
 function ga4SetupTab_(properties, props) {
   var ss = ga4Destination_();
+  var settings = ss.getSheetByName(GA4_.settingsSheetName);
+  if (settings && settings.getMaxColumns() >= 35 && settings.getRange('AH6').getValue() === 'Google Analytics 4') {
+    var choices = properties.map(function (p) { return p.name + ' [' + p.id + '] / ' + p.account; });
+    settings.getRange('AI10').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(choices, true).setAllowInvalid(false).build());
+    var choice = choices.indexOf(String(settings.getRange('AI10').getValue() || ''));
+    props.setProperty(GA4_.setupKey, JSON.stringify({spreadsheetId: ss.getId(), sheetId: settings.getSheetId()}));
+    if (choice < 0) return {message: 'Choose a GA4 property in Automation Settings!AI10, then run syncGA4.'};
+    return {config: ga4Connect_({propertyId: properties[choice].id, startDate: String(settings.getRange('AI12').getDisplayValue() || '')}, props)};
+  }
   var saved = ga4ReadJson_(props, GA4_.setupKey);
   var sheet = saved && saved.spreadsheetId === ss.getId() ? ss.getSheetById(saved.sheetId) : null;
   if (!sheet) {
@@ -306,7 +318,7 @@ function ga4EnsureSchedule_(config, props, event) {
   var triggers = ScriptApp.getProjectTriggers();
   var schedule = triggers.filter(function (t) { return t.getUniqueId() === config.scheduleId; });
   if (!schedule.length) {
-    config.scheduleId = ScriptApp.newTrigger(GA4_.handler).timeBased().everyHours(GA4_.scheduleHours).create().getUniqueId();
+    config.scheduleId = ScriptApp.newTrigger(GA4_.handler).timeBased().everyHours(config.scheduleHours || GA4_.scheduleHours).create().getUniqueId();
     ga4SaveConfig_(config, props);
   }
   // Only delete our known one-off trigger, never unrelated project triggers.
@@ -324,7 +336,11 @@ function ga4SetContinuation_(config, props, delay) {
   config.continuationId = ScriptApp.newTrigger(GA4_.handler).timeBased().after(delay).create().getUniqueId();
   ga4SaveConfig_(config, props);
 }
-function ga4Status_(ss, config, message) { ss.getSheetById(config.logSheetId).getRange('B1').setValue(message); }
+function ga4Status_(ss, config, message) {
+  if (config.layoutVersion === 2) {
+    Sheets.Spreadsheets.Values.update({values: [[message]]}, config.spreadsheetId, "'Automation Settings'!AI31", {valueInputOption: 'RAW'});
+  } else ss.getSheetById(config.logSheetId).getRange('B1').setValue(message);
+}
 function ga4LogFailure_(config, message, kind) {
   try {
     var ss = SpreadsheetApp.openById(config.spreadsheetId);
@@ -332,24 +348,29 @@ function ga4LogFailure_(config, message, kind) {
   } catch (ignored) { console.error('Could not write sync status: ' + String(ignored)); }
 }
 function ga4ReadLedger_(sheet) {
+  if (sheet.config) return ga4MetadataLedger_(sheet.config);
   return sheet.getLastRow() < 8 ? [] : sheet.getRange(8, 1, sheet.getLastRow() - 7, 5).getValues().filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(String(r[0])); });
 }
-function ga4ReadData_(sheet) {
+function ga4ReadData_(sheet, config) {
+  if (config && config.layoutVersion === 2) {
+    var response = Sheets.Spreadsheets.Values.get(config.spreadsheetId, "'" + config.sheetName.replace(/'/g, "''") + "'!AX3:BG", {valueRenderOption: 'UNFORMATTED_VALUE'});
+    return ga4NormalizeSheetRows_(response.values || []);
+  }
   var lastRow = sheet.getLastRow();
   return lastRow < 3 ? [] : sheet.getRange(3, 2, lastRow - 2, 11).getValues().filter(function (r) { return r.some(function (v) { return v !== ''; }); });
 }
-function ga4Queue_(today, startDate, ledger, dataRows) {
+function ga4Queue_(today, startDate, ledger, dataRows, refreshDays) {
   var completed = {};
   ledger.forEach(function (r) { completed[String(r[0])] = Number(r[2]); });
   var actual = {};
   dataRows.forEach(function (r) { actual[String(r[0])] = (actual[String(r[0])] || 0) + 1; });
   return ga4Days_(startDate, today).filter(function (day) {
-    return day >= ga4ShiftDay_(today, -GA4_.refreshDays) || completed[day] === undefined || (actual[day] || 0) !== completed[day];
+    return day >= ga4ShiftDay_(today, -(refreshDays || GA4_.refreshDays)) || completed[day] === undefined || (actual[day] || 0) !== completed[day];
   }).sort().reverse();
 }
 function ga4Run_(config, props, started) {
   var ss = SpreadsheetApp.openById(config.spreadsheetId);
-  var data = ss.getSheetById(config.sheetId), log = ss.getSheetById(config.logSheetId);
+  var data = ss.getSheetById(config.sheetId), log = config.layoutVersion === 2 ? {config: config} : ss.getSheetById(config.logSheetId);
   if (!data || !log) throw Error('An importer tab was deleted. Restore it from Sheet version history before running again.');
   var today = ga4Day_(new Date(), config.timeZone);
   var job = ga4ReadJson_(props, GA4_.stateKey);
@@ -360,10 +381,10 @@ function ga4Run_(config, props, started) {
   }
   // Keep checkpoints small even for years of backfill. The atomic daily ledger is the cursor.
   var ledger = ga4ReadLedger_(log);
-  var existing = ga4ReadData_(data);
+  var existing = ga4ReadData_(data, config);
   var cycleDone = {};
   ledger.forEach(function (r) { if (String(r[4]) === job.cycleId) cycleDone[String(r[0])] = true; });
-  job.queue = ga4Queue_(today, config.startDate, ledger, existing).filter(function (day) { return !cycleDone[day]; });
+  job.queue = ga4Queue_(today, config.startDate, ledger, existing, config.refreshDays).filter(function (day) { return !cycleDone[day]; });
   // A hard timeout cannot run finally/catch: this watchdog resumes after the 6-minute platform limit.
   ga4SetContinuation_(config, props, 7 * 60000);
   while (job.queue.length) {
@@ -384,7 +405,14 @@ function ga4Run_(config, props, started) {
     job.queue.shift();
   }
   ga4Status_(ss, config, 'Import cycle complete. Today and recent days remain provisional; check quality notes below.');
-  log.getRange('B5').setValue(new Date().toISOString());
+  if (config.layoutVersion === 2) {
+    var stamp = Utilities.formatDate(new Date(), config.timeZone, 'yyyy-MM-dd HH:mm:ss');
+    Sheets.Spreadsheets.Values.batchUpdate({valueInputOption: 'RAW', data: [
+      {range: "'Automation Settings'!AI30", values: [[stamp]]},
+      {range: "'Automation Settings'!AI32", values: [['Today is partial; recent dates can change.']]},
+      {range: "'Raw Ga4 & Meta Ads Data'!AX1", values: [['Google Analytics · Egypt\nLast updated ' + stamp]]}
+    ]}, config.spreadsheetId);
+  } else log.getRange('B5').setValue(new Date().toISOString());
   props.deleteProperty(GA4_.stateKey);
   ga4RemoveContinuation_(config, props);
   return {pending: false};
@@ -448,6 +476,7 @@ function ga4Cells_(row) {
   return {values: row.map(function (v) { return {userEnteredValue: typeof v === 'number' ? {numberValue: v} : {stringValue: String(v)}}; })};
 }
 function ga4PublishDay_(ss, data, log, day, result, job) {
+  if (log.config) return ga4PublishSharedDay_(data, log.config, day, result, job);
   var existing = ga4ReadData_(data);
   var merged = ga4MergeDay_(existing, day, result.rows);
   var ledger = ga4ReadLedger_(log).filter(function (r) { return String(r[0]) !== day; });
@@ -464,4 +493,109 @@ function ga4PublishDay_(ss, data, log, day, result, job) {
   requests.push({updateCells: {range: {sheetId: log.getSheetId(), startRowIndex: 7, endRowIndex: requiredLogRows, startColumnIndex: 0, endColumnIndex: 5}, rows: ledger.map(ga4Cells_), fields: 'userEnteredValue'}});
   SpreadsheetApp.flush();
   Sheets.Spreadsheets.batchUpdate({requests: requests}, ss.getId());
+}
+
+function ga4NormalizeSheetRows_(rows) {
+  return rows.filter(function (r) { return r[0] !== '' && r[0] !== undefined && r[0] !== null; }).map(function (r) {
+    var day = typeof r[0] === 'number' ? new Date(Date.UTC(1899, 11, 30) + Math.round(r[0]) * 86400000).toISOString().slice(0, 10) : String(r[0]);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw Error('Unexpected GA4 date in the export: ' + day);
+    var row = [day];
+    for (var i = 1; i < 10; i++) row.push(r[i] === undefined ? '' : r[i]);
+    row.push(typeof row[1] === 'number' && row[1] > 0 && typeof row[7] === 'number' ? row[7] / row[1] : '');
+    return row;
+  });
+}
+function ga4ExportCells_(row) {
+  var native = row.slice();
+  native[0] = Math.round((Date.parse(row[0] + 'T00:00:00Z') - Date.UTC(1899, 11, 30)) / 86400000);
+  return ga4Cells_(native);
+}
+function ga4MetadataLedger_(config) {
+  var found = Sheets.Spreadsheets.DeveloperMetadata.search({dataFilters: [{developerMetadataLookup: {
+    metadataKey: 'GA4_IMPORT_LEDGER_' + config.propertyId,
+    metadataLocation: {sheetId: config.sheetId}, locationMatchingStrategy: 'EXACT_LOCATION'
+  }}]}, config.spreadsheetId);
+  return (found.matchedDeveloperMetadata || []).map(function (match) {
+    var row = JSON.parse(match.developerMetadata.metadataValue);
+    row.metadataId = match.developerMetadata.metadataId;
+    return row;
+  });
+}
+function ga4LedgerRequest_(config, row, previous) {
+  var value = JSON.stringify(row.slice(0, 5));
+  if (previous && previous.metadataId !== undefined) return {updateDeveloperMetadata: {
+    dataFilters: [{developerMetadataLookup: {metadataId: previous.metadataId}}],
+    developerMetadata: {metadataValue: value}, fields: 'metadataValue'
+  }};
+  return {createDeveloperMetadata: {developerMetadata: {
+    metadataKey: 'GA4_IMPORT_LEDGER_' + config.propertyId, metadataValue: value,
+    location: {sheetId: config.sheetId}, visibility: 'DOCUMENT'
+  }}};
+}
+function ga4SharedPublication_(config, existing, merged, day, fresh) {
+  var indexes = [];
+  existing.forEach(function (r, i) { if (r[0] === day) indexes.push(i); });
+  var sameSize = indexes.length === fresh.length && indexes.every(function (n, i) { return !i || n === indexes[i - 1] + 1; });
+  if (sameSize && !fresh.length) return null;
+  var rows = sameSize ? merged.filter(function (r) { return r[0] === day; }) : merged;
+  var start = sameSize ? indexes[0] + 2 : 2;
+  return {updateCells: {
+    range: {sheetId: config.sheetId, startRowIndex: start, endRowIndex: sameSize ? start + rows.length : Math.max(existing.length, merged.length) + 2, startColumnIndex: 49, endColumnIndex: 60},
+    rows: rows.map(ga4ExportCells_), fields: 'userEnteredValue'
+  }};
+}
+function ga4PublishSharedDay_(data, config, day, result, job) {
+  var existing = ga4ReadData_(data, config), merged = ga4MergeDay_(existing, day, result.rows);
+  if (merged.length + 2 > data.getMaxRows()) throw Error('GA4 export exceeds the existing raw tab row capacity.');
+  var ledger = ga4MetadataLedger_(config), previous = ledger.filter(function (r) { return r[0] === day; })[0];
+  var notes = (day === job.today ? ['Today is partial.'] : []).concat(result.notes);
+  var row = [day, new Date().toISOString(), result.rows.length, notes.join(' ') || 'No API quality flags.', job.cycleId];
+  var publication = ga4SharedPublication_(config, existing, merged, day, result.rows);
+  var requests = publication ? [publication] : [];
+  requests.push(ga4LedgerRequest_(config, row, previous));
+  Sheets.Spreadsheets.batchUpdate({requests: requests}, config.spreadsheetId);
+}
+function ga4ApplyLayout_(config, props) {
+  var ss = SpreadsheetApp.openById(config.spreadsheetId);
+  var settings = ss.getSheetByName(GA4_.settingsSheetName);
+  if (!settings || settings.getMaxColumns() < 35 || settings.getRange('AH6').getValue() !== 'Google Analytics 4') throw Error('GA4 settings section is missing from Automation Settings!AH:AI.');
+  if (config.layoutVersion !== 2) {
+    var raw = ss.getSheetByName(GA4_.exportSheetName);
+    if (!raw) throw Error('The configured raw GA4 export tab is missing.');
+    var oldData = Sheets.Spreadsheets.Values.get(config.spreadsheetId, "'" + config.sheetName.replace(/'/g, "''") + "'!B3:L", {valueRenderOption: 'UNFORMATTED_VALUE'}).values || [];
+    var rawRows = Sheets.Spreadsheets.Values.get(config.spreadsheetId, "'Raw Ga4 & Meta Ads Data'!AX3:BG", {valueRenderOption: 'UNFORMATTED_VALUE'}).values || [];
+    var existing = ga4NormalizeSheetRows_(rawRows), fresh = ga4NormalizeSheetRows_(oldData), merged = existing;
+    Array.from(new Set(fresh.map(function (r) { return r[0]; }))).forEach(function (day) { merged = ga4MergeDay_(merged, day, fresh.filter(function (r) { return r[0] === day; })); });
+    var oldLedger = ss.getSheetById(config.logSheetId);
+    var ledger = oldLedger ? ga4ReadLedger_(oldLedger) : [];
+    var next = Object.assign({}, config, {layoutVersion: 2, legacyDataSheetId: config.sheetId, legacyLogSheetId: config.logSheetId,
+      sheetId: raw.getSheetId(), sheetName: GA4_.exportSheetName, settingsSheetId: settings.getSheetId(), scheduleHours: 12, refreshDays: 7});
+    var currentLedger = ga4MetadataLedger_(next);
+    var requests = [
+      {updateCells: {start: {sheetId: next.sheetId, rowIndex: 1, columnIndex: 49}, rows: [ga4Cells_(GA4_.headers)], fields: 'userEnteredValue'}},
+      {updateCells: {range: {sheetId: next.sheetId, startRowIndex: 2, endRowIndex: Math.max(rawRows.length, merged.length) + 2, startColumnIndex: 49, endColumnIndex: 60}, rows: merged.map(ga4ExportCells_), fields: 'userEnteredValue'}},
+      {repeatCell: {range: {sheetId: next.sheetId, startRowIndex: 2, endRowIndex: merged.length + 2, startColumnIndex: 49, endColumnIndex: 50}, cell: {userEnteredFormat: {numberFormat: {type: 'DATE', pattern: 'yyyy-mm-dd'}}}, fields: 'userEnteredFormat.numberFormat'}},
+      {repeatCell: {range: {sheetId: next.sheetId, startRowIndex: 2, endRowIndex: merged.length + 2, startColumnIndex: 57, endColumnIndex: 58}, cell: {userEnteredFormat: {numberFormat: {type: 'PERCENT', pattern: '0%'}}}, fields: 'userEnteredFormat.numberFormat'}},
+      {repeatCell: {range: {sheetId: next.sheetId, startRowIndex: 2, endRowIndex: merged.length + 2, startColumnIndex: 59, endColumnIndex: 60}, cell: {userEnteredFormat: {numberFormat: {type: 'NUMBER', pattern: '0.##'}}}, fields: 'userEnteredFormat.numberFormat'}}
+    ];
+    ledger.forEach(function (r) { requests.push(ga4LedgerRequest_(next, r, currentLedger.filter(function (x) { return x[0] === r[0]; })[0])); });
+    Sheets.Spreadsheets.batchUpdate({requests: requests}, config.spreadsheetId);
+    config = next;
+    ga4SaveConfig_(config, props);
+    props.setProperty(GA4_.setupKey, JSON.stringify({spreadsheetId: config.spreadsheetId, sheetId: settings.getSheetId()}));
+    console.log('GA4 export migrated to Raw Ga4 & Meta Ads Data!AX2:BH; ' + merged.length + ' rows preserved.');
+  }
+  var input = settings.getRange('AI10:AI24').getDisplayValues().map(function (r) { return r[0]; });
+  if (input[0].indexOf('[' + config.propertyId + ']') === -1) throw Error('The selected property differs from this connected export. Restore the connected property before refreshing.');
+  if (input[1] !== 'Egypt' || input[6] !== 'Raw Ga4 & Meta Ads Data' || input[7] !== 'AX:BH' || input[8] !== '2' || input[9] !== '3') throw Error('Keep the configured export at Egypt / Raw Ga4 & Meta Ads Data / AX:BH / header 2 / first data 3.');
+  var start = input[2], hours = Number(input[12]), days = Number(input[13]);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || ga4ShiftDay_(start, 0) !== start || start > ga4Day_(new Date(), config.timeZone)) throw Error('Choose a valid history start date in Automation Settings!AI12.');
+  if ([1, 2, 4, 6, 8, 12].indexOf(hours) === -1 || !Number.isInteger(days) || days < 1 || days > 30) throw Error('Set a supported hour interval and a refresh window from 1 to 30 days.');
+  if ((config.scheduleHours || 12) !== hours) {
+    ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getUniqueId() === config.scheduleId) ScriptApp.deleteTrigger(t); });
+    delete config.scheduleId;
+  }
+  config.startDate = start; config.scheduleHours = hours; config.refreshDays = days;
+  ga4SaveConfig_(config, props);
+  return config;
 }

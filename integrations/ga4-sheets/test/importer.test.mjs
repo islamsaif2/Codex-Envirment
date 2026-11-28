@@ -201,7 +201,7 @@ test('setup property dropdown validates actual accessible choices and connects o
   const c = context(), p = props({GA4_EGYPT_SETUP_V1: JSON.stringify({spreadsheetId: 'destination', sheetId: 77})});
   const writes = []; let options;
   const sheet = {getSheetId: () => 77, getLastRow: () => 8, getLastColumn: () => 2, getMaxRows: () => 100, getMaxColumns: () => 2, getRange(a1) {return {setDataValidation() {}, getValue: () => a1 === 'B3' ? 'Ultramedix [123] / Main' : '', setValue(v) {writes.push([a1, v]);}};}};
-  c.ga4Destination_ = () => ({getId: () => 'destination', getSheetById: () => sheet});
+  c.ga4Destination_ = () => ({getId: () => 'destination', getSheetById: () => sheet, getSheetByName: () => null});
   c.SpreadsheetApp = {newDataValidation() {const b = {requireValueInList(values) {options = plain(values); return b;}, setAllowInvalid() {return b;}, build() {return b;}}; return b;}};
   c.ga4Connect_ = event => {assert.equal(event.propertyId, '123'); return {sheetName: 'GA4 Egypt - 123'};};
   assert.equal(c.ga4SetupTab_([{id: '123', name: 'Ultramedix', account: 'Main'}], p).config.sheetName, 'GA4 Egypt - 123');
@@ -268,4 +268,58 @@ test('support-tab compaction refuses to truncate values outside the generated la
   c.Sheets = {Spreadsheets: {batchUpdate() {wrote = true;}}};
   c.ga4CompactOwned_({getId: () => 'book'}, {getLastRow: () => 8, getLastColumn: () => 7}, 100, 2);
   assert.equal(wrote, false);
+});
+
+test('shared export preserves native Sheet dates and calculates the eleventh metric without formulas', () => {
+  const c = context();
+  const rows = c.ga4NormalizeSheetRows_([[], [46353, 4, 4, 0, 0, 466.5618398, 8.25, 343, 0, 'Cairo']]);
+  assert.equal(rows[0][0], '2026-11-27'); assert.equal(rows[0][10], 85.75);
+  const cells = plain(c.ga4ExportCells_(rows[0]));
+  assert.equal(cells.values[0].userEnteredValue.numberValue, 46353);
+  assert.equal(cells.values[10].userEnteredValue.numberValue, 85.75);
+});
+
+test('same-size refresh only writes its own date block in AX:BH', () => {
+  const c = context();
+  const rows = ['2026-11-28', '2026-11-27', '2026-11-26'].map(day => c.ga4Row_(apiRow(day.replaceAll('-', ''), 'Cairo'), day));
+  const changed = rows[1].slice(); changed[1] = 6;
+  const merged = c.ga4MergeDay_(rows, '2026-11-27', [changed]);
+  const request = plain(c.ga4SharedPublication_({sheetId: 99}, rows, merged, '2026-11-27', [changed]));
+  assert.deepEqual(request.updateCells.range, {sheetId: 99, startRowIndex: 3, endRowIndex: 4, startColumnIndex: 49, endColumnIndex: 60});
+  assert.equal(request.updateCells.rows.length, 1);
+  assert.equal(request.updateCells.rows[0].values[1].userEnteredValue.numberValue, 6);
+});
+
+test('adding a new date moves existing GA4 history down only within AX:BH', () => {
+  const c = context();
+  const old = [c.ga4Row_(apiRow('20261127', 'Cairo'), '2026-11-27')];
+  const fresh = [c.ga4Row_(apiRow('20261128', 'Cairo'), '2026-11-28')];
+  const merged = c.ga4MergeDay_(old, '2026-11-28', fresh);
+  const request = plain(c.ga4SharedPublication_({sheetId: 99}, old, merged, '2026-11-28', fresh));
+  assert.deepEqual(request.updateCells.range, {sheetId: 99, startRowIndex: 2, endRowIndex: 4, startColumnIndex: 49, endColumnIndex: 60});
+  assert.equal(request.updateCells.rows.length, 2);
+  assert.equal(request.updateCells.rows[1].values[0].userEnteredValue.numberValue, 46353);
+  assert.ok(!request.insertDimension);
+});
+
+test('bookkeeping is embedded as metadata and updates the same daily record on replay', () => {
+  const c = context(), config = {propertyId: '123', sheetId: 99};
+  const row = ['2026-11-28', 'timestamp', 25, 'Today is partial.', 'cycle'];
+  const create = plain(c.ga4LedgerRequest_(config, row));
+  assert.equal(create.createDeveloperMetadata.developerMetadata.location.sheetId, 99);
+  assert.deepEqual(JSON.parse(create.createDeveloperMetadata.developerMetadata.metadataValue), row);
+  const update = plain(c.ga4LedgerRequest_(config, row, {metadataId: 12}));
+  assert.equal(update.updateDeveloperMetadata.dataFilters[0].developerMetadataLookup.metadataId, 12);
+  assert.ok(!update.createDeveloperMetadata);
+});
+
+test('shared publication commits data and completion metadata atomically and leaves BI untouched', () => {
+  const c = context(); let body;
+  const row = c.ga4Row_(apiRow(), '2026-11-27');
+  c.ga4ReadData_ = () => [row]; c.ga4MetadataLedger_ = () => [];
+  c.Sheets = {Spreadsheets: {batchUpdate(value) {body = plain(value);}}};
+  c.ga4PublishSharedDay_({getMaxRows: () => 149709}, {propertyId: '123', sheetId: 99, spreadsheetId: 'book'}, '2026-11-27', {rows: [row], notes: []}, {today: '2026-11-28', cycleId: 'cycle'});
+  assert.equal(body.requests.length, 2);
+  assert.equal(body.requests[0].updateCells.range.endColumnIndex, 60);
+  assert.ok(body.requests[1].createDeveloperMetadata);
 });

@@ -1,81 +1,82 @@
-# GA4 Egypt to Google Sheets
+# GA4 Egypt and page analysis importers
 
-Run **`syncGA4`**. This is the only public function. On first use, Google asks you to authorize the script with an account that has GA4 Viewer access. In a bound project a sidebar lists the accounts/properties available to that Google account. In a standalone project the script creates **GA4 Import Setup** in the configured destination spreadsheet: select the property in **B3**, then run **`syncGA4`** again. No API key, pasted access token, service account or separate connector subscription is required. Google manages OAuth internally; authorization is not guaranteed forever if you revoke it, lose access or change permissions.
+Google manages authorization for both importers. No API key, pasted token, service account or connector subscription is required. They use the official GA4 APIs and run on Google's servers even when the computer is closed. Revoked authorization or lost access requires reconnecting.
 
-The importer uses the official GA4 APIs, not browser scraping. Your spreadsheet and computer can be closed while Google runs the scheduled import.
+## Installed Ultramedix layout
 
-## Install into your spreadsheet's existing Apps Script project
+| Importer | Function | Settings | Export |
+|---|---|---|---|
+| Regional GA4 | `syncGA4` | Automation Settings!AH:AI | Raw Ga4 & Meta Ads Data!AX:BH |
+| Page analysis | `syncGA4Pages` | Automation Settings!AK:AL | D by D Pages Analysis!A:K |
 
-1. Open the destination Google Sheet, then **Extensions > Apps Script**.
-2. Add a **new script file** named `GA4EgyptImporter`. Paste `Code.gs` into that new file. Do not replace your existing automation files.
-3. Under **Services**, add **Google Analytics Data API** (`AnalyticsData`, v1beta), **Google Analytics Admin API** (`AnalyticsAdmin`, v1beta), and **Google Sheets API** (`Sheets`, v4). Keep all existing services. On an Apps Script default Cloud project, adding advanced services enables the corresponding APIs automatically. If the project uses a standard Cloud project, its administrator must enable these three APIs in that project as well.
-4. Save, choose `syncGA4` in the function selector and click **Run**. Complete Google's authorization yourself, using the Google account that has access to your GA4 property and destination Sheet.
-5. Return to the spreadsheet and select the property in the **GA4 Egypt import** sidebar. Leave the optional history date blank to start with today plus the previous 7 days, or choose an earlier initial backfill date. Click **Connect and import**.
+Both settings panels follow the existing green headings, blue input cells and hidden borders. Property, country and export coordinates guard against mixing business data. A property change requires a separate connection/destination; changing the displayed property does not silently reconnect this export.
 
-`appsscript.json` is a complete manifest for a **new dedicated bound project**. **Do not replace the manifest of an existing automation project**: it may contain other services, scopes and settings. Add the services through the UI as above. If the existing project explicitly lists `oauthScopes`, preserve them and add any missing scopes from this package's manifest; if it has no explicit scope list, Apps Script infers them from code.
+Settings rows: property 10, Egypt 11, history start 12, destination 16, columns 17, header row 18, first data row 19, interval 22, previous days 23, timezone 24, run function 27, last successful cycle 30, progress/error 31 and provisional-data reminder 32. Editable interval choices are 1, 2, 4, 6, 8 or 12 hours; refresh window accepts 1–30 previous days. Installed defaults are **12 hours and 7 previous days**.
 
-There is no Web App deployment step. No paid Cloud product, billing account or local server is required by this importer. The spreadsheet account's Apps Script and GA4 API quotas still apply.
+### Regional GA4
 
-## Standalone Apps Script projects
-
-The existing Ultramedix Dashboard project is standalone, so `SpreadsheetApp.getUi()` is unavailable there. This version supports that context automatically. The default `destinationSpreadsheetId` at the top of `Code.gs` points to the existing Ultramedix workbook. Change that setting before installing a standalone copy for a different business. A bound project uses its own spreadsheet instead.
-
-Tab creation and its ownership marker are committed atomically through the Sheets API. A timed-out creation is read back before retrying, preventing duplicate tabs. The empty field-catalogue tab left by the earlier non-atomic version can be recovered; populated unowned tabs are refused. Shared project locks wait up to 20 seconds for existing automations, then log a clear retry message rather than silently skipping work.
-
-Once the setup tab exists, temporary setup errors and newly created tabs missing from Apps Script's per-execution spreadsheet cache schedule another `syncGA4` execution automatically. It resumes using the saved property selection. Only the importer's known setup-retry trigger is replaced; other project triggers remain unchanged.
-
-Run `syncGA4`, open the **GA4 Import Setup** tab, select the accessible GA4 property in **B3**, optionally set a history start in **B4**, then run `syncGA4` again. Later manual and scheduled runs do not need a spreadsheet UI or property selection. No recurring trigger is installed until a property has been selected and validated.
-
-## Output
-
-Creates separate tabs with the selected property ID in their names:
-
-- **GA4 Egypt - PROPERTY_ID**: headers **B2:L2**, newest data **B3:L**. Columns A, row 1 and columns beyond L are not written by the importer. Initial setup reserves 1,000 rows in this new tab to limit workbook cell usage. Every refresh shifts older data down by rewriting only the owned B3:L range, without inserting entire spreadsheet rows. If capacity is exhausted it stops safely and asks you to increase the tab's capacity. Importer-owned setup and field-catalogue tabs trim unused grid only when it contains no values outside their support layout. Existing business tabs are never compacted.
-- **GA4 Sync - PROPERTY_ID**: current status, timezone, last completed cycle and a per-day completion ledger. Successful empty days are recorded distinctly from failed requests. Check the quality notes for thresholding, sampling or data loss.
-- **GA4 Fields - PROPERTY_ID**: actual dimension/metric catalogue returned by your property's metadata endpoint. Setup verifies the requested fields and checks compatibility before scheduling imports. Missing fields stop setup; nothing is silently substituted.
-
-The importer refuses to overwrite an existing tab with one of these names unless that tab has its ownership metadata. Existing dashboard source tabs and schedules are not changed. Use one installing Google account per property in a bound project; installable triggers and configuration belong to that user.
-
-## Query and formatting
+Headers stay at **AX2:BH2**; newest data starts at **AX3**. New dates move older values down inside AX:BH without inserting entire spreadsheet rows. Other raw source blocks and BI's region-normalization formula stay outside the write range.
 
 | Column | Header | Source |
 |---|---|---|
-| B | Day | `date`, ISO text YYYY-MM-DD |
+| AX | Day | `date`, native spreadsheet date |
+| AY | Sessions | `sessions` |
+| AZ | Engaged sessions | `engagedSessions` |
+| BA | Add to carts | `addToCarts` |
+| BB | Checkouts | `checkouts` |
+| BC | Average session duration | `averageSessionDuration`, seconds |
+| BD | Views per session | `screenPageViewsPerSession` |
+| BE | User engagement | `userEngagementDuration`, total seconds |
+| BF | Bounce rate | `bounceRate`, fraction displayed as percent |
+| BG | Region | `region` |
+| BH | Average Engaged time per session | `userEngagementDuration / sessions`; blank for zero sessions |
+
+Exact country filter: EG. Sort: date descending, region ascending. Add-to-cart and checkout metrics count event occurrences. Migration preserved older raw history and replaced recent dates from the former dedicated export. The obsolete GA4 Import Setup and GA4 Sync tabs were removed; the previous dedicated export is hidden as a backup. GA4 Fields remains available.
+
+### Page analysis
+
+Headers stay at **A2:K2**, **row 3 stays blank**, and newest data starts at **A4**. The key is day + page title + page path, so titles such as page 1 and page 2 remain distinct even when their path matches. Filter: Egypt. Sort: date descending, sessions descending, then path/title.
+
+| Column | Header | Source |
+|---|---|---|
+| A | Day | `date`, native spreadsheet date |
+| B | Page title | `pageTitle` |
 | C | Sessions | `sessions` |
 | D | Engaged sessions | `engagedSessions` |
-| E | Add to carts | `addToCarts` |
-| F | Checkouts | `checkouts` |
+| E | Engagement rate | `engagementRate`, fraction |
+| F | Bounce rate | `bounceRate`, fraction |
 | G | Average session duration | `averageSessionDuration`, seconds |
-| H | Views per session | `screenPageViewsPerSession` |
-| I | User engagement | `userEngagementDuration`, total seconds |
-| J | Bounce rate | `bounceRate`, fraction stored and percent displayed |
-| K | Region | `region`, including unknown values returned by GA4 |
-| L | Average Engaged time per session | `userEngagementDuration / sessions`; blank when sessions = 0 |
+| H | Total users | `totalUsers` |
+| I | New users | `newUsers` |
+| J | Page path | `pagePath`, excludes query string |
+| K | Old Users | Total users − New users, matching the existing sheet |
 
-Filter: exact `countryId = EG`. Group: date and region. Sort: date descending, region ascending. Decimal precision is stored; display formats can round. For the supplied example: `343 / 4 = 85.75` seconds. Add to carts and checkout starts are event occurrences, not item quantities or purchases.
+Old Users is the existing arithmetic definition, not GA4's returning-users audience. Users and sessions can appear on multiple pages, so page rows must not be summed to obtain deduplicated site totals.
 
-## Refresh and resume
+The one-time migration moves the existing A3:K history to A4:K using a value copy and commits a migration marker atomically. Refreshes replace each day's full page set. If the row count changes, a server-side value copy shifts the older tail within A:K; columns L onward do not move. The importer may extend the bottom grid when necessary, but never inserts entire rows at the top. Google Sheets workbook cell limits still apply.
 
-- One recurring trigger every **12 hours**, plus at most one temporary continuation/watchdog trigger for this importer. Other triggers are left alone. Google schedules are approximate.
-- A cycle revisits **today plus seven previous dates** (8 dates). Example for 2026-11-28: 2026-11-21 through 2026-11-28. GA4 property timezone determines today. This rolling window is a refresh policy, not a guarantee that GA4 never revises older data.
-- The selected initial history start date remains the lower bound for missing-date repair. Older missing imports and row-count discrepancies are re-fetched automatically; dates before the chosen history start are not invented or backfilled.
-- Pagination is completed and validated per day. If the execution budget is nearly used up, the unfinished day is downloaded again on continuation; published days need not be repeated within that cycle.
-- Each complete day replaces that day's entire region set. Data values, removal of obsolete rows and the day's completion ledger publish in one atomic Google Sheets API batch. A failed or partial download never clears a previously published day. A replay is idempotent.
-- A script lock prevents overlapping imports. A watchdog is scheduled before downloading so a hard Apps Script timeout can resume too. Temporary API failures get bounded retries, then a continuation. Permission failures require authorization repair; they do not trigger endless retries.
-- Running `syncGA4` again continues an unfinished cycle or starts a fresh one after the previous cycle completed. It does not create another 12-hour trigger while its existing schedule is present.
-- The entire row set is rewritten when a day is published so new dates occupy B3 and old dates move down within B:L. Other columns do not move; avoid putting manually maintained row-linked data beside this generated range.
+## Refresh, missing dates and continuation
+
+- Each cycle refreshes today and the previous 7 dates (8 dates total), using the GA4 property's timezone. Today's data is partial; the window is a refresh policy, not a finalization guarantee.
+- Missing dates and row-count discrepancies from the configured history start are repaired automatically. Earlier existing history is retained; gaps before that date are not backfilled.
+- Each complete day and its completion ledger record publish atomically. Partial downloads retain previously published data. A replay replaces that day's rows without duplication.
+- Completion records live in spreadsheet developer metadata; no sync-log tab is required. API sampling, thresholding and data-loss notes are retained there. Settings show cycle progress and a provisional-data reminder.
+- A shared script lock prevents concurrent imports. Each importer has one recurring trigger plus at most one temporary continuation/watchdog trigger. Known trigger IDs are managed separately; unrelated automations are preserved.
+- A saved job and atomic ledger resume incomplete work after transient errors or hard execution timeouts. Running the same public function manually also resumes. Permission/configuration errors require correction instead of endless retries.
+- Google trigger times are approximate. Apps Script and GA4 API quotas apply.
+
+## Apps Script source and installation
+
+The existing project contains **GA4EgyptImporter.gs** (source `Code.gs`) and **GA4PagesImporter.gs** (source `Pages.gs`). Pages.gs uses shared helpers from Code.gs; install both in the same project and retain all other automation files.
+
+Required advanced services: Analytics Data (`AnalyticsData`, v1beta), Analytics Admin (`AnalyticsAdmin`, v1beta), and Google Sheets (`Sheets`, v4). Existing Google authorization covers both importers; no Web App deployment is needed.
+
+The settings sections above are installed in the Ultramedix workbook. The current code expects these sections and exact destination tabs to exist; this package is not a generic settings-panel installer. The older sidebar/setup-tab connection flow remains for compatibility. Standalone projects cannot use SpreadsheetApp.getUi() and use sheet-based setup.
+
+`appsscript.json` is a reference manifest for a new dedicated project. **Do not replace an existing project's manifest**: preserve its services, scopes, settings and other functions. Google authorization must be completed interactively once.
 
 ## Verification
 
-From this directory: `node --test test/importer.test.mjs`.
+Run `node --test test/importer.test.mjs test/pages.test.mjs` from this directory. Tests cover pagination, interruption, rolling repair, trigger deduplication, date conversion, idempotent replacement, publication boundaries, page keys, row-4 positioning and shifting when counts increase/decrease. Live runs separately verify actual Google access and successful publication.
 
-Local tests simulate pagination, changing reports, interrupted cycles, retry behavior, schedule deduplication, rolling repair, exact output coordinates, example calculations and idempotent day replacement. They do not prove access to your GA4 account. Installation, property selection, consent and the first real import must be verified in Google's UI and the created tabs.
-
-Official references:
-
-- https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema
-- https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/properties/getMetadata
-- https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/properties/checkCompatibility
-- https://developers.google.com/apps-script/guides/services/advanced
-- https://developers.google.com/apps-script/guides/triggers/installable
-- https://developers.google.com/apps-script/guides/services/quotas
+References: [GA4 schema](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema), [advanced services](https://developers.google.com/apps-script/guides/services/advanced), [installable triggers](https://developers.google.com/apps-script/guides/triggers/installable), [developer metadata](https://developers.google.com/sheets/api/guides/metadata).
